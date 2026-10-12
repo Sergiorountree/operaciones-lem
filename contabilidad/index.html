@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Contabilidad · Grupo LEM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="/punto-de-vista.js?v=097"></script>
+<style>
+  /* ── Mismo sistema visual que Ventas y Nóminas (app de pre-nómina) ── */
+  :root { --font-sans: 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif; --font-serif: 'Instrument Serif', Georgia, serif; --font-mono: 'JetBrains Mono', monospace;
+          --lem: #534AB7; --lem-dark: #3C3489; --lem-light: #EEEDFE; --tota: #C03028;
+          --bg: #FAFAF7; --surface: #FFFFFF; --border: #E8E6DF; --border-strong: #D5D2C7; --text: #1A1A1A; --text-soft: #6B6B66; --text-faint: #9B9A92;
+          --verde: #0E5A42; --verde-bg: #DAF1E9; --ambar: #7A4B05; --ambar-bg: #FCEFD5; --rojo: #8C1F1B; --rojo-bg: #FCE7E5; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #root { height: 100%; }
+  body { font-family: var(--font-sans); background: var(--bg); color: var(--text); font-feature-settings: 'cv11', 'ss01'; letter-spacing: -0.005em; font-size: 14px; }
+  button, input, select, textarea { font-family: inherit; }
+  button { background: none; border: none; color: inherit; }
+  a { color: inherit; }
+  .font-serif { font-family: var(--font-serif); letter-spacing: 0; } .num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+  .grain { background-image: radial-gradient(circle at 20% 10%, rgba(83,74,183,0.04) 0%, transparent 50%), radial-gradient(circle at 80% 90%, rgba(192,48,40,0.03) 0%, transparent 50%); }
+  .shadow-card { box-shadow: 0 1px 0 rgba(0,0,0,0.02), 0 0 0 1px var(--border); }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; font-size: 14px; color: var(--text-soft); cursor: pointer; transition: background 0.1s ease, color 0.1s ease; width: 100%; text-align: left; text-decoration: none; }
+  .nav-item:hover { background: rgba(0,0,0,0.04); color: var(--text); } .nav-item.active { background: var(--lem-light); color: var(--lem-dark); font-weight: 500; } .nav-item.active svg { color: var(--lem); }
+  .nav-item .soon { margin-left: auto; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); border: 1px solid var(--border); border-radius: 4px; padding: 1px 4px; }
+  .nav-item.soon-item { cursor: default; color: var(--text-faint); } .nav-item.soon-item:hover { background: none; color: var(--text-faint); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 14px; border-radius: 7px; font-size: 13px; font-weight: 500; transition: all 0.1s ease; cursor: pointer; border: 1px solid transparent; text-decoration: none; white-space: nowrap; }
+  .btn-primary { background: var(--lem); color: white; } .btn-primary:hover { background: var(--lem-dark); }
+  .btn-secondary { background: white; color: var(--text); border-color: var(--border-strong); } .btn-secondary:hover { background: var(--bg); }
+  .btn-ghost { background: transparent; color: var(--text-soft); } .btn-ghost:hover { background: rgba(0,0,0,0.04); color: var(--text); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; } .btn.p-2 { padding: 8px; } .btn.p-15 { padding: 6px; } .btn.sm { padding: 5px 10px; font-size: 12px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap; }
+  .b-verde { background: var(--verde-bg); color: var(--verde); } .b-ambar { background: var(--ambar-bg); color: var(--ambar); } .b-rojo { background: var(--rojo-bg); color: var(--rojo); }
+  .b-gris { background: #F1EFE8; color: #565550; } .b-lem { background: var(--lem-light); color: var(--lem-dark); }
+  .conf { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 99px; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; border: 1px solid; white-space: nowrap; vertical-align: middle; }
+  .conf-est { background: #FFF7E6; color: var(--ambar); border-color: #F0CD83; } .conf-auto { background: #EEF8F2; color: var(--verde); border-color: #B9E0CB; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; border-radius: 99px; padding: 1px 8px; background: #F1EFE8; color: #565550; white-space: nowrap; }
+  .chip-pf { background: #EAE6F7; color: #322787; }
+  .lem-table { border-collapse: separate; border-spacing: 0; width: 100%; }
+  .lem-table thead th { background: #F5F3EC; font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.05em; padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .lem-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13.5px; background: white; vertical-align: middle; }
+  .lem-table tbody tr:hover td { background: #FAFAF7; } .lem-table tbody tr:last-child td { border-bottom: none; }
+  .lem-table.densa thead th { padding: 8px 10px; font-size: 10.5px; } .lem-table.densa tbody td { padding: 8px 10px; font-size: 13px; }
+  .lem-table td.num, .lem-table th.text-right { white-space: nowrap; }
+  .lem-table .fija { position: sticky; left: 0; z-index: 2; box-shadow: 1px 0 0 var(--border); } .lem-table thead th.fija { z-index: 3; }
+  .lem-table tr.total td { background: #F5F3EC !important; font-weight: 600; } .lem-table tr.sel td { background: var(--lem-light) !important; }
+  .lem-table tr.link { cursor: pointer; } .lem-table tr.cero td { background: #FFFBEB; }
+  .lnk { color: var(--lem-dark); text-decoration: none; font-weight: 500; } .lnk:hover { text-decoration: underline; }
+  .tabla { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  .dim { color: #C5C2B5; } .neg { color: var(--rojo); } .pos { color: var(--verde); } .warn { color: #9A5B00; }
+  .toast { position: fixed; bottom: 24px; right: 24px; z-index: 200; background: #1A1A1A; color: white; padding: 12px 16px; border-radius: 10px; font-size: 13px; max-width: 400px; box-shadow: 0 10px 32px rgba(0,0,0,0.2); animation: toast-in 0.2s ease; }
+  @keyframes toast-in { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .tip { position: relative; } .tip:hover .tip-body { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .tip-body { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%) translateY(4px); background: #1A1A1A; color: white; padding: 6px 10px; border-radius: 5px; font-size: 11px; white-space: nowrap; opacity: 0; pointer-events: none; transition: all 0.12s ease; z-index: 30; font-weight: 400; }
+  .stat-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; min-width: 0; }
+  .stat-card .stat-value { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; margin-top: 8px; overflow-wrap: anywhere; line-height: 1.15; }
+  .stat-card .stat-label { font-size: 12px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .card { background: white; border-radius: 12px; box-shadow: 0 1px 0 rgba(0,0,0,0.02), 0 0 0 1px var(--border); margin-bottom: 20px; min-width: 0; }
+  .card-head { padding: 16px 20px 12px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .card-head h3 { font-size: 15px; font-weight: 600; } .card-head p { font-size: 12.5px; color: var(--text-soft); margin-top: 3px; max-width: 760px; line-height: 1.45; }
+  .card-body { padding: 0 20px 18px; } .card-foot { padding: 10px 20px 14px; font-size: 12px; color: var(--text-soft); border-top: 1px solid var(--border); line-height: 1.5; }
+  .fade-in { animation: fade-in 0.2s ease; } @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  /* ── Armazón (sidebar + main), igual que Ventas ── */
+  .shell { display: flex; height: 100%; } .sidebar { width: 248px; flex-shrink: 0; border-right: 1px solid var(--border); background: #FCFBF7; display: flex; flex-direction: column; }
+  .sb-head { padding: 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .logo { width: 32px; height: 32px; background: var(--lem); border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-family: var(--font-serif); flex-shrink: 0; }
+  .sb-brand { font-size: 10px; font-weight: 500; letter-spacing: 0.1em; color: #6B7280; text-transform: uppercase; } .sb-app { font-size: 13px; font-weight: 500; line-height: 1.2; }
+  .sb-nav { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
+  .sb-foot { padding: 8px 12px 12px; border-top: 1px solid var(--border); } .sb-label { padding: 8px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #9CA3AF; font-weight: 500; }
+  .user-menu { padding: 10px 8px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
+  .avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 500; font-size: 12px; color: white; flex-shrink: 0; }
+  .sb-extra { padding: 4px 8px 0; display: flex; flex-direction: column; gap: 6px; } .sb-extra label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: #9CA3AF; font-weight: 500; display: block; margin-bottom: 2px; }
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; } .main > .scroll { flex: 1; overflow: auto; }
+  .topbar { border-bottom: 1px solid var(--border); padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--surface); flex-wrap: wrap; }
+  .topbar h1 { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; } .topbar p { font-size: 14px; color: #6B7280; margin-top: 2px; }
+  .sel { padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border-strong); font-size: 13.5px; background: white; max-width: 100%; }
+  .inp { padding: 7px 10px; border-radius: 8px; border: 1px solid var(--border-strong); font-size: 13.5px; background: white; max-width: 100%; }
+  .login-wrap { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+  .login-box { background: white; border-radius: 16px; padding: 32px; box-shadow: 0 12px 40px rgba(0,0,0,0.08), 0 0 0 1px var(--border); }
+  .logo-lg { width: 52px; height: 52px; background: var(--lem); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 22px; font-family: var(--font-serif); }
+  .msg-card { background: white; border-radius: 12px; padding: 32px; text-align: center; font-size: 14px; color: #6B7280; }
+  .banner { padding: 14px 16px; border-radius: 8px; border: 1px solid; margin-bottom: 16px; font-size: 13.5px; line-height: 1.5; }
+  .banner-amber { background: #FFFBEB; border-color: #F0CD83; color: #4A3205; } .banner-lem { background: var(--lem-light); border-color: #D9D6F7; color: var(--lem-dark); }
+  .banner-red { background: #FEF2F2; border-color: #F2B8B3; color: var(--rojo); } .banner-gris { background: white; border-color: var(--border); color: var(--text-soft); }
+  .banner details { margin-top: 8px; } .banner summary { cursor: pointer; font-weight: 500; } .banner ul { margin: 6px 0 0 18px; } .banner li { margin-top: 3px; }
+  .seg { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+  .seg button { padding: 6px 10px; font-size: 12.5px; font-weight: 500; background: white; color: var(--text-soft); cursor: pointer; border-right: 1px solid var(--border); }
+  .seg button:last-child { border-right: none; } .seg button.on { background: var(--lem-light); color: var(--lem-dark); }
+  .stack { display: flex; height: 14px; border-radius: 999px; overflow: hidden; background: #EEEDE6; } .stack > span { display: block; height: 100%; }
+  .leyendas { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px 16px; margin-top: 12px; }
+  .ley { display: flex; gap: 8px; align-items: flex-start; } .ley i { width: 10px; height: 10px; border-radius: 3px; margin-top: 4px; flex-shrink: 0; } .ley .t { font-size: 12px; color: var(--text-soft); } .ley .v { font-size: 14px; font-weight: 600; }
+  .kv { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; } .kv:last-child { border-bottom: none; } .kv .k { color: var(--text-soft); } .kv .v { text-align: right; font-weight: 500; }
+  .exc { padding: 10px 0; border-bottom: 1px solid var(--border); } .exc:last-child { border-bottom: none; }
+  /* utilidades */
+  .flex { display: flex; } .items-center { align-items: center; } .items-start { align-items: flex-start; } .justify-between { justify-content: space-between; } .justify-center { justify-content: center; } .flex-wrap { flex-wrap: wrap; } .flex-1 { flex: 1; } .min-w-0 { min-width: 0; }
+  .gap-1 { gap: 4px; } .gap-2 { gap: 8px; } .gap-3 { gap: 12px; } .gap-4 { gap: 16px; }
+  .p-8 { padding: 28px 32px 48px; } .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; } .mb-5 { margin-bottom: 20px; } .mb-6 { margin-bottom: 24px; }
+  .mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mt-5 { margin-top: 20px; }
+  .text-10 { font-size: 10px; } .text-11 { font-size: 11px; } .text-xs { font-size: 12px; } .text-13 { font-size: 13px; } .text-sm { font-size: 14px; } .text-base { font-size: 16px; } .text-lg { font-size: 18px; } .text-xl { font-size: 20px; } .text-2xl { font-size: 24px; }
+  .text-gray-400 { color: #9CA3AF; } .text-gray-500 { color: #6B7280; } .text-gray-600 { color: #4B5563; }
+  .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .uppercase { text-transform: uppercase; } .text-center { text-align: center; } .text-right { text-align: right; } .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .leading-relaxed { line-height: 1.6; } .nowrap { white-space: nowrap; }
+  .w-full { width: 100%; } .grid { display: grid; gap: 16px; } .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .nombre-prov { min-width: 200px; max-width: 300px; white-space: normal; line-height: 1.3; }
+  .badge.largo { white-space: normal; text-transform: none; letter-spacing: 0; line-height: 1.3; }
+  /* ── Subir XML ── */
+  .zona { border: 2px dashed var(--border-strong); border-radius: 12px; padding: 28px 20px; text-align: center; background: #FCFBF7; transition: background .1s ease, border-color .1s ease; }
+  .zona.sobre { background: var(--lem-light); border-color: var(--lem); } .zona .t { font-size: 15px; font-weight: 500; } .zona .s { font-size: 12.5px; color: var(--text-soft); margin-top: 6px; line-height: 1.5; }
+  .zona.apagada { opacity: .5; pointer-events: none; }
+  .barra { height: 10px; border-radius: 99px; background: #EEEDE6; overflow: hidden; } .barra > span { display: block; height: 100%; background: var(--lem); transition: width .2s ease; }
+  .lem-table td.motivo { min-width: 240px; max-width: 420px; white-space: normal; line-height: 1.35; font-size: 12.5px; color: var(--text-soft); }
+  .lem-table td.arch { min-width: 230px; max-width: 340px; white-space: normal; overflow-wrap: anywhere; line-height: 1.3; font-size: 12.5px; }
+  .stat-card.click { cursor: pointer; } .stat-card.click:hover { border-color: var(--border-strong); } .stat-card.on { border-color: var(--lem); box-shadow: 0 0 0 1px var(--lem) inset; }
+  /* ── Espejo de Drive (mig. 094): conciliación y caja, solo lectura ── */
+  .b-mixto { background: #ECE6FA; color: #4B2F8F; } .b-hist { background: #F6F5F0; color: #9B9A92; }
+  .lem-table td.cap, .lem-table th.cap { background: #FFF6D6 !important; } .lem-table thead th.cap { color: #6B5200; }
+  .lem-table tr.grupo td { background: #F1EFE8 !important; color: #565550; font-size: 12.5px; } .lem-table tr.semhead td { background: #FAFAF7 !important; font-size: 11px; font-weight: 600; color: var(--text-soft); text-transform: uppercase; letter-spacing: .05em; }
+  .cuadri { border-collapse: collapse; } .cuadri td, .cuadri th { border: 1px solid var(--border); padding: 4px 8px; font-size: 12px; white-space: nowrap; background: white; }
+  .cuadri th { background: #F5F3EC; color: var(--text-faint); font-weight: 500; font-size: 10.5px; text-align: center; } .cuadri td.fn { background: #F5F3EC; color: var(--text-faint); text-align: right; font-family: var(--font-mono); font-size: 11px; }
+  .cuadri .oc { color: #A3A196; font-style: italic; } .cuadri td.n { text-align: right; font-family: var(--font-mono); }
+  .falta td.p { background: #FCE7E5; color: var(--rojo); font-weight: 600; text-align: center; } .falta td.h { background: #F6F5F0; color: #9B9A92; text-align: center; } .falta td.v { text-align: center; color: var(--verde); }
+  @media print { .sidebar, .topbar .acciones, #toast { display: none !important; } .shell { display: block; } .main { overflow: visible; } }
+  @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+  @media (max-width: 760px) {
+    .shell { flex-direction: column; height: auto; min-height: 100%; } .sidebar { width: auto; border-right: none; border-bottom: 1px solid var(--border); }
+    .sb-head { padding: 12px 16px; } .sb-nav { flex-direction: row; overflow-x: auto; padding: 8px; gap: 4px; } .nav-item { white-space: nowrap; width: auto; padding: 6px 10px; } .nav-item.soon-item { display: none; }
+    .sb-foot { padding: 4px 8px 8px; } .sb-label { display: none; } .sb-extra { flex-direction: row; flex-wrap: wrap; align-items: center; }
+    .main { overflow: visible; } .main > .scroll { overflow: visible; } .topbar { padding: 14px 16px; } .topbar h1 { font-size: 18px; } .topbar p { font-size: 13px; }
+    .p-8 { padding: 16px 16px 40px; } .card-head { padding: 14px 14px 10px; } .card-body { padding: 0 14px 14px; } .card-foot { padding: 10px 14px 12px; }
+    .stat-card { padding: 12px; } .stat-card .stat-value { font-size: 16px; margin-top: 6px; } .stat-card .stat-label { font-size: 10.5px; }
+    .nombre-prov { min-width: 130px; max-width: 160px; } .lem-table td.fija, .lem-table th.fija { max-width: 170px; }
+    .grid { gap: 10px; } .toast { left: 16px; right: 16px; bottom: 16px; max-width: none; } .login-box { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"><div class="msg-card">Cargando…</div></div>
+<div id="toast"></div>
+
+<script>
+/* Si la conexión (SQL Connect / Firebase) no carga —sin internet, bloqueador de contenido—, la pantalla lo dice en lugar de
+   quedarse en "Cargando…". Contabilidad no tiene otro camino: no usa el respaldo de n8n. */
+setTimeout(function () {
+  if (document.documentElement.getAttribute('data-conta') === 'ok') return;
+  var r = document.getElementById('root');
+  if (r) r.innerHTML = '<div class="login-wrap"><div class="login-box" style="max-width:420px;text-align:center"><div class="font-serif text-xl mb-2">No cargó la conexión</div>' +
+    '<p class="text-sm text-gray-500">No se pudo cargar SQL Connect (Firebase). Revisa tu internet o el bloqueador de contenido y vuelve a cargar la página.</p>' +
+    '<a class="btn btn-secondary mt-4" href="/">Volver a los módulos</a></div></div>';
+}, 15000);
+</script>
+
+<script type="module">
+/* ═══ SQL Connect (inicio) ═══ Firebase → Postgres directo (decisión 8/12-sep-2026), con la misma credencial de Google del botón.
+   Diferencias con los otros módulos (plan de Contabilidad §6):
+   - La sesión de Firebase vive en sessionStorage (browserSessionPersistence): dura lo que la pestaña.
+   - La conexión y la función de llamada NO se publican en window: viven dentro de este módulo.
+   - Siempre la mutación "Accion": cada acción conta_* escribe su renglón en lem.conta_bitacora (por "Consulta", de solo
+     lectura, responden sin_bitacora). */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { initializeAuth, browserSessionPersistence, GoogleAuthProvider, signInWithCredential, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+import { getDataConnect, mutationRef, executeMutation } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-data-connect.js";
+const fbApp = initializeApp({"apiKey": "AIzaSyC1ycKtN1atpb1monWFIJqmR4X5vmpnNoo", "authDomain": "lem-erp.firebaseapp.com", "projectId": "lem-erp", "appId": "1:902179844288:web:e887a0886fa1188da2fd25"});
+const fbAuth = initializeAuth(fbApp, { persistence: browserSessionPersistence });
+const dc = getDataConnect(fbApp, { connector: "api", location: "us-central1", service: "lem-api" });
+let resolverListo; const listoFb = new Promise(r => { resolverListo = r; });
+onAuthStateChanged(fbAuth, () => resolverListo());
+const Conexion = Object.freeze({
+  listo: listoFb,
+  usuario: () => fbAuth.currentUser,
+  entrar: (idToken) => signInWithCredential(fbAuth, GoogleAuthProvider.credential(idToken)),
+  salir: () => signOut(fbAuth).catch(() => {}),
+  llamar: async (accion, datos) => {
+    const r = await executeMutation(mutationRef(dc, "Accion", { accion, datos: JSON.stringify(datos || {}) }));
+    return (r && r.data && r.data.r && r.data.r.r) || {};
+  }
+});
+/* ═══ SQL Connect (fin) ═══ */
+
+/* ── Módulo Contabilidad · F0 (7-oct-2026). C0 Inicio, Subir XML (mig. 093: Alan sube los XML de las facturas aquí, sin Drive),
+   C1 Cuánto debemos (estimado), C2 Ingresos por tienda y canal, C3 Cortes de caja con su conciliación y Efectivo: ESPEJO de Drive de
+   solo lectura (mig. 094, 8-oct-2026: la hoja "ERP Cortes" y la carpeta "Control de Efectivo" se muestran como están; se editan en Drive).
+   Los números los da SQL (lem.fn_api_conta_*, migraciones 091, 093 y 094); la pantalla solo pinta. Contrato:
+   compras-v1/docs/contabilidad-api.md. Solo entran administración y contabilidad: el servidor responde "sin_acceso" a los demás.
+   Reglas: solo SQL Connect (sin respaldo de n8n); siempre empresa_id; ninguna respuesta se guarda en localStorage ni en el HTML
+   (viven en memoria y se borran al salir); la sesión se cierra tras 15 minutos sin uso. ── */
+document.documentElement.setAttribute('data-conta', 'ok');
+const CLIENT_ID = '902179844288-c4ppk03u5ss2vdqvl0chfoghhedi9ape.apps.googleusercontent.com';
+const INACTIVIDAD_MIN = 15;
+const INACTIVIDAD_MS = INACTIVIDAD_MIN * 60 * 1000;
+const ACCIONES = new Set(['conta_inicio', 'conta_debemos', 'conta_ingresos', 'conta_cortes', 'conta_xml_subir', 'conta_xml_subidas', 'conta_espejo_cortes', 'conta_espejo_efectivo', 'ver_como_opciones']);   // ver_como_opciones: barra "Punto de vista" (mig. 097)
+const ss = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }, del(k) { try { sessionStorage.removeItem(k); } catch (e) {} } };
+const uiInicial = () => ({ excTodas: false, q: '', soloSaldo: true, orden: 'abierto', base: null, factSolo: false, mesIng: null, mesCor: null, diasFiltro: 'revisar',
+                           concBranch: null, concEstado: null, concTec: false, concDias: 14, concTiendas: [], efeOrden: 'semana' });
+const subInicial = () => ({ items: [], leyendo: false, enviando: false, detener: false, lote: null, empresa: null, hechos: 0, total: 0, error: null, filtro: 'todos',
+                            hist: null, histCargando: false, histErr: null, histEstado: 'todos', histQ: '', histT: null, sec: 0 });
+const S = { token: ss.get('lem_tok') || null, usuario: '', inicio: null, empresa: null, cache: new Map(), vez: 0, epoca: 0, ultima: Date.now(), motivo: '', tiendas: [], deb: null, ui: uiInicial(), sub: subInicial(), toastT: null };
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const N = n => Number(n) || 0;
+const esNum = n => n !== null && n !== undefined && n !== '' && isFinite(Number(n));
+
+/* ── Formatos: montos con 2 decimales, fechas dd/mm/aaaa, instantes en hora de Chihuahua. null = "no hay dato" (—), no cero. ── */
+const F2 = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const F1 = new Intl.NumberFormat('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const F0 = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 0 });
+function pesos(n) { if (!esNum(n)) return '—'; const v = Number(n); return (v < 0 ? '−$' : '$') + F2.format(Math.abs(v)); }
+function entero(n) { return esNum(n) ? F0.format(Number(n)) : '—'; }
+// Monto en su moneda (095): MXN como pesos; otra moneda con su clave y sin convertir (nunca se suma a los pesos)
+function monto(n, mon) { if (!mon || String(mon).toUpperCase() === 'MXN') return pesos(n); if (!esNum(n)) return '—'; const v = Number(n); return (v < 0 ? '−' : '') + F2.format(Math.abs(v)) + ' ' + esc(String(mon).toUpperCase()); }
+function porc(n) { return esNum(n) ? F1.format(Number(n)) + '%' : '—'; }
+function variacion(n) { if (!esNum(n)) return '—'; const v = Number(n); return (v > 0 ? '+' : v < 0 ? '−' : '') + F1.format(Math.abs(v)) + '%'; }
+const MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+const MESES_C = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+function fecha(d) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] : '—'; }
+function fechaCorta(d) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || '')); return m ? Number(m[3]) + ' ' + MESES_C[Number(m[2]) - 1] : '—'; }
+function instante(iso) {   // "…+00:00" → hora de Chihuahua
+  if (!iso) return '—'; const t = new Date(iso); if (isNaN(t.getTime())) return '—';
+  try { return t.toLocaleString('es-MX', { timeZone: 'America/Chihuahua', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).replace(',', ''); }
+  catch (e) { return t.toISOString().slice(0, 16).replace('T', ' ') + ' UTC'; }
+}
+function horaChih(s) {   // robot_ultima_corrida ya viene en hora de Chihuahua y sin zona: no se convierte
+  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(String(s || '')); return m ? m[3] + '/' + m[2] + '/' + m[1] + ' ' + m[4] + ':' + m[5] : '—';
+}
+function hhmm(s) { const m = /^(\d{2}):(\d{2})/.exec(String(s || '')); return m ? m[1] + ':' + m[2] : '—'; }
+function mesLargo(ym) { const m = /^(\d{4})-(\d{2})$/.exec(String(ym || '')); return m ? MESES[Number(m[2]) - 1] + ' ' + m[1] : '—'; }
+function mesMas(ym, n) { const a = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) - 1 + n; const d = new Date(Date.UTC(a, m, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); }
+function dias(n) { if (!esNum(n)) return '—'; const v = Number(n); return v === 0 ? 'hoy' : v === 1 ? '1 día' : F0.format(v) + ' días'; }
+function sinAcentos(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+
+/* ── Iconos ── */
+const ICONS = { home: '<path d="M3 12L12 4l9 8M5 10v10h4v-6h6v6h4V10"/>', chart: '<path d="M3 3v18h18"/><path d="M7 14l4-4 4 3 5-7"/>',
+  money: '<circle cx="12" cy="12" r="9"/><path d="M14.8 9a3 3 0 0 0-2.8-2c-1.7 0-3 1-3 2.5s1.5 2 3 2.5 3 1 3 2.5-1.3 2.5-3 2.5a3 3 0 0 1-2.8-2M12 6v2m0 8v2"/>',
+  cash: '<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/>',
+  file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>', lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>', refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>',
+  chevronR: '<path d="M9 6l6 6-6 6"/>', chevronL: '<path d="M15 6l-6 6 6 6"/>', alert: '<path d="M12 2L2 22h20L12 2zM12 9v4M12 17h.01"/>', search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  upload: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>' };
+const icon = (n, s) => '<svg width="' + (s || 16) + '" height="' + (s || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true">' + (ICONS[n] || '') + '</svg>';
+
+/* ── Sesión: solo mientras la pestaña está abierta y con cierre por inactividad ── */
+const huella = t => String(t || '').slice(-24);
+function emailDeToken(t) { try { return (JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).email || '').toLowerCase(); } catch (e) { return ''; } }
+function sesionAbierta() { return !!(S.token || S.inicio); }
+const AVISO_INACT = 'Contabilidad se cerró: pasaron ' + INACTIVIDAD_MIN + ' min sin usar esta pantalla. Tus otros módulos siguen abiertos; vuelve a entrar aquí.';
+function guardarActividad() { if (S.token) ss.set('lem_conta_ultima', JSON.stringify({ t: S.ultima, tok: huella(S.token) })); }
+function actividad() {
+  const ahora = Date.now();
+  if (sesionAbierta() && ahora - S.ultima >= INACTIVIDAD_MS) { cerrarSesion(AVISO_INACT, true); return; }
+  const antes = S.ultima; S.ultima = ahora; if (ahora - antes > 5000) guardarActividad();
+}
+function revisarInactividad() { if (sesionAbierta() && Date.now() - S.ultima >= INACTIVIDAD_MS) cerrarSesion(AVISO_INACT, true); }
+['pointerdown', 'keydown', 'wheel', 'touchstart', 'scroll', 'mousemove'].forEach(ev => window.addEventListener(ev, actividad, { passive: true, capture: true }));
+document.addEventListener('visibilitychange', revisarInactividad); window.addEventListener('focus', revisarInactividad); window.addEventListener('pageshow', revisarInactividad);
+setInterval(revisarInactividad, 15000);
+(function alCargar() {   // una pestaña recargada o restaurada después de 15 min sin uso entra cerrada
+  let prev = null; try { prev = JSON.parse(ss.get('lem_conta_ultima') || 'null'); } catch (e) {}
+  if (S.token && ss.get('lem_conta_cerrado') === huella(S.token)) { S.token = null; S.motivo = AVISO_INACT; return; }   // ya se cerró aquí con este token
+  if (S.token && prev && prev.tok === huella(S.token) && Date.now() - N(prev.t) >= INACTIVIDAD_MS) {
+    ss.set('lem_conta_cerrado', huella(S.token)); ss.del('lem_conta_ultima'); S.token = null; Conexion.salir();   // lem_tok se queda: es de los otros módulos
+    S.motivo = AVISO_INACT;
+  }
+})();
+function cerrarSesion(msj, soloAqui) {
+  S.epoca++; S.vez++; S.inicio = null; S.empresa = null; S.usuario = ''; S.cache.clear(); S.tiendas = []; S.deb = null; S.ui = uiInicial(); S.sub = subInicial();   // los XML en memoria se borran
+  if (soloAqui && S.token) ss.set('lem_conta_cerrado', huella(S.token)); else { ss.del('lem_tok'); if (window.LEM_PV) LEM_PV.salir(); }
+  ss.del('lem_conta_ultima'); S.token = null;
+  Conexion.salir();   // solo la sesión de Firebase de esta página (browserSessionPersistence)
+  try { if (location.hash) history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+  vLogin(msj);
+}
+function salir() { cerrarSesion('Sesión cerrada.'); }
+
+/* ── API: solo SQL Connect, solo acciones conta_*. Sin respaldo de n8n: si SQL Connect falla, se muestra el error. ── */
+function errSesion(m) { const e = new Error(m); e.sesion = true; return e; }
+function errObsoleto() { const e = new Error('obsoleto'); e.obsoleto = true; return e; }
+async function sesion() {
+  await Promise.race([Conexion.listo, new Promise(r => setTimeout(r, 5000))]);
+  const em = emailDeToken(S.token);
+  let u = Conexion.usuario();
+  if (u && em && String(u.email || '').toLowerCase() !== em) { await Conexion.salir(); u = null; }
+  if (!u) {
+    if (!S.token) throw errSesion('Entra con tu cuenta @grupolem.com.');
+    try { await Conexion.entrar(S.token); }
+    catch (e) { const c = String((e && (e.code || e.message)) || ''); throw errSesion(/expired|invalid-credential|invalid-idp|token/i.test(c) ? 'Tu sesión de Google expiró — vuelve a entrar.' : 'No se pudo abrir la sesión (' + (c || 'error') + '). Vuelve a entrar.'); }
+    u = Conexion.usuario();
+  }
+  if (!u) throw errSesion('No se pudo abrir la sesión. Vuelve a entrar.');
+  S.usuario = String(u.email || em || '').toLowerCase();
+}
+async function api(accion, datos) {
+  if (!ACCIONES.has(accion)) throw new Error('Acción no permitida en Contabilidad: ' + accion);
+  const d0 = Object.assign({}, datos || {});
+  if (S.empresa != null && d0.empresa_id == null && accion !== 'ver_como_opciones') d0.empresa_id = S.empresa;
+  const d = window.LEM_PV ? LEM_PV.datos(accion, d0) : d0;   // punto de vista (mig. 097): la vista elegida viaja en datos.ver_como
+  const ep = S.epoca;
+  await sesion();
+  if (ep !== S.epoca) throw errObsoleto();
+  let j;
+  try { j = await Conexion.llamar(accion, d); }
+  catch (e) {
+    if (ep !== S.epoca) throw errObsoleto();
+    const c = String((e && (e.code || e.message)) || '');
+    if (/unauthenticated|unauthorized|auth\//i.test(c)) throw errSesion('Tu sesión expiró — vuelve a entrar.');
+    const x = new Error('SQL Connect no respondió (' + (c || 'sin respuesta') + '). Contabilidad no usa otro camino: reintenta en un momento.'); x.red = true; throw x;
+  }
+  if (ep !== S.epoca) throw errObsoleto();
+  if (!j || typeof j !== 'object' || Array.isArray(j) || !Object.keys(j).length) { const x = new Error('SQL Connect respondió vacío. Reintenta en un momento.'); x.red = true; throw x; }
+  if (window.LEM_PV && LEM_PV.rechazo(j)) return LEM_PV.pendiente();   // el servidor rechazó la vista: vuelve a la propia sin cerrar sesión
+  if (j.error) { const x = new Error(j.detalle || j.error); x.negocio = true; x.codigo = j.error; throw x; }
+  return j;
+}
+async function traer(accion, datos) {   // memoria de la pestaña; se borra con Actualizar, al cambiar de empresa y al salir
+  const k = accion + '|' + S.empresa + '|' + JSON.stringify(datos || {});
+  if (S.cache.has(k)) return S.cache.get(k);
+  const ep = S.epoca; const r = await api(accion, datos);
+  if (ep !== S.epoca) throw errObsoleto();
+  S.cache.set(k, r); return r;
+}
+function guardarEnMemoria(accion, datos, r) { S.cache.set(accion + '|' + S.empresa + '|' + JSON.stringify(datos || {}), r); }
+
+/* ── Toast ── */
+function toast(msg) { const t = $('toast'); if (!t) return; t.innerHTML = '<div class="toast" role="status">' + esc(msg) + '</div>'; clearTimeout(S.toastT); S.toastT = setTimeout(() => { t.innerHTML = ''; }, 3200); }
+
+/* ── Entrada con Google, "Sin acceso" y errores de arranque ── */
+let intentosGsi = 0;
+function vLogin(msj) {
+  S.inicio = null;
+  $('root').innerHTML = '<div class="login-wrap grain"><div style="width:100%;max-width:380px"><div class="login-box">' +
+    '<div class="flex justify-center mb-4"><div class="logo-lg">L</div></div><div class="text-center mb-1"><h1 class="font-serif text-2xl" style="color:var(--lem);font-weight:400">Grupo LEM Contabilidad</h1></div>' +
+    '<p class="text-center text-gray-500 text-sm mb-6">Solo administración y contabilidad</p><div id="gbtn" class="flex justify-center"></div>' +
+    '<p class="text-center text-xs text-gray-500 mt-4" id="loginMsg">' + esc(msj || 'Entra con tu cuenta @grupolem.com') + '</p>' +
+    '<p class="text-center text-11 text-gray-400 mt-3">La sesión dura mientras la pestaña esté abierta y se cierra tras ' + INACTIVIDAD_MIN + ' min sin uso.</p></div>' +
+    '<div class="text-center mt-5 text-xs text-gray-400"><a href="/" style="color:inherit">Portal Grupo LEM · operaciones.grupolem.com</a></div></div></div>';
+  intentosGsi = 0; pintarBotonGoogle();
+}
+function pintarBotonGoogle() {
+  const b = $('gbtn'); if (!b) return;
+  if (window.google && google.accounts && google.accounts.id) {
+    google.accounts.id.initialize({ client_id: CLIENT_ID, itp_support: true,
+      error_callback: (e) => toast('Google no pudo abrir la ventana de acceso (' + ((e && e.type) || 'desconocido') + '). Permite ventanas emergentes para este sitio y reintenta.'),
+      callback: (resp) => { S.token = resp.credential; ss.set('lem_tok', S.token); ss.del('lem_conta_cerrado'); S.ultima = Date.now(); guardarActividad(); arrancar(); } });
+    google.accounts.id.renderButton(b, { theme: 'filled_blue', size: 'large', text: 'signin_with', locale: 'es' });
+  } else if (++intentosGsi < 40) setTimeout(pintarBotonGoogle, 400);
+  else b.innerHTML = '<p class="text-xs" style="color:var(--rojo)">No cargó el botón de Google. Revisa tu internet o el bloqueador y recarga la página.</p>';
+}
+function vSinAcceso(detalle) {
+  S.inicio = null;
+  $('root').innerHTML = '<div class="login-wrap grain"><div class="login-box" style="max-width:420px;text-align:center"><div class="flex justify-center mb-3"><div class="logo-lg">L</div></div>' +
+    '<div class="font-serif text-2xl mb-2">Sin acceso</div><p class="text-sm text-gray-600">' + esc(detalle || 'No tienes acceso al módulo de Contabilidad') + '.</p>' +
+    '<p class="text-xs text-gray-500 mt-3">Contabilidad es solo para administración y contabilidad. Si crees que deberías entrar, pídeselo a Sergio.</p>' +
+    (S.usuario ? '<p class="text-11 text-gray-400 mt-3">Entraste como ' + esc(S.usuario) + '</p>' : '') +
+    '<div class="flex justify-center gap-2 mt-5 flex-wrap"><a class="btn btn-secondary" href="/">Volver a los módulos</a><button class="btn btn-ghost" data-act="salir">Entrar con otra cuenta</button></div></div></div>';
+}
+function vErrorArranque(e) {
+  const titulo = e.codigo === 'solo_sql_connect' ? 'Solo por SQL Connect' : 'No se pudo abrir Contabilidad';
+  $('root').innerHTML = '<div class="login-wrap grain"><div class="login-box" style="max-width:460px;text-align:center"><div class="font-serif text-xl mb-2">' + titulo + '</div>' +
+    '<p class="text-sm text-gray-600">' + esc(e.message || 'Error desconocido') + '</p>' + (e.red ? '<p class="text-xs text-gray-500 mt-2">Contabilidad solo usa SQL Connect: no hay respaldo por otro camino.</p>' : '') +
+    '<div class="flex justify-center gap-2 mt-5 flex-wrap"><button class="btn btn-primary" data-act="arrancar">Reintentar</button><a class="btn btn-secondary" href="/">Volver a los módulos</a><button class="btn btn-ghost" data-act="salir">Salir</button></div></div></div>';
+}
+/* La empresa con la que abre: la preferencia que ya usan los otros módulos (localStorage lem_empresa; con "Ver como", la de la vista),
+   solo si esta cuenta la tiene en Contabilidad. Es una preferencia, no una respuesta: no rompe la regla de no guardar respuestas. */
+let preferenciaUsada = false;
+function empresaPreferida() {
+  if (preferenciaUsada) return null; preferenciaUsada = true;
+  try { const n = Number(localStorage.getItem('lem_empresa')); return Number.isInteger(n) && n > 0 ? n : null; } catch (e) { return null; }
+}
+async function arrancar() {
+  const ep = S.epoca;
+  $('root').innerHTML = '<div class="login-wrap grain"><div class="msg-card shadow-card">Abriendo Contabilidad…</div></div>';
+  let r;
+  try {
+    try { r = await api('conta_inicio', S.empresa != null ? { empresa_id: S.empresa } : {}); }
+    catch (e) {
+      if (ep !== S.epoca || e.obsoleto) return;
+      if (e.sesion) { ss.del('lem_tok'); S.token = null; Conexion.salir(); vLogin(e.message); return; }
+      if (e.codigo === 'sin_acceso') { vSinAcceso(e.message); return; }
+      vErrorArranque(e); return;
+    }
+    if (ep !== S.epoca) return;
+    const pref = S.empresa == null ? empresaPreferida() : null;
+    if (pref != null && pref !== r.empresa_id && (r.empresas || []).some(x => x.empresa_id === pref)) { S.empresa = pref; arrancar(); return; }
+    S.inicio = r; S.empresa = r.empresa_id; S.ultima = Date.now(); guardarActividad();
+    pintarShell(); router();
+  } finally { if (window.LEM_PV && S.token && ep === S.epoca) LEM_PV.iniciar({ api, sinGuardar: () => { const s = S.sub;   // XML en memoria: se pierden al recargar
+    return !!(s.enviando || s.leyendo || s.items.some(i => i.previa === 'listo' && i.texto != null && (!i.res || i.res.resultado === 'no_enviado'))); } }); }   // barra "Punto de vista" (solo si el servidor lo permite)
+}
+
+/* ── Armazón ── */
+const ROLES = { admin: { label: 'Administrador', color: '#534AB7' }, contabilidad: { label: 'Contabilidad', color: '#0E5A42' } };
+function pintarShell() {
+  const p = S.inicio; const rol = ROLES[p.rol] || { label: p.rol || '—', color: '#6B6B66' };
+  const quien = (p.ver_como_aplicado && p.ver_como_aplicado.cuenta) || S.usuario || '—'; const ini = (quien.split('@')[0] || '?').slice(0, 2).toUpperCase();   // viendo como (mig. 097): la cuenta vista
+  const emps = p.empresas || [];
+  let extra = emps.length > 1
+    ? '<div><label for="selEmp">Empresa</label><select id="selEmp" class="sel w-full" data-chg="empresa">' + emps.map(e => '<option value="' + esc(e.empresa_id) + '"' + (e.empresa_id === S.empresa ? ' selected' : '') + '>' + esc(e.nombre) + '</option>').join('') + '</select></div>'
+    : '<div class="text-11 text-gray-500" style="padding:0 4px">' + esc(p.empresa || '') + '</div>';
+  extra += '<a href="/" class="nav-item" style="padding:6px 10px;font-size:12px">' + icon('home', 14) + '<span>Portal de módulos</span></a>';
+  $('root').innerHTML = '<div class="shell"><aside class="sidebar"><div class="sb-head"><div class="logo">L</div><div><div class="sb-brand">Grupo LEM</div><div class="sb-app">Contabilidad</div></div></div><nav class="sb-nav" id="nav" aria-label="Pantallas"></nav>' +
+    '<div class="sb-foot"><div class="sb-label">Sesión</div><div class="user-menu"><div class="avatar" style="width:32px;height:32px;background:' + rol.color + '">' + esc(ini) + '</div><div class="flex-1 min-w-0"><div class="text-13 font-medium truncate">' + esc(quien) + '</div><div class="text-11 text-gray-500 truncate">' + esc(rol.label) + '</div></div>' +
+    '<button class="btn btn-ghost p-2 tip" data-act="salir" aria-label="Salir">' + icon('logout', 14) + '<span class="tip-body">Salir</span></button></div><div class="sb-extra">' + extra + '</div></div></aside>' +
+    '<main class="main"><div class="scroll" id="scroll"><div id="vista"></div></div></main></div>';
+}
+function pintarNav(r) {
+  const items = [['inicio', 'home', 'Inicio'], ['subir', 'upload', 'Subir XML'], ['debemos', 'money', 'Cuánto debemos'], ['ingresos', 'chart', 'Ingresos'], ['cortes', 'cash', 'Cortes de caja'], ['efectivo', 'file', 'Efectivo (espejo)']];
+  const n = $('nav'); if (!n) return;
+  const act = r === 'conciliacion' ? 'cortes' : r;   // la conciliación es una pestaña de Cortes de caja
+  n.innerHTML = items.map(([k, ic, t]) => '<a class="nav-item' + (act === k ? ' active' : '') + '" href="#' + k + '"' + (act === k ? ' aria-current="page"' : '') + '>' + icon(ic) + '<span>' + t + '</span></a>').join('') +
+    '<div class="nav-item soon-item">' + icon('file') + '<span>Estado de resultados</span><span class="soon">F1</span></div>' +
+    '<div class="nav-item soon-item">' + icon('lock') + '<span>Cierre del mes</span><span class="soon">F2</span></div>';
+}
+function topbar(t, sub, acciones) { return '<header class="topbar"><div class="min-w-0"><h1>' + t + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (acciones ? '<div class="acciones flex items-center gap-2 flex-wrap">' + acciones + '</div>' : '') + '</header>'; }
+function btnActualizar() { return '<button class="btn btn-secondary" data-act="actualizar">' + icon('refresh', 14) + 'Actualizar</button>'; }
+function stat(label, valor, hint, color, tag) { return '<div class="stat-card"><div class="stat-label">' + label + (tag || '') + '</div><div class="stat-value num" style="color:' + (color || 'var(--text)') + '">' + valor + '</div>' + (hint ? '<div class="text-xs text-gray-500 mt-1">' + hint + '</div>' : '') + '</div>'; }
+function card(titulo, sub, cuerpo, derecha, pie) { return '<section class="card"><div class="card-head"><div class="min-w-0"><h3>' + titulo + '</h3>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (derecha || '') + '</div>' + cuerpo + (pie ? '<div class="card-foot">' + pie + '</div>' : '') + '</section>'; }
+const CONF_EST = '<span class="conf conf-est" title="Estimado: no es un saldo verificado">Estimado</span>';
+const CONF_AUTO = '<span class="conf conf-auto" title="Automático: sale directo de la base">Automático</span>';
+const th = (t, num, extra) => '<th' + (num ? ' class="text-right"' : '') + (extra || '') + '>' + t + '</th>';
+function tdP(n, cls) { const cero = esNum(n) && Number(n) === 0; return '<td class="text-right num' + (cls ? ' ' + cls : '') + '">' + (cero ? '<span class="dim">' + pesos(0) + '</span>' : pesos(n)) + '</td>'; }
+function tdM(n, mon, cls) { return (!mon || String(mon).toUpperCase() === 'MXN') ? tdP(n, cls) : '<td class="text-right num nowrap' + (cls ? ' ' + cls : '') + '">' + monto(n, mon) + '</td>'; }
+function tdN(n) { const cero = esNum(n) && Number(n) === 0; return '<td class="text-right num">' + (cero ? '<span class="dim">0</span>' : entero(n)) + '</td>'; }
+function pon(h) { const v = $('vista'); if (v) v.innerHTML = '<div class="fade-in">' + h + '</div>'; }
+function arriba() { const sc = $('scroll'); if (sc) sc.scrollTop = 0; if (window.innerWidth <= 760) window.scrollTo(0, 0); }
+function cargando(t, sub) { pon(topbar(t, sub) + '<div class="p-8"><div class="msg-card shadow-card">Cargando…</div></div>'); }
+
+/* ── Rutas: #inicio · #subir · #debemos · #debemos/<clave> · #ingresos · #cortes · #cortes/<branch_id> ·
+   #conciliacion[/semana/AAAA-SS | /motor/AAAA-MM[/branch_id] | /resumen | /falta | /cambios] · #efectivo[/AAAA-MM | /historico/<pestaña>] ── */
+const RUTAS = { inicio: vInicio, subir: vSubir, debemos: vDebemos, ingresos: vIngresos, cortes: vCortes, conciliacion: vConciliacion, efectivo: vEfectivo };
+function ruta() {
+  let h = (location.hash || '').replace(/^#/, ''); try { h = decodeURIComponent(h); } catch (e) {}
+  const i = h.indexOf('/'); const r = i < 0 ? h : h.slice(0, i); const arg = i < 0 ? null : (h.slice(i + 1) || null);
+  return RUTAS[r] ? { r, arg } : { r: 'inicio', arg: null };
+}
+function ir(r) { if (location.hash !== '#' + r) location.hash = r; else router(); }
+let rutaAnterior = '';
+window.addEventListener('hashchange', () => { if (S.inicio) router(); });
+async function router() {
+  if (!S.inicio) return;
+  const vez = ++S.vez; const { r, arg } = ruta(); pintarNav(r);
+  const clave = r + '/' + (arg || ''); if (clave !== rutaAnterior) { rutaAnterior = clave; arriba(); }
+  try { await RUTAS[r](arg, vez); }
+  catch (e) { if (vez !== S.vez || (e && e.obsoleto)) return; errorEnVista(e); }
+}
+function errorEnVista(e) {
+  if (e.sesion) { ss.del('lem_tok'); S.token = null; Conexion.salir(); vLogin(e.message); return; }
+  console.error(e);
+  const titulo = e.codigo === 'solo_sql_connect' ? 'Solo por SQL Connect' : e.codigo === 'sin_acceso' ? 'Sin acceso' : e.codigo === 'faltan_datos' ? 'Datos incompletos'
+    : e.codigo === 'sin_espejo' ? 'Sin espejo de Drive' : e.codigo === 'sin_copia' ? 'Todavía no hay copia' : e.codigo === 'estructura_cambio' ? 'La hoja cambió de forma' : 'No se pudo cargar';
+  pon(topbar(titulo) + '<div class="p-8"><div class="card" style="max-width:640px"><div class="card-head"><div><h3 style="color:var(--rojo)">' + titulo + '</h3><p>' + esc(e.message || 'Error desconocido') + '</p>' +
+    (e.red ? '<p>Contabilidad solo usa SQL Connect: no hay respaldo por otro camino.</p>' : '') + '</div></div><div class="card-body flex gap-2 flex-wrap"><button class="btn btn-primary" data-act="reintentar">Reintentar</button><a class="btn btn-secondary" href="#inicio">Volver al inicio</a></div></div></div>');
+}
+
+/* ════════════════ C0 · Inicio: frescura de las fuentes, excepciones y adopción ════════════════ */
+const ESTADO_FUENTE = { al_dia: ['Al día', 'b-verde'], atrasado: ['Atrasado', 'b-rojo'], sin_datos: ['Sin datos', 'b-gris'] };
+const ROBOT_ST = { ok: 'b-verde', parcial: 'b-ambar', error: 'b-rojo', fallo: 'b-rojo', fallido: 'b-rojo' };
+const TIPO_EXC = { corte_cero: 'Corte en cero', cfdi_mes_cerrado: 'Factura de mes cerrado', cfdi: 'Factura en cuarentena', sku_nuevo: 'Producto nuevo de CDC' };
+const SEV = { alta: 'b-rojo', media: 'b-ambar', baja: 'b-gris' };
+const RESULTADO_NEG = { sin_acceso: 'Sin acceso', solo_sql_connect: 'Otro canal (no SQL Connect)', error: 'Error' };
+async function vInicio(arg, vez) {
+  const p = S.inicio; const F = p.fuentes || []; const n = e => F.filter(f => f.estado === e).length; const ex = p.excepciones || {}; const ad = p.adopcion || {};
+  let h = topbar('Inicio', esc(p.empresa || '') + ' · hoy ' + fecha(p.hoy), btnActualizar()) + '<div class="p-8">';
+  h += '<div class="banner banner-lem"><b>Contabilidad · F0.</b> Los XML de las facturas se suben en <a class="lnk" href="#subir">Subir XML</a> (ya no en Drive); lo demás es de solo lectura: todavía no se captura ni se firma nada. Cada cifra sale de la base y dice su confianza: ' + CONF_AUTO + ' (directo de la base) o ' + CONF_EST + ' (no es un saldo verificado). CONTPAQi sigue siendo lo fiscal.</div>';
+  h += '<div class="grid grid-4 mb-6">' + stat('Fuentes al día', n('al_dia') + ' de ' + F.length, 'dentro de su umbral de días', 'var(--verde)') +
+    stat('Fuentes atrasadas', n('atrasado'), 'más días que su umbral', n('atrasado') ? 'var(--rojo)' : null) +
+    stat('Fuentes sin datos', n('sin_datos'), 'todavía no llegan a la base') +
+    stat('Excepciones abiertas', entero(ex.abiertas), (ex.por_tipo || []).map(t => esc(TIPO_EXC[t.tipo] || t.tipo) + ': ' + entero(t.n)).join(' · ') || 'ninguna', N(ex.abiertas) ? 'var(--ambar)' : null) + '</div>';
+  // Frescura
+  let t = '<div class="tabla"><table class="lem-table densa" style="min-width:880px"><thead><tr>' + th('Fuente', false, ' class="fija"') + th('Estado') + th('Dato más reciente') + th('Atraso') + th('Robot') + th('Registros', true) + '</tr></thead><tbody>';
+  t += F.map(f => { const [et, ec] = ESTADO_FUENTE[f.estado] || [f.estado || '—', 'b-gris'];
+    return '<tr><td class="fija" style="max-width:340px;white-space:normal"><div class="font-medium">' + esc(f.nombre) + '</div><div class="text-11 text-gray-500 mt-1" style="line-height:1.35">' + esc(f.nota || '') + '</div></td>' +
+      '<td><span class="badge ' + ec + '">' + esc(et) + '</span></td>' +
+      '<td class="num nowrap">' + fecha(f.dato_hasta) + (f.cargado_el ? '<div class="text-11 text-gray-500">cargado ' + instante(f.cargado_el) + '</div>' : '') + '</td>' +
+      '<td class="nowrap">' + (esNum(f.dias_atraso) ? '<span class="' + (f.estado === 'atrasado' ? 'neg font-medium' : '') + '">' + dias(f.dias_atraso) + '</span>' : '—') + '<div class="text-11 text-gray-500">umbral ' + dias(f.umbral_dias) + '</div></td>' +
+      '<td class="nowrap">' + (f.robot ? '<span class="num text-xs">' + esc(f.robot) + '</span>' + (f.robot_status ? ' <span class="badge ' + (ROBOT_ST[f.robot_status] || 'b-gris') + '">' + esc(f.robot_status) + '</span>' : '') + '<div class="text-11 text-gray-500">última corrida ' + horaChih(f.robot_ultima_corrida) + '</div>' : '<span class="text-gray-400 text-xs">sin robot</span>') + '</td>' +
+      tdN(f.registros) + '</tr>'; }).join('');
+  t += '</tbody></table></div>';
+  h += card('Frescura de las fuentes', '"Dato más reciente" es la fecha del último registro de cada fuente; el atraso se cuenta contra hoy (hora de Chihuahua). La nómina solo da fechas: aquí no se ven montos ni nombres.', t);
+  // Excepciones + adopción
+  const lista = ex.lista || []; const ver = S.ui.excTodas ? lista : lista.slice(0, 8);
+  let e = '<div class="card-body">';
+  e += lista.length ? ver.map(x => '<div class="exc"><div class="flex items-center gap-2 flex-wrap mb-1"><span class="badge b-lem">' + esc(TIPO_EXC[x.tipo] || x.tipo) + '</span>' + (x.severidad ? '<span class="badge ' + (SEV[x.severidad] || 'b-gris') + '">' + esc(x.severidad) + '</span>' : '') + '<span class="text-11 text-gray-500">' + instante(x.creada) + '</span></div><div class="text-13">' + esc(x.motivo) + '</div></div>').join('')
+    : '<p class="text-sm text-gray-500">No hay excepciones abiertas.</p>';
+  if (lista.length > 8) e += '<button class="btn btn-ghost sm mt-2" data-act="excTodas">' + (S.ui.excTodas ? 'Ver menos' : 'Ver las ' + lista.length) + '</button>';
+  if (N(ex.abiertas) > lista.length) e += '<p class="text-11 text-gray-400 mt-2">La lista muestra las ' + lista.length + ' más recientes de ' + entero(ex.abiertas) + '.</p>';
+  e += '</div>';
+  const kv = (k, v, sub) => '<div class="kv"><div class="k">' + k + (sub ? '<div class="text-11 text-gray-400">' + sub + '</div>' : '') + '</div><div class="v num">' + v + '</div></div>';
+  let a = '<div class="card-body">';
+  a += kv('Cortes de este mes conciliados', entero(ad.cortes_mes_conciliados) + ' de ' + entero(ad.cortes_mes) + (esNum(ad.pct_conciliados_mes) ? ' · ' + porc(ad.pct_conciliados_mes) : ''), 'con efectivo llegado en el espejo de "ERP Cortes" (Alan lo captura en la hoja)');
+  a += kv('Cortes del mes anterior conciliados', entero(ad.cortes_mes_anterior_conciliados) + ' de ' + entero(ad.cortes_mes_anterior));
+  a += kv('Monto de CFDI clasificado', porc(ad.pct_cfdi_clasificado), 'facturas recibidas con clasificación aceptada');
+  a += kv('Capturas pendientes de firma', esNum(ad.capturas_pendientes_firma) ? entero(ad.capturas_pendientes_firma) : '—', esc(ad.nota_capturas || ''));
+  a += kv('Intentos negados (30 días)', entero(ad.intentos_negados_30d), 'llamadas sin acceso o por un canal que no es SQL Connect; un intento igual repetido cuenta una vez cada 10 min');
+  const vis = ad.visitas || [];
+  a += '<div class="text-xs uppercase text-gray-500 font-medium mt-4 mb-2" style="letter-spacing:.05em">Quién lo usa (consultas en 30 días)</div>';
+  a += vis.length ? '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Usuario') + th('Última') + th('Consultas', true) + '</tr></thead><tbody>' + vis.map(v => '<tr><td>' + esc(v.usuario) + '</td><td class="num nowrap">' + instante(v.ultima) + '</td>' + tdN(v.visitas_30d) + '</tr>').join('') + '</tbody></table></div>' : '<p class="text-sm text-gray-500">Todavía nadie.</p>';
+  const neg = ad.intentos_negados || [];
+  if (neg.length) a += '<div class="text-xs uppercase text-gray-500 font-medium mt-4 mb-2" style="letter-spacing:.05em">Últimos intentos negados (uno por usuario)</div><div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Usuario') + th('Último intento') + th('Canal · cuándo') + th('Veces', true) + '</tr></thead><tbody>' +
+    neg.map(x => '<tr><td style="word-break:break-all">' + esc(x.usuario) + '</td><td><span class="num text-xs">' + esc(x.accion) + '</span><div><span class="badge b-rojo">' + esc(RESULTADO_NEG[x.resultado] || x.resultado) + '</span></div></td><td class="text-xs">' + esc(x.canal) + '<div class="num text-11 text-gray-500 nowrap">' + instante(x.cuando) + '</div></td>' + tdN(esNum(x.veces) ? x.veces : 1) + '</tr>').join('') + '</tbody></table></div>';
+  a += '</div>';
+  h += '<div class="grid grid-2">' + card('Excepciones abiertas', esc(ex.nota || ''), e) + card('Adopción del módulo', 'Qué tanto se usa Contabilidad y qué tanto está conciliado en el portal.', a) + '</div>';
+  pon(h + '</div>');
+}
+
+/* ════════════════ Subir XML (mig. 093): Alan sube aquí los XML de las facturas; ya no se usa Drive ════════════════
+   1. La pantalla revisa cada archivo ANTES de mandarlo (extensión .xml, 200 KB, UTF-8, sin caracteres nulos ni DOCTYPE, que parezca
+      factura timbrada). Los PDF y demás archivos de una carpeta se ignoran.
+   2. Manda los listos en paquetes de 25 a conta_xml_subir; si un paquete falla, lo parte a la mitad hasta llegar a un solo archivo
+      (así se aísla un archivo que truena la llamada o un paquete demasiado grande). Pero si la conexión falla 3 veces seguidas, o la
+      base truena 3 archivos seguidos con el mismo error, se detiene: es una falla de todo el sistema y partir no sirve; lo que no se
+      mandó sigue en la lista. Los errores que detienen todo (sin acceso, falta el RFC de la empresa…) se muestran arriba.
+   3. La base vuelve a revisar todo y guarda el XML idéntico; responde por archivo: aceptado, ya estaba o rechazado con su motivo.
+   4. El historial (conta_xml_subidas) dice en qué va cada uno: cargada, pendiente (el robot la procesa cada 30 min de 7:00 a 22:00;
+      lo de la noche, a las 6:15), en revisión o
+      de mes cerrado. El contenido de los XML vive solo en memoria y se borra al terminar de mandarlo, al salir o al cambiar de empresa. */
+const MAX_KB = 200, PAQUETE = 25;
+const FATALES = new Set(['sin_acceso', 'solo_sql_connect', 'sin_bitacora', 'falta_rfc_empresa', 'demasiados_archivos', 'faltan_datos', 'accion_desconocida', 'sin_email']);
+const TXT_FATAL = { accion_desconocida: 'La subida de XML todavía no está activa en la base: avisa a Sergio. Los archivos siguen en la lista.',
+  sin_email: 'La base no recibió tu cuenta: sal y vuelve a entrar. Los archivos siguen en la lista.' };
+const FALLAS_SEGUIDAS = 3, ESPERA_RED_MS = 2000;   // fallas iguales seguidas = falla de todo el sistema: se detiene en vez de partir
+const RES_SUB = { aceptado: ['Aceptado', 'b-verde'], ya_estaba: ['Ya estaba', 'b-gris'], rechazado: ['Rechazado', 'b-rojo'], no_enviado: ['No se envió', 'b-ambar'] };
+const EST_SUB = { cargada: ['Cargada', 'b-verde'], pendiente: ['Pendiente', 'b-ambar'], en_revision: ['En revisión', 'b-rojo'], mes_cerrado: ['Mes cerrado', 'b-gris'] };
+const TIPO_CFDI = { I: 'Ingreso', E: 'Egreso (nota de crédito)', P: 'Pago (REP)', N: 'Nómina', T: 'Traslado' };
+const kb = n => F1.format(Number(n) / 1024) + ' KB';
+function nuevoLote() { const d = new Date(); const p = n => String(n).padStart(2, '0'); const r = new Uint8Array(3); crypto.getRandomValues(r);
+  return 'L' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds()) + '-' + Array.from(r, b => b.toString(16).padStart(2, '0')).join(''); }
+function cuentaSub() {
+  const it = S.sub.items; const c = { listos: 0, omitidos: 0, porEnviar: 0, aceptado: 0, ya_estaba: 0, rechazado: 0, no_enviado: 0, conRes: 0 };
+  for (const x of it) { if (x.previa === 'omitido') { c.omitidos++; continue; } c.listos++; if (x.res) { c.conRes++; c[x.res.resultado] = (c[x.res.resultado] || 0) + 1; } else c.porEnviar++; }
+  return c;
+}
+async function vSubir(arg, vez) {
+  pon(topbar('Subir XML', esc(S.inicio.empresa || '') + ' · facturas recibidas (CFDI 4.0)', '<button class="btn btn-secondary" data-act="histActualizar">' + icon('refresh', 14) + 'Actualizar historial</button>') +
+      '<div class="p-8"><div id="subirCuerpo"></div><div id="hist"></div></div>');
+  if (S.sub.hist && S.sub.hist.empresa_id !== S.empresa) S.sub.hist = null;
+  pintarSubir(); pintarHist();
+  await cargarHistorial(vez);   // siempre fresco al entrar: el robot pudo haber cargado lo pendiente
+}
+function pintarSubir() {
+  const el = $('subirCuerpo'); if (!el) return;
+  const sub = S.sub; const c = cuentaSub(); const h = sub.hist;
+  const sinRfc = h && h.empresa_id === S.empresa && !h.rfc_empresa;
+  let x = '<div class="banner banner-lem"><b>Aquí se suben los XML de las facturas que recibió ' + esc(S.inicio.empresa || 'la empresa') + '.</b> Ya no hace falta Drive: el XML se guarda en la base tal cual y no se puede cambiar ni borrar. ' +
+    'Arrastra todos los XML del mes (o la carpeta completa); se revisan aquí y otra vez en la base. Lo aceptado lo carga el robot a la base en su siguiente revisión (cada 30 min de 7:00 a 22:00; lo que subas de noche entra a las 6:15): no tienes que esperar en esta pantalla.' +
+    (h && h.rfc_empresa ? ' Solo se aceptan facturas a nombre del RFC <b class="num">' + esc(h.rfc_empresa) + '</b>.' : '') + '</div>';
+  if (sinRfc) x += '<div class="banner banner-red"><b>Falta el RFC de ' + esc(h.empresa || 'la empresa') + ' en el sistema.</b> Sin él no se puede revisar a quién van dirigidas las facturas, así que por ahora no se pueden subir sus XML. Pídele a Sergio que lo dé de alta.</div>';
+  if (sub.error) x += '<div class="banner banner-red"><b>Se detuvo la subida.</b> ' + esc(sub.error) + '</div>';
+  else if (!sub.enviando && c.no_enviado) x += '<div class="banner banner-amber"><b>' + entero(c.no_enviado) + (c.no_enviado === 1 ? ' archivo no se pudo enviar' : ' archivos no se pudieron enviar') + ' (falló la conexión o la base no respondió).</b> No están guardados: dale "Reintentar ' + entero(c.no_enviado) + ' no enviados" abajo antes de cerrar la pestaña.</div>';
+  // 1 · elegir
+  const bloqueada = sub.enviando || sub.leyendo || sinRfc;
+  x += card('1 · Elige los XML', 'Puedes arrastrar varios archivos o una carpeta, o usar los botones. Se ignoran los PDF y lo que no sea .xml.',
+    '<div class="card-body"><div id="zona" class="zona' + (bloqueada ? ' apagada' : '') + '"><div class="t">' + icon('upload', 18) + ' Arrastra aquí los XML o la carpeta del mes</div>' +
+    '<div class="flex justify-center gap-2 flex-wrap mt-3"><label class="btn btn-primary">Elegir archivos<input type="file" multiple accept=".xml,.XML,text/xml,application/xml" data-chg="archivos" hidden></label>' +
+    '<label class="btn btn-secondary">Elegir carpeta<input type="file" webkitdirectory directory multiple data-chg="carpeta" hidden></label></div>' +
+    '<div class="s">Antes de mandarlos se revisa que cada archivo termine en .xml, pese ' + MAX_KB + ' KB o menos, esté en UTF-8 y parezca factura timbrada (CFDI con TimbreFiscalDigital).</div></div>' +
+    (sub.leyendo ? '<p class="text-sm text-gray-500 mt-3">Revisando archivos…</p>' : '') + '</div>');
+  // 2 · revisión previa y envío
+  if (sub.items.length) {
+    let b = '<div class="card-body"><div class="grid grid-4 mb-4">' + stat('Listos para subir', entero(c.porEnviar), 'pasaron la revisión de la pantalla', c.porEnviar ? 'var(--lem-dark)' : null) +
+      stat('Omitidos', entero(c.omitidos), 'no se mandan (ver abajo)', c.omitidos ? 'var(--ambar)' : null) +
+      stat('Ya enviados', entero(c.conRes), 'con respuesta de la base') + stat('Lote', '<span class="text-13">' + esc(sub.lote || '—') + '</span>', 'una subida, en paquetes de ' + PAQUETE) + '</div>';
+    if (sub.enviando) {
+      const pct = sub.total ? Math.round(100 * sub.hechos / sub.total) : 0;
+      b += '<div class="mb-3"><div class="flex justify-between text-13 mb-1"><span>Subiendo… ' + entero(sub.hechos) + ' de ' + entero(sub.total) + '</span><span class="num">' + pct + '%</span></div><div class="barra"><span style="width:' + pct + '%"></span></div></div>' +
+        '<div class="flex gap-2 flex-wrap"><button class="btn btn-secondary" data-act="subDetener"' + (sub.detener ? ' disabled' : '') + '>' + (sub.detener ? 'Deteniendo…' : 'Detener') + '</button></div>';
+    } else {
+      b += '<div class="flex gap-2 flex-wrap items-center"><button class="btn btn-primary" data-act="subSubir"' + (c.porEnviar && !sinRfc && !sub.leyendo ? '' : ' disabled') + '>' + icon('upload', 14) + 'Subir ' + entero(c.porEnviar) + (c.porEnviar === 1 ? ' factura' : ' facturas') + '</button>' +
+        (c.no_enviado ? '<button class="btn btn-secondary" data-act="subReintentar">Reintentar ' + entero(c.no_enviado) + ' no enviados</button>' : '') +
+        '<button class="btn btn-ghost" data-act="subLimpiar">Quitar la lista</button></div>';
+    }
+    const om = sub.items.filter(i => i.previa === 'omitido');
+    if (om.length) {
+      const grupos = new Map(); om.forEach(i => { const k = i.motivo; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(i.nombre); });
+      b += '<details class="mt-4"><summary class="text-13 font-medium" style="cursor:pointer">Omitidos (' + entero(om.length) + '): por qué no se mandan</summary><ul class="text-13 mt-2" style="margin-left:18px;line-height:1.5">' +
+        Array.from(grupos.entries()).map(([m, ns]) => '<li><b>' + esc(m) + '</b> · ' + entero(ns.length) + ': <span class="text-gray-500">' + ns.slice(0, 15).map(esc).join(', ') + (ns.length > 15 ? '… y ' + entero(ns.length - 15) + ' más' : '') + '</span></li>').join('') + '</ul></details>';
+    }
+    b += '</div>';
+    x += card('2 · Revisión y envío', 'Lo que no pasa la revisión de la pantalla no se manda. Lo demás se manda en paquetes de ' + PAQUETE + ' y la base lo vuelve a revisar.', b);
+  }
+  // 3 · resultado por archivo
+  if (c.conRes) {
+    const f = sub.filtro; const conR = sub.items.filter(i => i.res);
+    const ver = f === 'todos' ? conR : conR.filter(i => i.res.resultado === f);
+    const seg = '<div class="seg" role="group" aria-label="Filtrar resultados">' + [['todos', 'Todos', conR.length], ['aceptado', 'Aceptados', c.aceptado], ['ya_estaba', 'Ya estaban', c.ya_estaba], ['rechazado', 'Rechazados', c.rechazado], ['no_enviado', 'No enviados', c.no_enviado]]
+      .filter(([k, , n]) => k === 'todos' || n).map(([k, t, n]) => '<button class="' + (f === k ? 'on' : '') + '" data-act="subFiltro" data-arg="' + k + '">' + t + ' (' + entero(n) + ')</button>').join('') + '</div>';
+    let t = '<div class="card-body"><div class="grid grid-4 mb-4">' + stat('Aceptados', entero(c.aceptado), 'guardados; el robot los carga', 'var(--verde)') + stat('Ya estaban', entero(c.ya_estaba), 'ya cargados o ya subidos: no se duplican') +
+      stat('Rechazados', entero(c.rechazado), 'ver el motivo de cada uno', c.rechazado ? 'var(--rojo)' : null) + stat('No enviados', entero(c.no_enviado), 'falló la conexión: reintenta', c.no_enviado ? 'var(--ambar)' : null) + '</div></div>';
+    t += '<div class="tabla"><table class="lem-table densa" style="min-width:980px"><thead><tr>' + th('Archivo') + th('Resultado') + th('Detalle') + th('Fecha') + th('Tipo') + th('Total', true) + th('Emisor') + th('UUID') + '</tr></thead><tbody>';
+    t += ver.length ? ver.slice(0, 1500).map(i => { const r = i.res; const [et, ec] = RES_SUB[r.resultado] || [r.resultado, 'b-gris'];
+      return '<tr><td class="arch">' + esc(i.nombre) + '</td><td><span class="badge ' + ec + '">' + esc(et) + '</span></td><td class="motivo">' + esc(r.motivo || '') + '</td>' +
+        '<td class="num nowrap">' + (r.fecha ? fecha(r.fecha) : '—') + '</td><td class="nowrap text-xs">' + esc(TIPO_CFDI[r.tipo] || r.tipo || '—') + '</td>' + (esNum(r.total) ? tdP(r.total) : '<td class="text-right">—</td>') +
+        '<td class="num text-xs nowrap">' + esc(r.emisor || '—') + '</td><td class="num text-11 nowrap">' + esc(r.uuid || '—') + '</td></tr>'; }).join('')
+      : '<tr><td colspan="8" class="text-center text-gray-500" style="padding:24px">Nada en este filtro.</td></tr>';
+    t += '</tbody></table></div>';
+    x += card('3 · Resultado por archivo', 'Lo que respondió la base para cada archivo de esta subida.', t, seg, ver.length > 1500 ? 'Se muestran 1,500 de ' + entero(ver.length) + '.' : '');
+  }
+  el.innerHTML = x;
+}
+async function cargarHistorial(vez) {
+  const sub = S.sub; const sec = ++sub.sec; const ep = S.epoca; const rfcAntes = sub.hist ? (sub.hist.rfc_empresa || '') : null;
+  sub.histCargando = true; sub.histErr = null;
+  if (!sub.hist) pintarHist(); else { const z = $('histCargando'); if (z) z.textContent = 'Cargando…'; }
+  try {
+    const d = { limite: 300 }; if (sub.histEstado !== 'todos') d.estado = sub.histEstado; if (sub.histQ.trim()) d.buscar = sub.histQ.trim();
+    const r = await api('conta_xml_subidas', d);
+    if (ep !== S.epoca || sec !== sub.sec) return;
+    sub.hist = r;
+  } catch (e) {
+    if (ep !== S.epoca || sec !== sub.sec || e.obsoleto) return;
+    if (e.sesion) { errorEnVista(e); return; }
+    sub.histErr = e.message || 'No se pudo cargar el historial';
+  } finally {
+    if (ep === S.epoca && sec === sub.sec) {
+      sub.histCargando = false;
+      if (ruta().r === 'subir') { pintarHist(); if (sub.hist && rfcAntes !== (sub.hist.rfc_empresa || '') && !sub.enviando) pintarSubir(); }   // solo si cambió el aviso del RFC
+    }
+  }
+}
+function pintarHist() {
+  const el = $('hist'); if (!el) return;
+  const act = document.activeElement; const foco = !!(act && act.getAttribute && act.getAttribute('data-inp') === 'histQ'); const pos = foco ? act.selectionStart : null;
+  pintarHistDentro(el);
+  if (foco) { const i = el.querySelector('[data-inp="histQ"]'); if (i) { i.focus(); try { i.setSelectionRange(pos, pos); } catch (e) {} } }
+}
+function pintarHistDentro(el) {
+  const sub = S.sub; const h = sub.hist;
+  if (!h) { el.innerHTML = card('Historial de XML subidos', '', '<div class="card-body"><p class="text-sm ' + (sub.histErr ? 'neg' : 'text-gray-500') + '">' + esc(sub.histErr || 'Cargando…') + '</p>' + (sub.histErr ? '<button class="btn btn-secondary sm mt-2" data-act="histActualizar">Reintentar</button>' : '') + '</div>'); return; }
+  const T = h.totales || {}; const TF = h.totales_filtro || {}; const e = sub.histEstado;
+  const tarjeta = (k, t, hint, color) => '<div class="stat-card click' + (e === k ? ' on' : '') + '" data-act="histEstado" data-arg="' + k + '" role="button" tabindex="0"><div class="stat-label">' + t + '</div><div class="stat-value num" style="color:' + (color || 'var(--text)') + '">' + entero(T[k]) + '</div><div class="text-xs text-gray-500 mt-1">' + hint + '</div></div>';
+  let b = '<div class="card-body"><div class="grid grid-4 mb-4">' + tarjeta('cargada', 'Cargadas', 'ya están en la base', 'var(--verde)') + tarjeta('pendiente', 'Pendientes', 'el robot las carga cada 30 min de 7:00 a 22:00 (de noche, a las 6:15)', N(T.pendiente) ? 'var(--ambar)' : null) +
+    tarjeta('en_revision', 'En revisión', 'el robot no las pudo cargar: avisa a Sergio', N(T.en_revision) ? 'var(--rojo)' : null) + tarjeta('mes_cerrado', 'Mes cerrado', 'no entran hasta que se reabra el mes') + '</div>';
+  const u = h.ultima_subida; const rb = h.robot;
+  b += '<p class="text-13 text-gray-600 mb-3">' + (u ? 'Última subida: <b>' + instante(u.cuando) + '</b> por ' + esc(u.por) + ' (' + entero(u.archivos) + (u.archivos === 1 ? ' archivo' : ' archivos') + ').' : 'Todavía no se ha subido ningún XML desde aquí.') +
+    (rb ? ' · Robot de facturas: última corrida ' + horaChih(rb.ultima_corrida) + (rb.corrida ? ' (' + esc(rb.corrida) + ')' : '') + (rb.status ? ' <span class="badge ' + (ROBOT_ST[rb.status] || 'b-gris') + '">' + esc(rb.status) + '</span>' : '') : '') + '</p>';
+  b += '<div class="flex gap-2 flex-wrap items-center mb-3"><div class="seg" role="group" aria-label="Estado"><button class="' + (e === 'todos' ? 'on' : '') + '" data-act="histEstado" data-arg="todos">Todas (' + entero(T.subidas) + ')</button></div>' +
+    '<input class="inp" style="min-width:240px" placeholder="Buscar por archivo, UUID o RFC" data-inp="histQ" value="' + esc(sub.histQ) + '" aria-label="Buscar en el historial"><span id="histCargando" class="text-xs text-gray-500">' + (sub.histCargando ? 'Cargando…' : '') + '</span></div></div>';
+  const L = h.lista || [];
+  let t = '<div class="tabla"><table class="lem-table densa" style="min-width:1050px"><thead><tr>' + th('Subido') + th('Archivo') + th('Estado') + th('Detalle') + th('Fecha factura') + th('Tipo') + th('Total', true) + th('Emisor') + '</tr></thead><tbody>';
+  t += L.length ? L.map(i => { const [et, ec] = EST_SUB[i.estado] || [i.estado, 'b-gris'];
+    return '<tr><td class="num nowrap text-xs">' + instante(i.subido_en) + '<div class="text-11 text-gray-500">' + esc((i.subido_por || '').split('@')[0]) + '</div></td><td class="arch">' + esc(i.archivo) + '<div class="num text-11 text-gray-400">' + esc(i.uuid) + '</div></td>' +
+      '<td><span class="badge ' + ec + '">' + esc(et) + '</span>' + (i.cargada_el ? '<div class="text-11 text-gray-500 nowrap">' + instante(i.cargada_el) + '</div>' : '') + '</td><td class="motivo">' + esc(i.motivo || '') + '</td>' +
+      '<td class="num nowrap">' + fecha(i.fecha) + '</td><td class="nowrap text-xs">' + esc(TIPO_CFDI[i.tipo] || i.tipo || '—') + '</td>' + tdP(i.total) + '<td class="num text-xs nowrap">' + esc(i.emisor || '—') + '</td></tr>'; }).join('')
+    : '<tr><td colspan="8" class="text-center text-gray-500" style="padding:24px">' + (N(T.subidas) ? 'Nada con este filtro.' : 'Todavía no hay XML subidos desde la app.') + '</td></tr>';
+  t += '</tbody></table></div>';
+  const pie = 'Mostrando ' + entero(L.length) + ' de ' + entero(TF.subidas) + '. ' + esc(h.nota || '');
+  el.innerHTML = card('Historial de XML subidos', 'En qué va cada XML que se subió aquí. El estado se calcula cada vez que lo abres.', b + t, '', pie);
+}
+// Revisión en el navegador (la base vuelve a revisar todo)
+async function agregarArchivos(lista) {
+  const sub = S.sub; if (sub.enviando || sub.leyendo) { toast('Espera a que termine lo que está en curso.'); return; }
+  if (!lista.length) return;
+  sub.leyendo = true; sub.error = null; pintarSubir();
+  const ep = S.epoca; const ya = new Map(sub.items.filter(i => i.clave).map(i => [i.clave, i.nombre]));
+  let nuevos = 0, ocultos = 0;
+  const dec = new TextDecoder('utf-8', { fatal: true });
+  for (const { file, ruta: r } of lista) {
+    if (ep !== S.epoca) return;
+    const nombre = file.name || '(sin nombre)';
+    if (/^\._/.test(nombre) || nombre === '.DS_Store' || nombre === 'Thumbs.db') { ocultos++; continue; }   // archivos ocultos del sistema
+    const it = { id: sub.items.length + 1, nombre, ruta: r || nombre, tam: file.size, previa: 'omitido', motivo: '', texto: null, clave: null, res: null };
+    sub.items.push(it); nuevos++;
+    if (!/\.xml$/i.test(nombre)) { it.motivo = 'No es un .xml (PDF u otro archivo)'; continue; }
+    if (!file.size) { it.motivo = 'Está vacío'; continue; }
+    if (file.size > MAX_KB * 1024) { it.motivo = 'Pesa más de ' + MAX_KB + ' KB (una factura normal pesa menos de 30 KB)'; continue; }
+    let buf; try { buf = await file.arrayBuffer(); } catch (e) { it.motivo = 'No se pudo leer el archivo'; continue; }
+    if (new Uint8Array(buf).includes(0)) { it.motivo = 'Trae caracteres nulos: parece un PDF o ZIP renombrado como .xml'; continue; }
+    let txt; try { txt = dec.decode(buf); } catch (e) { it.motivo = 'No está en UTF-8 (no se puede leer como texto)'; continue; }
+    if (/<!\s*(DOCTYPE|ENTITY)/i.test(txt)) { it.motivo = 'Trae DOCTYPE o ENTITY (una factura del SAT nunca los trae)'; continue; }
+    if (txt.indexOf('<cfdi:Comprobante') < 0 || txt.indexOf('TimbreFiscalDigital') < 0) { it.motivo = 'No parece una factura timbrada (no trae cfdi:Comprobante con TimbreFiscalDigital)'; continue; }
+    let clave; try { clave = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', buf)), b => b.toString(16).padStart(2, '0')).join(''); } catch (e) { clave = 'n' + txt.length + ':' + txt.slice(-200); }
+    if (ya.has(clave)) { it.motivo = 'Repetido en tu selección (es igual a ' + ya.get(clave) + ')'; continue; }
+    ya.set(clave, nombre); it.clave = clave; it.texto = txt; it.previa = 'listo';   // clave = huella SHA-256: el contenido no se queda en memoria después de mandarlo
+  }
+  sub.leyendo = false; S.ultima = Date.now();
+  if (!sub.lote) sub.lote = nuevoLote();
+  pintarSubir();
+  toast(entero(nuevos) + (nuevos === 1 ? ' archivo revisado' : ' archivos revisados') + (ocultos ? ' · ' + entero(ocultos) + ' ocultos del sistema ignorados' : '') + '.');
+}
+async function archivosDeDrop(dt) {
+  const out = []; const ents = [];
+  for (const it of Array.from(dt.items || [])) { const e = it.webkitGetAsEntry ? it.webkitGetAsEntry() : null; if (e) ents.push(e); }   // antes de cualquier await
+  if (!ents.length) { Array.from(dt.files || []).forEach(f => out.push({ file: f, ruta: f.name })); return out; }
+  const recorrer = async (ent, base) => {
+    if (ent.isFile) { const f = await new Promise((res, rej) => ent.file(res, rej)); out.push({ file: f, ruta: base + f.name }); }
+    else if (ent.isDirectory) { const lector = ent.createReader(); let lote;
+      do { lote = await new Promise((res, rej) => lector.readEntries(res, rej)); for (const e of lote) await recorrer(e, base + ent.name + '/'); } while (lote.length); }
+  };
+  for (const e of ents) { try { await recorrer(e, ''); } catch (x) { console.error(x); } }
+  return out;
+}
+async function subirTodo() {
+  const sub = S.sub; if (sub.enviando || sub.leyendo) return;
+  if (sub.hist && sub.hist.empresa_id === S.empresa && !sub.hist.rfc_empresa) { toast('Falta el RFC de la empresa: avisa a Sergio.'); return; }
+  const cola = sub.items.filter(i => i.previa === 'listo' && !i.res && i.texto != null);
+  if (!cola.length) { toast('No hay archivos listos para subir.'); return; }
+  const ep = S.epoca; sub.enviando = true; sub.detener = false; sub.error = null; sub.lote = sub.lote || nuevoLote(); sub.empresa = S.empresa; sub.total = cola.length; sub.hechos = 0;
+  sub.redSeguidas = 0; sub.solosSeguidos = 0; sub.ultimoMotivo = null;
+  let sesionCaida = false;
+  pintarSubir();
+  try {
+    for (let k = 0; k < cola.length && !sub.detener; k += PAQUETE) {
+      await enviarPaquete(cola.slice(k, k + PAQUETE), ep);
+      if (ep !== S.epoca) return;
+      S.ultima = Date.now(); guardarActividad();   // subir cuenta como uso de la pantalla
+      if (ruta().r === 'subir') pintarSubir();
+    }
+    if (sub.detener) sub.error = 'La detuviste. Lo que no se mandó sigue en la lista: dale "Subir" para continuar.';
+  } catch (e) {
+    if (ep !== S.epoca || e.obsoleto) return;
+    if (e.sesion) {   // la lista se queda en memoria: se vuelve a entrar aquí mismo, sin pasar por Salir (Salir la borra)
+      sesionCaida = true;
+      sub.error = 'Se cerró tu sesión a media subida. Faltan ' + entero(cuentaSub().porEnviar) + ' por mandar y siguen en la lista: dale "Subir" para continuar. ' +
+        'Si recargas la página o usas Salir, la lista se borra y tendrías que arrastrar otra vez los mismos XML (los que ya se guardaron saldrán como "Ya estaba" y no se duplican).';
+    } else sub.error = e.message || 'Error desconocido';
+    if (e.codigo === 'falta_rfc_empresa' && sub.hist) sub.hist.rfc_empresa = null;
+  } finally {
+    if (ep === S.epoca) {
+      sub.enviando = false; sub.detener = false; S.cache.clear();
+      if (sesionCaida) { errorEnVista(errSesion('Tu sesión expiró a media subida. Vuelve a entrar aquí, sin recargar la página: los XML que faltan siguen en la lista.')); return; }
+      const c = cuentaSub();
+      const resumen = entero(c.aceptado) + ' aceptados, ' + entero(c.ya_estaba) + ' ya estaban, ' + entero(c.rechazado) + ' rechazados';
+      if (!sub.error) toast(c.no_enviado ? (c.no_enviado === 1 ? 'Falta 1 no enviado' : 'Faltan ' + entero(c.no_enviado) + ' no enviados') + ': dale "Reintentar". (' + resumen + ')' : 'Listo: ' + resumen + '.');
+      if (ruta().r === 'subir') { pintarSubir(); cargarHistorial(S.vez); }
+    }
+  }
+}
+async function enviarPaquete(items, ep) {
+  if (S.sub.detener) return;
+  let r;
+  try { r = await api('conta_xml_subir', { empresa_id: S.sub.empresa, lote: S.sub.lote, archivos: items.map(i => ({ archivo: i.nombre, xml: i.texto })) }); }
+  catch (e) {
+    if (e.obsoleto || ep !== S.epoca) throw errObsoleto();
+    if (e.sesion || (e.negocio && FATALES.has(e.codigo))) { if (e.negocio && TXT_FATAL[e.codigo]) e.message = TXT_FATAL[e.codigo]; throw e; }   // detiene toda la subida
+    if (e.red) {   // conexión, tiempo o tamaño: partir ayuda con un paquete muy grande, no con la red caída
+      if (++S.sub.redSeguidas >= FALLAS_SEGUIDAS) {
+        const quedan = S.sub.items.filter(i => i.previa === 'listo' && !i.res).length;
+        throw new Error('Se perdió la conexión con SQL Connect: ' + FALLAS_SEGUIDAS + ' intentos seguidos fallaron, así que se detuvo la subida. ' + entero(quedan) + ' siguen en la lista: dale "Subir" cuando vuelva.');
+      }
+      if (S.sub.redSeguidas >= 2) {   // una falla suelta se parte de inmediato (paquete grande); a la segunda seguida, espera un poco
+        await new Promise(res => setTimeout(res, ESPERA_RED_MS));
+        if (ep !== S.epoca) throw errObsoleto();
+        if (S.sub.detener) return;
+      }
+    }
+    if (items.length > 1) { const m = Math.ceil(items.length / 2); await enviarPaquete(items.slice(0, m), ep); await enviarPaquete(items.slice(m), ep); return; }
+    const motivo = (e.negocio ? 'La base no lo pudo revisar: ' : 'No se pudo enviar: ') + (e.message || 'error');
+    items[0].res = { resultado: 'no_enviado', motivo };
+    S.sub.hechos += 1;
+    S.sub.solosSeguidos = (S.sub.ultimoMotivo === motivo) ? S.sub.solosSeguidos + 1 : 1; S.sub.ultimoMotivo = motivo;
+    if (S.sub.solosSeguidos >= FALLAS_SEGUIDAS) throw new Error('La base falló ' + FALLAS_SEGUIDAS + ' archivos seguidos con el mismo error (' + (e.message || 'error') + '), así que se detuvo la subida. Avisa a Sergio; lo que no se mandó sigue en la lista.');
+    return;
+  }
+  S.sub.redSeguidas = 0; S.sub.solosSeguidos = 0; S.sub.ultimoMotivo = null;   // respondió: no es falla de todo el sistema
+  for (const x of (r.resultados || [])) { const it = items[Number(x.i) - 1]; if (it) { it.res = x; it.texto = null; } }   // el contenido ya no se guarda en memoria
+  for (const it of items) if (!it.res) it.res = { resultado: 'no_enviado', motivo: 'La base no devolvió resultado para este archivo; reintenta.' };
+  S.sub.hechos += items.length;
+}
+function subAccion(k, arg) {
+  const sub = S.sub;
+  if (k === 'subSubir') subirTodo();
+  else if (k === 'subDetener') { sub.detener = true; pintarSubir(); }
+  else if (k === 'subReintentar') { sub.items.forEach(i => { if (i.res && i.res.resultado === 'no_enviado' && i.texto != null) i.res = null; }); subirTodo(); }
+  else if (k === 'subLimpiar') { if (sub.enviando) return; sub.items = []; sub.lote = null; sub.error = null; sub.filtro = 'todos'; pintarSubir(); }
+  else if (k === 'subFiltro') { sub.filtro = arg || 'todos'; pintarSubir(); }
+  else if (k === 'histEstado') { sub.histEstado = (arg && arg === sub.histEstado && arg !== 'todos') ? 'todos' : (arg || 'todos'); cargarHistorial(S.vez); }
+  else if (k === 'histActualizar') cargarHistorial(S.vez);
+}
+
+/* ════════════════ C1 · Cuánto debemos (estimado) ════════════════ */
+const TRAMOS = [['0_30', '0 a 30 días', '#86C9A4'], ['31_60', '31 a 60 días', '#EAB308'], ['61_90', '61 a 90 días', '#F97316'], ['mas_90', 'Más de 90 días', '#DC2626']];
+const MOTIVO_REP = { saldo_anterior_mayor_que_factura: 'Saldo anterior mayor que el total de la factura', saldo_no_cuadra: 'Saldo anterior − pagado no da el insoluto', moneda_distinta_de_la_factura: 'La moneda del REP (MonedaDR) no es la de la factura: no manda ni suma a lo pagado' };
+const AVISO_SAT = 'No se verifica la cancelación ante el SAT: una factura que el proveedor canceló sigue contando aquí hasta que se sustituya o se quite de la base.';
+function datosDebemos(extra) { return Object.assign({}, extra || {}, S.ui.base ? { cargados_antes: S.ui.base } : {}); }
+function bannerEstimado(d, corto) {
+  let h = '<div class="banner banner-amber"><div class="flex items-center gap-2 flex-wrap mb-1">' + CONF_EST + '<b>No es un saldo verificado</b></div><div>' + esc(d.leyenda || '') + '</div>';
+  // 095 (hallazgo 5): sin fuente del SAT, se dice claro en cada vista de C1
+  h += '<div class="mt-2"><span class="badge b-ambar">Cancelación SAT sin verificar</span> ' + esc((d.cancelacion_sat && d.cancelacion_sat.aviso) || AVISO_SAT) + '</div>';
+  if (!corto) h += '<details><summary>Cómo se calcula</summary><ul>' + (d.regla_rep || []).map(x => '<li>' + esc(x) + '</li>').join('') +
+    '<li>Lo abierto de una factura PPD es su total si no tiene REP, o el saldo insoluto del REP que manda (solo cuentan los REP en la moneda de la factura). Pagado = total − abierto; un mismo pago timbrado dos veces cuenta una vez.</li>' +
+    '<li>Un saldo menor a 1 peso (redondeo del REP) suma al abierto, pero no cuenta como factura abierta ni entra en vencido, por vencer o sin plazo: va en "centavos".</li>' +
+    '<li>Vence = fecha de la factura + plazo de CondicionesDePago del XML; sin número de días, "sin plazo". La antigüedad se cuenta desde la fecha de la factura.</li>' +
+    '<li>Los importes son en pesos y solo con facturas en MXN. Lo que viene en otra moneda va aparte, por moneda y sin convertir.</li>' +
+    '<li>Las PUE (de contado) se suponen pagadas y no suman. Las notas de crédito son informativas: no se restan todavía (F4). El "abierto neto" solo descuenta la parte de las notas ligadas que el REP todavía no refleja; si los REP declaran pagado más de lo que bajó, no descuenta ninguna.</li></ul></details>';
+  return h + '</div>';
+}
+// 095 (hallazgo 7): lo que viene en otra moneda no se suma a los pesos; se enseña aparte, por moneda y sin convertir
+function otrasTxt(l, campo) { return (l || []).length ? '<div class="text-11 text-gray-400">aparte, sin convertir: ' + l.map(x => monto(x[campo], x.moneda)).join(' · ') + '</div>' : ''; }
+function bannerMonedas(d) {
+  const t = d.totales || {}; const l = t.otras_monedas || [];
+  if (!l.length) return '';
+  return '<div class="banner banner-lem"><b>Otras monedas (no se suman a los pesos de arriba):</b> ' + l.map(m => esc(m.moneda) + ': ' + entero(m.ppd_facturas) + ' PPD por ' + monto(m.ppd_facturado, m.moneda) + ', abierto ' + monto(m.ppd_abierto, m.moneda) +
+    (N(m.pue_facturas) ? ' · ' + entero(m.pue_facturas) + ' PUE por ' + monto(m.pue_monto, m.moneda) : '') + (N(m.notas_credito) ? ' · ' + entero(m.notas_credito) + ' notas por ' + monto(m.notas_credito_monto, m.moneda) : '')).join(' — ') +
+    '<div class="text-11 mt-1">' + esc(t.monedas_nota || '') + '</div></div>';
+}
+function bannerBase(d) {
+  if (!S.ui.base) return '';
+  return '<div class="banner banner-lem flex items-center justify-between gap-3 flex-wrap"><div><b>Base reproducida:</b> solo lo cargado antes del ' + fecha(d.corte && d.corte.cargados_antes || S.ui.base) + ' (00:00, hora de Chihuahua).</div><button class="btn btn-secondary sm" data-act="baseHoy">Volver a la base de hoy</button></div>';
+}
+function lineaCorte(d) {
+  const c = d.corte || {};
+  return '<p class="text-xs text-gray-500 mb-4">Facturas hasta el <b>' + fecha(c.cfdi_hasta) + '</b> · última carga de CFDI ' + instante(c.cfdi_cargado_el) + ' · último pago con REP ' + fecha(c.ultimo_pago_rep) + '</p>';
+}
+function barraAntiguedad(ant, abierto) {
+  const tot = TRAMOS.reduce((s, [k]) => s + Math.max(0, N(ant[k])), 0);
+  let h = '<div class="stack" role="img" aria-label="Antigüedad de lo abierto">' + (tot > 0 ? TRAMOS.map(([k, t, c]) => N(ant[k]) > 0 ? '<span style="width:' + (100 * N(ant[k]) / tot) + '%;background:' + c + '" title="' + esc(t + ': ' + pesos(ant[k])) + '"></span>' : '').join('') : '') + '</div>';
+  h += '<div class="leyendas">' + TRAMOS.map(([k, t, c]) => '<div class="ley"><i style="background:' + c + '"></i><div><div class="t">' + t + '</div><div class="v num">' + pesos(ant[k]) + '</div></div></div>').join('') + '</div>';
+  return h;
+}
+async function vDebemos(arg, vez) {
+  if (arg) return vProveedor(arg, vez);
+  cargando('Cuánto debemos', 'Estimado');
+  const d = await traer('conta_debemos', datosDebemos()); if (vez !== S.vez) return;
+  S.deb = d; const t = d.totales || {};
+  let h = topbar('Cuánto debemos', esc(S.inicio.empresa || '') + ' · facturas a crédito (PPD) y sus complementos de pago', btnActualizar()) + '<div class="p-8">';
+  h += bannerEstimado(d) + bannerBase(d) + lineaCorte(d);
+  h += '<div class="grid grid-4 mb-4">' +
+    stat('Abierto (MXN)', pesos(t.ppd_abierto), entero(t.facturas_abiertas) + ' facturas abiertas' + (N(t.facturas_con_centavos) ? ' · ' + entero(t.facturas_con_centavos) + ' más con centavos' + (esNum(t.saldo_centavos) ? ' (' + pesos(t.saldo_centavos) + ')' : '') : ''), 'var(--text)', CONF_EST) +
+    stat('Vencido', pesos(t.vencido), 'facturas abiertas que ya pasaron el plazo del XML', N(t.vencido) > 0 ? 'var(--rojo)' : null) +
+    stat('Por vencer', pesos(t.por_vencer), 'facturas abiertas con plazo que no se cumple aún') +
+    stat('Sin plazo en el XML', pesos(t.sin_plazo), 'facturas abiertas · ' + entero(t.facturas_con_plazo_en_xml) + ' de ' + entero(t.ppd_facturas) + ' facturas traen plazo') + '</div>';
+  h += bannerMonedas(d);
+  h += '<div class="grid grid-4 mb-6">' +
+    stat('Facturado a crédito (PPD)', pesos(t.ppd_facturado), entero(t.ppd_facturas) + ' facturas · ' + entero(t.ppd_con_rep) + ' con REP') +
+    stat('Total − abierto', pesos(t.ppd_pagado), 'REP declaran ' + pesos(t.ppd_pagado_rep) + (N(t.ppd_no_declarado_rep) >= 1 ? ' · ' + pesos(t.ppd_no_declarado_rep) + ' bajó sin pago en REP (notas aplicadas)' : '')) +
+    stat('Facturas sin REP', pesos(t.ppd_sin_rep_monto), entero(t.ppd_sin_rep) + ' facturas sin complemento de pago') +
+    stat('De contado (PUE)', pesos(t.pue_monto), entero(t.pue_facturas) + ' facturas · supuesto: ' + esc(t.pue_supuesto || 'pagada')) + '</div>';
+  const otros = '<div class="kv"><div class="k">Notas de crédito<div class="text-11 text-gray-400">' + esc(t.notas_credito_nota || '') + '</div></div><div class="v num">' + entero(t.notas_credito) + ' · ' + pesos(t.notas_credito_monto) + '</div></div>' +
+    '<div class="kv"><div class="k">Notas ligadas a facturas abiertas<div class="text-11 text-gray-400">' + esc(t.notas_ligadas_nota || '') + '</div></div><div class="v num">' + entero(t.notas_ligadas_a_abiertas) + ' · ' + pesos(t.notas_ligadas_a_abiertas_monto) + '</div></div>' +
+    '<div class="kv"><div class="k">Abierto neto de esas notas<div class="text-11 text-gray-400">solo descuenta lo que el REP todavía no refleja' + (esNum(t.notas_ligadas_por_restar) ? ': ' + pesos(t.notas_ligadas_por_restar) : '') + '</div></div><div class="v num">' + pesos(t.abierto_neto_de_notas_ligadas) + '</div></div>' +
+    '<div class="kv"><div class="k">Deuda financiera' + otrasTxt(t.deuda_otras_monedas, 'saldo') + '</div><div class="v num">' + pesos(t.deuda_financiera) + '</div></div><div class="kv"><div class="k">Otras obligaciones sin CFDI' + otrasTxt(t.obligaciones_otras_monedas, 'monto') + '</div><div class="v num">' + pesos(t.otras_obligaciones) + '</div></div>';
+  h += '<div class="grid grid-2">' + card('Antigüedad de lo abierto', 'Por fecha de la factura. Suma ' + pesos(t.ppd_abierto) + '.', '<div class="card-body">' + barraAntiguedad(t.antiguedad || {}) + '</div>') +
+    card('Fuera del abierto', 'No suman a lo abierto: se muestran para tenerlos a la vista.', '<div class="card-body">' + otros + '</div>') + '</div>';
+  // Proveedores
+  const ctrl = '<div class="flex items-center gap-2 flex-wrap"><label class="flex items-center gap-2 inp" style="padding:5px 10px">' + icon('search', 14) + '<input id="fQ" data-inp="q" type="search" placeholder="Buscar proveedor o RFC" value="' + esc(S.ui.q) + '" style="border:none;outline:none;font-size:13px;min-width:0;width:170px"></label>' +
+    '<label class="flex items-center gap-1 text-13"><input type="checkbox" data-chg="soloSaldo"' + (S.ui.soloSaldo ? ' checked' : '') + '> Solo con saldo</label>' +
+    '<select class="sel" data-chg="orden" aria-label="Ordenar">' + [['abierto', 'Mayor abierto'], ['vencido', 'Mayor vencido'], ['facturado', 'Mayor facturado'], ['dias', 'Más días vencido'], ['nombre', 'Nombre']].map(([k, tx]) => '<option value="' + k + '"' + (S.ui.orden === k ? ' selected' : '') + '>' + tx + '</option>').join('') + '</select></div>';
+  h += card('Por proveedor', 'Clic en un proveedor para ver sus facturas. Las personas físicas van marcadas y sin RFC; si coinciden con un colaborador, su nombre no se muestra. Devengado: sin fuente todavía (F1–F4).', '<div id="provs">' + tablaProveedores(d) + '</div>', ctrl);
+  h += seccionRep(d) + seccionControles(d) + seccionTardias(d) + seccionObligaciones(d);
+  h += card('Reproducir la base de un día', 'Muestra lo que la base tenía cargado antes de las 00:00 (hora de Chihuahua) de ese día. Sirve para comparar contra un corte anterior.',
+    '<div class="card-body flex items-center gap-2 flex-wrap"><input type="date" id="fBase" class="inp" max="' + esc(S.inicio.hoy || '') + '" value="' + esc(S.ui.base || '') + '"><button class="btn btn-secondary" data-act="baseVer">Ver esa base</button>' + (S.ui.base ? '<button class="btn btn-ghost" data-act="baseHoy">Volver a hoy</button>' : '') + '</div>');
+  pon(h + '</div>');
+}
+function filtrarProveedores(d) {
+  const q = sinAcentos(S.ui.q.trim());
+  let l = (d.proveedores || []).filter(p => (!S.ui.soloSaldo || N(p.abierto) > 0) && (!q || sinAcentos(p.nombre).includes(q) || sinAcentos(p.rfc || '').includes(q)));
+  const o = S.ui.orden;
+  if (o === 'vencido') l = l.slice().sort((a, b) => N(b.vencido) - N(a.vencido) || N(b.abierto) - N(a.abierto));
+  else if (o === 'facturado') l = l.slice().sort((a, b) => N(b.facturado) - N(a.facturado));
+  else if (o === 'dias') l = l.slice().sort((a, b) => N(b.max_dias_vencido) - N(a.max_dias_vencido) || N(b.vencido) - N(a.vencido));
+  else if (o === 'nombre') l = l.slice().sort((a, b) => sinAcentos(a.nombre).localeCompare(sinAcentos(b.nombre)));
+  return l;
+}
+function quienProv(p) {
+  return '<div class="nombre-prov"><a class="lnk" href="#debemos/' + esc(encodeURIComponent(p.clave)) + '">' + esc(p.nombre) + '</a></div><div class="text-11 text-gray-500 mt-1 flex items-center gap-1 flex-wrap">' +
+    (p.persona_fisica ? '<span class="chip chip-pf">Persona física</span>' : '<span class="num">' + esc(p.rfc || '') + '</span>') + (N(p.rep_inconsistentes) ? '<span class="badge b-rojo">REP inconsistente</span>' : '') + ((p.otras_monedas || []).length ? '<span class="chip" title="Tiene facturas en otra moneda: no suman a las columnas en pesos">también en ' + esc(p.otras_monedas.map(m => m.moneda).join(', ')) + '</span>' : '') + '</div>';
+}
+function tablaProveedores(d) {
+  const todos = d.proveedores || []; const l = filtrarProveedores(d);
+  let h = '<div class="tabla"><table class="lem-table densa" style="min-width:1360px"><thead><tr>' + th('Proveedor', false, ' class="fija"') + th('Abierto', true) + th('Vencido', true) + th('Por vencer', true) + th('Sin plazo', true) + th('PPD', true) + th('Facturado', true) + th('Pagado', true) +
+    th('0–30', true) + th('31–60', true) + th('61–90', true) + th('+90', true) + th('Próximo vence') + th('Máx. días vencido', true) + '</tr></thead><tbody>';
+  h += l.length ? l.map(p => { const a = p.antiguedad || {};
+    return '<tr class="link" data-ir="debemos/' + esc(encodeURIComponent(p.clave)) + '"><td class="fija">' + quienProv(p) + '</td>' + tdP(p.abierto, 'font-semibold') + tdP(p.vencido, N(p.vencido) > 0 ? 'neg' : '') + tdP(p.por_vencer) + tdP(p.sin_plazo) + tdN(p.ppd_facturas) + tdP(p.facturado) + tdP(p.pagado) +
+      tdP(a['0_30']) + tdP(a['31_60']) + tdP(a['61_90']) + tdP(a.mas_90, N(a.mas_90) > 0 ? 'neg' : '') + '<td class="num nowrap">' + fecha(p.proximo_vencimiento) + '</td>' + '<td class="text-right num">' + (esNum(p.max_dias_vencido) ? '<span class="neg">' + entero(p.max_dias_vencido) + '</span>' : '—') + '</td></tr>'; }).join('')
+    : '<tr><td colspan="14" class="text-center text-gray-500" style="padding:24px">Ningún proveedor con ese filtro.</td></tr>';
+  h += '</tbody></table></div><div class="card-foot">Mostrando ' + l.length + ' de ' + todos.length + ' proveedores' + (S.ui.soloSaldo ? ' (solo los que tienen saldo abierto)' : '') + '. Los totales de arriba son de todos.</div>';
+  return h;
+}
+function seccionRep(d) {
+  const l = d.rep_inconsistentes || [];
+  const cuerpo = l.length ? '<div class="tabla"><table class="lem-table densa" style="min-width:1200px"><thead><tr>' + th('Proveedor', false, ' class="fija"') + th('REP') + th('Factura') + th('Parcialidad', true) + th('Saldo anterior', true) + th('Pagado', true) + th('Insoluto', true) + th('Total de la factura', true) + th('Fecha de pago') + th('¿Manda?') + th('Motivo') + '</tr></thead><tbody>' +
+    l.map(x => '<tr><td class="fija"><div class="nombre-prov">' + (x.clave ? '<a class="lnk" href="#debemos/' + esc(encodeURIComponent(x.clave)) + '">' + esc(x.proveedor || '—') + '</a>' : esc(x.proveedor || '—')) + '</div>' + (x.persona_fisica ? '<span class="chip chip-pf mt-1">Persona física</span>' : '') + '</td>' +
+      '<td class="num text-xs nowrap" title="' + esc(x.uuid_rep) + '">' + esc(x.folio_rep || '—') + '</td><td class="num text-xs nowrap" title="' + esc(x.uuid_factura) + '">' + esc(x.folio_factura || '—') + '</td>' + tdN(x.parcialidad) + tdM(x.saldo_anterior, x.moneda, 'neg') + tdM(x.pagado, x.moneda) + tdM(x.insoluto, x.moneda) + tdP(x.total_factura) +
+      '<td class="num nowrap">' + fecha(x.fecha_pago) + '</td><td>' + (x.vigente ? '<span class="badge b-ambar">Sí</span>' : '<span class="badge b-gris">No</span>') + '</td><td class="text-13" style="min-width:220px;white-space:normal">' + esc(MOTIVO_REP[x.motivo] || x.motivo || '') + '</td></tr>').join('') + '</tbody></table></div>'
+    : '<div class="card-body"><p class="text-sm text-gray-500">Ninguno.</p></div>';
+  return card('REP inconsistentes (' + l.length + ')', 'Complementos de pago que no cuadran con su factura. "¿Manda?" dice si es el REP vigente de la factura (el que fija su saldo). Uno en otra moneda que su factura nunca manda.', cuerpo);
+}
+function seccionControles(d) {
+  const rs = d.rep_sustituidos || {}; const sf = d.rep_sin_factura_en_base || {};
+  const kv = (k, v, sub) => '<div class="kv"><div class="k">' + k + (sub ? '<div class="text-11 text-gray-400">' + sub + '</div>' : '') + '</div><div class="v num">' + v + '</div></div>';
+  let h = '<div class="card-body">' + kv('REP que sustituyen a otro (relación 04)', entero(rs.rep_que_sustituyen), entero(rs.sustituidos_en_base) + ' de los sustituidos están en la base y se excluyen') +
+    kv('Facturas sustituidas excluidas', entero(d.facturas_sustituidas_excluidas)) + kv('REP ilegibles', entero(d.rep_ilegibles)) + kv('REP en otra moneda', entero(d.rep_otra_moneda)) +
+    kv('REP de facturas que no están en la base', entero(sf.facturas) + ' facturas · ' + entero(sf.con_saldo) + ' con saldo · ' + pesos(sf.saldo) + ((sf.saldo_otras_monedas || []).length ? ' · aparte ' + sf.saldo_otras_monedas.map(x => monto(x.saldo, x.moneda)).join(' · ') : ''), esc(sf.nota || ''));
+  const l = sf.lista || [];
+  if (l.length) h += '<div class="tabla mt-3"><table class="lem-table densa" style="min-width:640px"><thead><tr>' + th('Proveedor') + th('Factura') + th('Parcialidad', true) + th('Insoluto', true) + th('Fecha de pago') + '</tr></thead><tbody>' +
+    l.map(x => '<tr><td><div class="nombre-prov">' + esc(x.proveedor || '—') + '</div></td><td class="num text-xs nowrap" title="' + esc(x.uuid_factura) + '">' + esc(x.folio_factura || '—') + '</td>' + tdN(x.parcialidad) + tdM(x.insoluto, x.moneda) + '<td class="num nowrap">' + fecha(x.fecha_pago) + '</td></tr>').join('') + '</tbody></table></div>';
+  return card('Controles de la regla', 'Para revisar que la regla del REP se aplicó bien.', h + '</div>');
+}
+function seccionTardias(d) {
+  const t = d.tardias_mes_cerrado || {}; const l = t.lista || [];
+  const cuerpo = '<div class="card-body"><p class="text-sm mb-2"><b class="num">' + entero(t.n) + '</b> factura(s) · sin monto en la base.</p>' +
+    (l.length ? '<div class="tabla"><table class="lem-table densa" style="min-width:640px"><thead><tr>' + th('UUID') + th('Motivo') + th('Estado') + th('Creada') + '</tr></thead><tbody>' + l.map(x => '<tr><td class="num text-xs">' + esc(x.uuid) + '</td><td class="text-13" style="white-space:normal">' + esc(x.motivo) + '</td><td><span class="badge b-ambar">' + esc(x.estado) + '</span></td><td class="num nowrap">' + instante(x.creada) + '</td></tr>').join('') + '</tbody></table></div>' : '') + '</div>';
+  return card('Facturas tardías de un mes cerrado', esc(t.nota || ''), cuerpo);
+}
+function seccionObligaciones(d) {
+  const df = d.deuda_financiera || [], ob = d.otras_obligaciones || [], co = d.contingencias || [];
+  let h = '<div class="card-body">';
+  if (!df.length && !ob.length && !co.length) h += '<p class="text-sm text-gray-500">' + esc(d.nota_obligaciones || 'Sin registros.') + '</p>';
+  if (df.length) h += '<div class="text-xs uppercase text-gray-500 font-medium mb-2">Deuda financiera</div><div class="tabla mb-4"><table class="lem-table densa" style="min-width:820px"><thead><tr>' + th('Acreedor') + th('Tipo') + th('Saldo', true) + th('Saldo al') + th('Próximo vencimiento') + th('Pago periódico', true) + th('Fuente') + '</tr></thead><tbody>' +
+    df.map(x => '<tr><td>' + esc(x.acreedor) + '<div class="text-11 text-gray-500">' + esc(x.descripcion || '') + '</div></td><td>' + esc(x.tipo || '') + '</td>' + tdM(x.saldo, x.moneda) + '<td class="num">' + fecha(x.saldo_al) + '</td><td class="num">' + fecha(x.proximo_vencimiento) + '</td>' + tdM(x.pago_periodico, x.moneda) + '<td class="text-xs">' + esc(x.fuente || '') + ' · ' + esc(x.confianza || '') + '</td></tr>').join('') + '</tbody></table></div>';
+  if (ob.length) h += '<div class="text-xs uppercase text-gray-500 font-medium mb-2">Obligaciones sin CFDI</div><div class="tabla mb-4"><table class="lem-table densa" style="min-width:720px"><thead><tr>' + th('Acreedor') + th('Concepto') + th('Monto', true) + th('Vence') + th('Fuente') + '</tr></thead><tbody>' +
+    ob.map(x => '<tr><td>' + esc(x.acreedor) + '</td><td>' + esc(x.concepto || '') + '</td>' + tdM(x.monto, x.moneda) + '<td class="num">' + fecha(x.vence) + '</td><td class="text-xs">' + esc(x.fuente || '') + ' · ' + esc(x.confianza || '') + '</td></tr>').join('') + '</tbody></table></div>';
+  if (co.length) h += '<div class="text-xs uppercase text-gray-500 font-medium mb-2">Contingencias (memo: no suman)</div><div class="tabla"><table class="lem-table densa" style="min-width:600px"><thead><tr>' + th('Acreedor') + th('Concepto') + th('Monto', true) + th('Fuente') + '</tr></thead><tbody>' +
+    co.map(x => '<tr><td>' + esc(x.acreedor) + '</td><td>' + esc(x.concepto || '') + '</td>' + tdM(x.monto, x.moneda) + '<td class="text-xs">' + esc(x.fuente || '') + '</td></tr>').join('') + '</tbody></table></div>';
+  return card('Deuda financiera, obligaciones sin CFDI y contingencias', 'Solo con documento verificable (contrato, estado de cuenta o auxiliar de CONTPAQi).', h + '</div>');
+}
+async function vProveedor(clave, vez) {
+  cargando('Proveedor', 'Cargando sus facturas…');
+  const d = await traer('conta_debemos', datosDebemos({ proveedor: clave })); if (vez !== S.vez) return;
+  const p = (d.proveedores || []).find(x => x.clave === clave);
+  const volver = '<a class="btn btn-secondary" href="#debemos">' + icon('chevronL', 14) + 'Todos los proveedores</a>';
+  if (!p) { pon(topbar('Proveedor', 'Estimado', volver) + '<div class="p-8"><div class="msg-card shadow-card">No se encontró ese proveedor en esta empresa' + (S.ui.base ? ' con la base reproducida' : '') + '.</div></div>'); return; }
+  const fs = d.facturas || []; const ver = S.ui.factSolo ? fs.filter(f => N(f.abierto) > 0) : fs;
+  const a = p.antiguedad || {};
+  let h = topbar(esc(p.nombre), (p.persona_fisica ? 'Persona física' : '<span class="num">' + esc(p.rfc || '') + '</span>') + ' · ' + entero(p.ppd_facturas) + ' facturas a crédito' + ((p.otras_monedas || []).length ? ' en pesos + ' + entero(p.otras_monedas.reduce((s, m) => s + N(m.ppd_facturas), 0)) + ' en otra moneda' : ''), volver + btnActualizar()) + '<div class="p-8">';
+  h += bannerEstimado(d, true) + bannerBase(d);
+  h += '<div class="grid grid-4 mb-4">' + stat('Abierto (MXN)', pesos(p.abierto), entero(p.facturas_abiertas) + ' facturas abiertas · ' + entero(p.facturas_sin_rep) + ' sin REP' + (N(p.saldo_centavos) ? ' · ' + pesos(p.saldo_centavos) + ' en centavos' : ''), null, CONF_EST) +
+    stat('Vencido', pesos(p.vencido), esNum(p.max_dias_vencido) ? 'hasta ' + dias(p.max_dias_vencido) + ' vencida' : 'nada vencido', N(p.vencido) > 0 ? 'var(--rojo)' : null) +
+    stat('Por vencer', pesos(p.por_vencer), p.proximo_vencimiento ? 'próximo el ' + fecha(p.proximo_vencimiento) : '') +
+    stat('Sin plazo en el XML', pesos(p.sin_plazo), (p.condiciones || []).length ? esc(p.condiciones.join(' · ')) : 'sin CondicionesDePago') + '</div>';
+  h += '<div class="grid grid-4 mb-6">' + stat('Facturado (PPD)', pesos(p.facturado), entero(p.ppd_facturas) + ' facturas') + stat('Total − abierto', pesos(p.pagado), 'REP declaran ' + pesos(p.pagado_rep) + (N(p.no_declarado_rep) >= 1 ? ' · ' + pesos(p.no_declarado_rep) + ' sin pago en REP' : '')) +
+    stat('De contado (PUE)', pesos(p.pue && p.pue.monto), entero(p.pue && p.pue.facturas) + ' facturas · supuesto: pagadas') +
+    stat('Notas de crédito', pesos(p.notas_credito && p.notas_credito.monto), entero(p.notas_credito && p.notas_credito.n) + ' · informativo, no se restan' + (p.notas_ligadas_a_abiertas && N(p.notas_ligadas_a_abiertas.n) ? ' · ' + entero(p.notas_ligadas_a_abiertas.n) + ' ligadas a abiertas por ' + pesos(p.notas_ligadas_a_abiertas.monto) + ' (neto ' + pesos(p.abierto_neto_de_notas_ligadas) + ', solo lo que el REP no refleja)' : '')) + '</div>';
+  if ((p.otras_monedas || []).length) h += '<div class="banner banner-lem"><b>En otra moneda (no suma a los pesos de arriba):</b> ' + p.otras_monedas.map(m => entero(m.ppd_facturas) + ' PPD por ' + monto(m.facturado, m.moneda) + ', abierto ' + monto(m.abierto, m.moneda)).join(' — ') + '. En la tabla, esas facturas van con su moneda.</div>';
+  h += card('Antigüedad de lo abierto', 'La factura abierta más vieja es del ' + fecha(p.abierta_mas_vieja) + '. Devengado: sin fuente todavía.', '<div class="card-body">' + barraAntiguedad(a) + '</div>');
+  const ctrl = '<label class="flex items-center gap-1 text-13"><input type="checkbox" data-chg="factSolo"' + (S.ui.factSolo ? ' checked' : '') + '> Solo con saldo</label>';
+  let t = '<div class="tabla"><table class="lem-table densa" style="min-width:1320px"><thead><tr>' + th('Factura', false, ' class="fija"') + th('Fecha') + th('Total', true) + th('Pagado', true) + th('Abierto', true) + th('Estado') + th('REP') + th('Condiciones') + th('Vence') + th('Días vencida', true) + th('Antigüedad', true) + th('UUID') + '</tr></thead><tbody>';
+  t += ver.length ? ver.map(f => { const est = f.rep_inconsistente ? '<span class="badge b-rojo">REP inconsistente</span> ' : '';
+    const st = f.abierta ? (esNum(f.dias_vencida) ? '<span class="badge b-rojo">Vencida</span>' : '<span class="badge b-ambar">Abierta</span>') : N(f.abierto) > 0 ? '<span class="badge b-gris" title="Saldo menor a 1 peso: redondeo del REP">Centavos</span>' : '<span class="badge b-verde">Pagada</span>';
+    return '<tr><td class="fija num nowrap">' + esc([f.serie, f.folio].filter(Boolean).join('-') || '—') + '</td><td class="num nowrap">' + fecha(f.fecha) + '</td>' + tdM(f.total, f.moneda) + tdM(f.pagado, f.moneda).replace('<td', () => '<td title="' + esc('REP declaran ' + monto(f.pagado_rep, f.moneda) + (N(f.no_declarado_rep) >= 1 ? ' · ' + monto(f.no_declarado_rep, f.moneda) + ' sin pago en REP' : '') + (f.notas_ligadas && N(f.notas_ligadas.n) ? ' · ' + entero(f.notas_ligadas.n) + ' notas ligadas por ' + monto(f.notas_ligadas.monto, f.moneda) + (esNum(f.notas_ligadas.por_restar) ? ' (el REP no refleja ' + monto(f.notas_ligadas.por_restar, f.moneda) + ')' : '') : '')) + '"') + tdM(f.abierto, f.moneda, 'font-semibold') + '<td class="nowrap">' + est + st + '</td>' +
+      '<td class="text-xs nowrap">' + (f.con_rep ? 'parcialidad ' + entero(f.parcialidad) + '<div class="text-11 text-gray-500">pago ' + fecha(f.ultimo_pago) + '</div>' : '<span class="text-gray-400">sin REP</span>') + '</td>' +
+      '<td class="text-xs">' + esc(f.condiciones || '—') + (esNum(f.plazo_dias) ? '<div class="text-11 text-gray-500">' + dias(f.plazo_dias) + '</div>' : '') + '</td><td class="num nowrap">' + fecha(f.vence) + '</td>' +
+      '<td class="text-right num">' + (esNum(f.dias_vencida) ? '<span class="neg">' + entero(f.dias_vencida) + '</span>' : '—') + '</td><td class="text-right num nowrap">' + dias(f.antiguedad_dias) + '</td>' +
+      '<td class="num text-11 text-gray-500 nowrap" title="' + esc(f.uuid) + '">' + esc(String(f.uuid || '').slice(0, 8)) + '…</td></tr>'; }).join('')
+    : '<tr><td colspan="12" class="text-center text-gray-500" style="padding:24px">Sin facturas con ese filtro.</td></tr>';
+  t += '</tbody></table></div>';
+  h += card('Facturas a crédito (' + entero(fs.length) + ')', 'Cada factura PPD con el REP que fija su saldo. Pasa el cursor sobre el UUID para verlo completo.', t, ctrl, 'Mostrando ' + ver.length + ' de ' + fs.length + '.');
+  pon(h + '</div>');
+}
+
+/* ════════════════ C2 · Ingresos por tienda y canal (solo ingresos en F0) ════════════════ */
+const CANALES = [['efectivo', 'Efectivo', '#0E5A42'], ['tdc', 'Tarjeta', '#534AB7'], ['uber', 'Uber Eats', '#1A1A1A'], ['didi', 'DiDi Food', '#D85A30'], ['rappi', 'Rappi', '#B4547A'], ['vales', 'Vales', '#9B9A92'], ['otros', 'Otros', '#C5C2B5']];
+async function vIngresos(arg, vez) {
+  cargando('Ingresos por tienda y canal', S.ui.mesIng ? mesLargo(S.ui.mesIng) : 'último mes completo');
+  const datos = S.ui.mesIng ? { anio: Number(S.ui.mesIng.slice(0, 4)), mes: Number(S.ui.mesIng.slice(5, 7)) } : {};
+  const d = await traer('conta_ingresos', datos); if (vez !== S.vez) return;
+  if (!S.ui.mesIng && d.mes) { S.ui.mesIng = d.mes; guardarEnMemoria('conta_ingresos', { anio: Number(d.mes.slice(0, 4)), mes: Number(d.mes.slice(5, 7)) }, d); }
+  const meses = (d.meses || []).map(m => m.mes); const i = meses.indexOf(d.mes);
+  const prev = i > 0 ? meses[i - 1] : (i < 0 ? meses.filter(m => m < d.mes).pop() : null); const sig = i >= 0 && i < meses.length - 1 ? meses[i + 1] : (i < 0 ? meses.find(m => m > d.mes) : null);
+  const sel = '<span class="flex items-center gap-1"><button class="btn btn-ghost p-15" data-act="mesIng" data-arg="' + esc(prev || '') + '"' + (prev ? '' : ' disabled') + ' aria-label="Mes anterior">' + icon('chevronL', 14) + '</button><b class="text-sm text-center" style="min-width:128px">' + mesLargo(d.mes) + '</b><button class="btn btn-ghost p-15" data-act="mesIng" data-arg="' + esc(sig || '') + '"' + (sig ? '' : ' disabled') + ' aria-label="Mes siguiente">' + icon('chevronR', 14) + '</button></span>';
+  const tm = d.total_mes || {}; const ant = (d.meses || []).find(m => m.mes === d.mes_anterior);
+  let h = topbar('Ingresos por tienda y canal', esc(S.inicio.empresa || '') + ' · ' + mesLargo(d.mes) + ' · sin IVA', sel + btnActualizar()) + '<div class="p-8">';
+  h += '<div class="banner banner-gris"><div class="flex items-center gap-2 flex-wrap mb-1">' + CONF_AUTO + '<span class="text-13">' + esc(d.fuente || '') + '</span></div><div class="text-13">' + esc(d.nota || '') + '</div></div>';
+  if (d.mes_en_curso) h += '<div class="banner banner-amber">' + mesLargo(d.mes) + ' es el mes en curso: las cifras son parciales.</div>';
+  h += '<div class="grid grid-4 mb-6">' + stat('Ingresos del mes', pesos(tm.total), 'sin IVA', 'var(--text)', CONF_AUTO) + stat('Con IVA', pesos(tm.con_iva)) +
+    stat('Mes anterior', ant ? pesos(ant.total) : '—', ant ? mesLargo(ant.mes) + ', sin IVA' : 'sin datos de ' + mesLargo(d.mes_anterior)) + stat('Tiendas con venta', entero(tm.tiendas)) + '</div>';
+  if (!N(tm.tiendas)) h += '<div class="banner banner-gris">No hay ventas cargadas para ' + mesLargo(d.mes) + '.</div>';
+  // Por canal (las barras solo dibujan los montos del servidor)
+  const totC = CANALES.reduce((s, [k]) => s + Math.max(0, N(tm[k])), 0);
+  let c = '<div class="card-body"><div class="stack" role="img" aria-label="Ingresos por canal">' + (totC > 0 ? CANALES.map(([k, t, col]) => N(tm[k]) > 0 ? '<span style="width:' + (100 * N(tm[k]) / totC) + '%;background:' + col + '" title="' + esc(t + ': ' + pesos(tm[k])) + '"></span>' : '').join('') : '') + '</div>';
+  c += '<div class="leyendas">' + CANALES.map(([k, t, col]) => '<div class="ley"><i style="background:' + col + '"></i><div><div class="t">' + t + '</div><div class="v num">' + pesos(tm[k]) + '</div></div></div>').join('') + '</div></div>';
+  h += card('Por canal · ' + mesLargo(d.mes), 'Efectivo y tarjeta del POS; plataformas según el R26. Vales = "Vale de cortesía" del R26.', c);
+  // Por tienda
+  const ts = d.tiendas || [];
+  let t = '<div class="tabla"><table class="lem-table densa" style="min-width:1300px"><thead><tr>' + th('Tienda', false, ' class="fija"') + th('Total', true) + th('Mes anterior', true) + th('Variación', true) + CANALES.map(([k, tx]) => th(tx, true)).join('') + th('Con IVA', true) + th('Pagos', true, ' title="Número de pagos registrados en el R26"') + '</tr></thead><tbody>';
+  t += ts.map(x => '<tr><td class="fija"><div class="font-medium nowrap">' + esc(x.corto || x.tienda) + '</div><div class="text-11 text-gray-500 nowrap">' + esc(x.tienda) + '</div></td>' + tdP(x.total, 'font-semibold') + tdP(x.total_mes_anterior) +
+    '<td class="text-right num ' + (N(x.variacion_pct) < 0 ? 'neg' : N(x.variacion_pct) > 0 ? 'pos' : '') + '">' + variacion(x.variacion_pct) + '</td>' + CANALES.map(([k]) => tdP(x[k])).join('') + tdP(x.con_iva) + tdN(x.pagos) + '</tr>').join('');
+  if (ts.length) t += '<tr class="total"><td class="fija">Total del mes</td>' + tdP(tm.total) + '<td class="text-right num">' + (ant ? pesos(ant.total) : '—') + '</td><td></td>' + CANALES.map(([k]) => tdP(tm[k])).join('') + tdP(tm.con_iva) + '<td></td></tr>';
+  else t += '<tr><td colspan="13" class="text-center text-gray-500" style="padding:24px">Sin tiendas con venta este mes.</td></tr>';
+  t += '</tbody></table></div>';
+  h += card('Por tienda · ' + mesLargo(d.mes), 'Ordenadas por ingreso. La variación es contra el mes anterior de la misma tienda.', t);
+  // Mes por mes
+  let m = '<div class="tabla"><table class="lem-table densa" style="min-width:1160px"><thead><tr>' + th('Mes', false, ' class="fija"') + th('Total', true) + CANALES.map(([k, tx]) => th(tx, true)).join('') + th('Con IVA', true) + th('Tiendas', true) + '</tr></thead><tbody>';
+  m += (d.meses || []).map(x => '<tr class="link' + (x.mes === d.mes ? ' sel' : '') + '" data-act="mesIng" data-arg="' + esc(x.mes) + '"><td class="fija nowrap font-medium">' + mesLargo(x.mes) + '</td>' + tdP(x.total, 'font-semibold') + CANALES.map(([k]) => tdP(x[k])).join('') + tdP(x.con_iva) + tdN(x.tiendas) + '</tr>').join('');
+  m += '</tbody></table></div>';
+  h += card('Mes por mes', 'Todos los meses con ventas en la base. Clic en un mes para verlo por tienda.', m);
+  pon(h + '</div>');
+}
+
+/* ════════════════ C3 · Cortes de caja (lectura) ════════════════ */
+function claseEstadoDia(e) { e = String(e || ''); return e === 'ok' ? 'b-verde' : e.startsWith('corte en cero') ? 'b-rojo' : e.startsWith('revisar') ? 'b-ambar' : 'b-gris'; }
+function difTd(n) { if (!esNum(n)) return '<td class="text-right num">—</td>'; const v = Number(n); return '<td class="text-right num' + (Math.abs(v) >= 1 ? ' warn font-medium' : '') + '">' + (v === 0 ? '<span class="dim">' + pesos(0) + '</span>' : pesos(v)) + '</td>'; }
+async function vCortes(arg, vez) {
+  const hoyMes = String(S.inicio.hoy || '').slice(0, 7);
+  let branch = null;
+  if (arg != null) { if (!/^\d{1,5}$/.test(arg)) { location.hash = 'cortes'; return; } branch = Number(arg); }
+  cargando('Cortes de caja', S.ui.mesCor ? mesLargo(S.ui.mesCor) : 'mes en curso');
+  const datos = {}; if (S.ui.mesCor) { datos.anio = Number(S.ui.mesCor.slice(0, 4)); datos.mes = Number(S.ui.mesCor.slice(5, 7)); } if (branch != null) datos.branch_id = branch;
+  const d = await traer('conta_cortes', datos); if (vez !== S.vez) return;
+  if (!S.ui.mesCor && d.mes) { S.ui.mesCor = d.mes; guardarEnMemoria('conta_cortes', Object.assign({ anio: Number(d.mes.slice(0, 4)), mes: Number(d.mes.slice(5, 7)) }, branch != null ? { branch_id: branch } : {}), d); }
+  if (branch == null) { const nuevas = (d.resumen || []).map(r => ({ branch_id: r.branch_id, tienda: r.tienda })); nuevas.forEach(x => { if (!S.tiendas.some(y => y.branch_id === x.branch_id)) S.tiendas.push(x); }); S.tiendas.sort((a, b) => sinAcentos(a.tienda).localeCompare(sinAcentos(b.tienda))); }
+  const res = d.resumen || []; const tienda = branch != null ? ((res[0] && res[0].tienda) || ((S.tiendas.find(x => x.branch_id === branch) || {}).tienda) || ('Sucursal ' + branch)) : null;
+  if (branch != null && !S.tiendas.some(x => x.branch_id === branch) && tienda) S.tiendas.push({ branch_id: branch, tienda });
+  const sig = mesMas(d.mes, 1); const puedeSig = sig <= hoyMes;
+  let acts = '<span class="flex items-center gap-1"><button class="btn btn-ghost p-15" data-act="mesCor" data-arg="' + esc(mesMas(d.mes, -1)) + '" aria-label="Mes anterior">' + icon('chevronL', 14) + '</button><b class="text-sm text-center" style="min-width:128px">' + mesLargo(d.mes) + '</b><button class="btn btn-ghost p-15" data-act="mesCor" data-arg="' + esc(sig) + '"' + (puedeSig ? '' : ' disabled') + ' aria-label="Mes siguiente">' + icon('chevronR', 14) + '</button></span>';
+  acts += '<select class="sel" data-chg="tienda" aria-label="Tienda"><option value="">Todas las tiendas</option>' + S.tiendas.map(x => '<option value="' + esc(x.branch_id) + '"' + (x.branch_id === branch ? ' selected' : '') + '>' + esc(x.tienda) + '</option>').join('') + '</select>' + btnActualizar();
+  let h = topbar(branch != null ? 'Cortes · ' + esc(tienda) : 'Cortes de caja', esc(S.inicio.empresa || '') + ' · ' + mesLargo(d.mes) + ' · conciliación: espejo de ERP Cortes', acts) + '<div class="p-8">';
+  h += segCortes('pos');
+  h += '<div class="banner banner-gris"><div class="flex items-center gap-2 flex-wrap mb-1">' + CONF_AUTO + '<span class="text-13">' + esc(d.fuente || '') + '</span></div><ul style="margin:4px 0 0 18px">' + (d.notas || []).map(x => '<li class="text-13">' + esc(x) + '</li>').join('') + '</ul></div>';
+  const est = d.estados || {}; const sumaEst = f => Object.keys(est).filter(f).reduce((s, k) => s + N(est[k]), 0);
+  h += '<div class="grid grid-4 mb-6">' + stat('Días que cuadran', entero(sumaEst(k => k === 'ok')), 'R26 contra corte, estado "ok"', 'var(--verde)') +
+    stat('Días para revisar', entero(sumaEst(k => k.startsWith('revisar'))), 'posible corte de medianoche o faltante', sumaEst(k => k.startsWith('revisar')) ? 'var(--ambar)' : null) +
+    stat('Días con corte en cero', entero(sumaEst(k => k.startsWith('corte en cero'))), 'usar el R26', sumaEst(k => k.startsWith('corte en cero')) ? 'var(--rojo)' : null) +
+    stat('Otros estados', entero(sumaEst(k => k !== 'ok' && !k.startsWith('revisar') && !k.startsWith('corte en cero'))), Object.keys(est).filter(k => k !== 'ok' && !k.startsWith('revisar') && !k.startsWith('corte en cero')).map(k => esc(k)).join(' · ') || 'ninguno') + '</div>';
+  if (!res.length) h += '<div class="banner banner-gris">No hay cortes cargados para ' + mesLargo(d.mes) + (branch != null ? ' en esta tienda' : '') + '.</div>';
+  // Resumen por tienda
+  if (res.length) {
+    let t = '<div class="tabla"><table class="lem-table densa" style="min-width:2050px"><thead><tr>' + th('Tienda', false, ' class="fija"') + th('Cortes', true) + th('Venta', true) + th('Efectivo', true) + th('Tarjeta', true, ' title="Incluye Amex"') + th('Uber', true) + th('DiDi', true) + th('Rappi', true) + th('Pide Directo', true) + th('Spin', true) + th('Vales', true) + th('Otras', true) +
+      th('Fondo', true, ' title="Campo faltante del R22: es el fondo de caja"') + th('Sobrante', true) + th('Cortes en cero', true) + th('Días', true) + th('Ok', true) + th('Revisar', true) + th('Corte en cero', true) + th('Sin corte', true) + th('Sin R26', true) + th('Dif. mostrador', true) + th('Conciliados', true) + '</tr></thead><tbody>';
+    t += res.map(r => '<tr' + (branch == null ? ' class="link" data-ir="cortes/' + esc(r.branch_id) + '"' : '') + '><td class="fija nowrap">' + (branch == null ? '<a class="lnk" href="#cortes/' + esc(r.branch_id) + '">' + esc(r.tienda) + '</a>' : '<b>' + esc(r.tienda) + '</b>') + '</td>' +
+      tdN(r.cortes) + tdP(r.venta, 'font-semibold') + tdP(r.efectivo) + tdP(r.tarjeta) + tdP(r.uber) + tdP(r.didi) + tdP(r.rappi) + tdP(r.pide_directo) + tdP(r.spin) + tdP(r.vales) + tdP(r.otras) + tdP(r.fondo) + tdP(r.sobrante) +
+      '<td class="text-right num' + (N(r.cortes_en_cero) ? ' neg' : '') + '">' + entero(r.cortes_en_cero) + '</td>' + tdN(r.dias) + tdN(r.dias_ok) + '<td class="text-right num' + (N(r.dias_revisar) ? ' warn' : '') + '">' + entero(r.dias_revisar) + '</td>' + '<td class="text-right num' + (N(r.dias_corte_en_cero) ? ' neg' : '') + '">' + entero(r.dias_corte_en_cero) + '</td>' + tdN(r.dias_sin_corte) + tdN(r.dias_sin_r26) + difTd(r.dif_mostrador) + tdN(r.conciliados) + '</tr>').join('');
+    t += '</tbody></table></div>';
+    h += card(branch != null ? 'Resumen del mes' : 'Por tienda', 'Del R22 (cortes de Drizline). La tarjeta incluye Amex. Fondo = el campo "faltante" del R22 (es el fondo de caja, no un faltante).' + (branch == null ? ' Clic en una tienda para ver sus cortes.' : ''), t);
+  }
+  // Cortes de la tienda
+  if (branch != null) {
+    const cs = d.cortes || [];
+    let t = '<div class="tabla"><table class="lem-table densa" style="min-width:2100px"><thead><tr>' + th('Fecha', false, ' class="fija"') + th('Caja') + th('Horario') + th('Venta', true) + th('Impuestos', true) + th('Efectivo', true) + th('Tarjeta', true) + th('Amex', true) + th('Uber', true) + th('DiDi', true) + th('Rappi', true) + th('Pide Directo', true) + th('Spin', true) + th('Vales', true) + th('Otras', true) +
+      th('IVA comisión', true) + th('Fondo', true) + th('Sobrante', true) + th('Efectivo llegado', true) + th('TDC real', true) + th('Compras de caja', true) + th('Conciliado') + '</tr></thead><tbody>';
+    t += cs.length ? cs.map(c => '<tr class="' + (c.en_cero ? 'cero' : '') + '"><td class="fija num nowrap">' + fechaCorta(c.fecha) + (c.en_cero ? ' <span class="badge b-rojo">en cero</span>' : '') + '</td><td class="num">' + esc(c.caja || '—') + '</td><td class="num nowrap">' + hhmm(c.hora_inicio) + '–' + hhmm(c.hora_fin) + '</td>' +
+      tdP(c.venta, 'font-semibold') + tdP(c.impuestos) + tdP(c.efectivo) + tdP(c.tarjeta) + tdP(c.amex) + tdP(c.uber) + tdP(c.didi) + tdP(c.rappi) + tdP(c.pide_directo) + tdP(c.spin) + tdP(c.vales) + tdP(c.otras) + tdP(c.iva_comision) + tdP(c.fondo) + tdP(c.sobrante) +
+      tdP(c.efectivo_llegado) + tdP(c.tdc_real) + tdP(c.compras_caja) + '<td>' + (c.conciliado ? '<span class="badge b-verde">Sí</span>' : '<span class="badge b-gris">No</span>') + '</td></tr>').join('')
+      : '<tr><td colspan="22" class="text-center text-gray-500" style="padding:24px">Sin cortes en el mes.</td></tr>';
+    t += '</tbody></table></div>';
+    h += card('Cortes (' + entero(cs.length) + ')', 'Uno por renglón, en el orden del día. Sin nombre del cajero ni comentario del POS. Efectivo llegado, TDC real y compras de caja salen del espejo de la hoja "ERP Cortes" (Alan los captura en la hoja; se copian a las 7:30 y 13:00): "—" quiere decir que todavía no se capturan. El detalle está en <a class="lnk" href="#conciliacion">Conciliación</a>.', t);
+  }
+  // R26 contra corte, por día
+  const ds = d.dias || []; const f = S.ui.diasFiltro;
+  const verD = f === 'todos' ? ds : f === 'revisar' ? ds.filter(x => x.estado !== 'ok') : ds.filter(x => x.estado === f);
+  const nNoOk = Object.keys(est).filter(k => k !== 'ok').reduce((s, k) => s + N(est[k]), 0);
+  const seg = '<div class="seg" role="group" aria-label="Filtrar días"><button class="' + (f === 'revisar' ? 'on' : '') + '" data-act="diasFiltro" data-arg="revisar">Distintos de ok (' + entero(nNoOk) + ')</button><button class="' + (f === 'todos' ? 'on' : '') + '" data-act="diasFiltro" data-arg="todos">Todos (' + entero(ds.length) + ')</button></div>';
+  let t = '<div class="tabla"><table class="lem-table densa" style="min-width:1240px"><thead><tr>' + th('Fecha', false, ' class="fija"') + (branch == null ? th('Tienda') : '') + th('R26 mostrador', true) + th('Corte mostrador', true) + th('Dif. mostrador', true) + th('Dif. Uber', true) + th('Dif. DiDi', true) + th('Dif. Rappi', true) + th('Cortes', true) + th('En cero', true) + th('Estado') + '</tr></thead><tbody>';
+  t += verD.length ? verD.map(x => '<tr><td class="fija num nowrap">' + fechaCorta(x.fecha) + '</td>' + (branch == null ? '<td class="nowrap"><a class="lnk" href="#cortes/' + esc(x.branch_id) + '">' + esc(x.tienda) + '</a></td>' : '') + tdP(x.r26_mostrador) + tdP(x.corte_mostrador) + difTd(x.dif_mostrador) + difTd(x.dif_uber) + difTd(x.dif_didi) + difTd(x.dif_rappi) + tdN(x.n_cortes) +
+    '<td class="text-right num' + (N(x.cortes_en_cero) ? ' neg' : '') + '">' + entero(x.cortes_en_cero) + '</td><td style="min-width:190px"><span class="badge largo ' + claseEstadoDia(x.estado) + '">' + esc(x.estado) + '</span></td></tr>').join('')
+    : '<tr><td colspan="11" class="text-center text-gray-500" style="padding:24px">' + (ds.length ? 'Todos los días de este filtro cuadran.' : 'Sin días en el mes.') + '</td></tr>';
+  t += '</tbody></table></div>';
+  h += card('R26 contra corte, por día', 'Ventas del POS (R26) contra lo que dicen los cortes (R22), con IVA. "Dif." distinta de cero se marca.', t, seg, 'Mostrando ' + verD.length + ' de ' + ds.length + ' días.');
+  pon(h + '</div>');
+}
+
+/* ════════════════ Espejo de Drive (mig. 094, 8-oct-2026): conciliación ("ERP Cortes") y caja ("Control de Efectivo") ════════════════
+   Pedido de Sergio: "construyelo como esta el drive y por mientras que solo sea un espejo". Un robot de n8n copia las hojas a SQL a las
+   7:30 y 13:00; aquí se muestran tal cual, en SOLO LECTURA (no hay campos ni botones de guardar; se edita en Drive). Lo que SQL no
+   entrega a propósito: el cajero, el texto del comentario del POS y de las notas (solo "sí"), la descripción y las observaciones de la
+   caja, el saldo renglón por renglón y los pagos al personal uno por uno (van agrupados por semana). */
+const VISTAS_CONC = [['semana', 'Semana'], ['motor', 'Motor'], ['resumen', 'Resumen'], ['falta', 'Falta'], ['cambios', 'Cambios']];
+const EST_ESP = { 'ok': 'b-verde', '⚠ FALTA': 'b-rojo', '⚠ SOBRA': 'b-ambar', '⚠ MIXTO': 'b-mixto', '⏳ FALTA DE LLEGAR': 'b-gris', '· hist.': 'b-hist' };
+const FILTROS_EST = [['', 'Todos'], ['distinto_de_ok', 'Distintos de ok'], ['falta', '⚠ Falta'], ['sobra', '⚠ Sobra'], ['mixto', '⚠ Mixto'], ['falta_de_llegar', '⏳ Falta de llegar'], ['ok', 'ok'], ['hist', '· hist.']];
+const NUM2 = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 2 });
+function segCortes(on) {
+  return '<div class="seg mb-4" role="group" aria-label="Cortes de caja"><button class="' + (on === 'pos' ? 'on' : '') + '" data-act="ir" data-arg="cortes">Cortes del POS (R22)</button>' +
+    '<button class="' + (on === 'conc' ? 'on' : '') + '" data-act="ir" data-arg="conciliacion">Conciliación (espejo de ERP Cortes)</button></div>';
+}
+function instanteDrive(iso) {   // "08-oct-2026 07:31" en hora de Chihuahua
+  if (!iso) return '—'; const t = new Date(iso); if (isNaN(t.getTime())) return '—';
+  try { const p = {}; new Intl.DateTimeFormat('es-MX', { timeZone: 'America/Chihuahua', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(t).forEach(x => { p[x.type] = x.value; });
+        return p.day + '-' + MESES_C[Number(p.month) - 1] + '-' + p.year + ' ' + p.hour + ':' + p.minute; }
+  catch (e) { return t.toISOString().slice(0, 16).replace('T', ' ') + ' UTC'; }
+}
+const ligaSegura = u => /^https:\/\/(docs|drive)\.google\.com\/[A-Za-z0-9/_-]+$/.test(String(u || '')) ? u : null;
+function leyendaEspejo(cp, que, extra) {   // cp = respuesta.copia (ultima_buena, ultima_corrida, robot)
+  const ub = (cp && cp.ultima_buena) || null, uc = (cp && cp.ultima_corrida) || {}, rb = (cp && cp.robot) || {};
+  if (!ub) return '<div class="banner banner-amber"><span class="badge b-gris">Solo lectura</span> <b>Espejo de Drive:</b> el robot todavía no copia ' + esc(que) + '.</div>';
+  // el atraso se mide contra la última revisión del robot (verificado_en), no contra la copia: un Excel sin cambios no deja copia nueva
+  const tCop = new Date(ub.copiado_en).getTime(), tVer = cp.verificado_en ? new Date(cp.verificado_en).getTime() : NaN;
+  const revisado = isNaN(tVer) ? tCop : Math.max(tCop, tVer);
+  const horas = (Date.now() - revisado) / 3600000;
+  let cls = 'banner-gris', aviso = '';
+  if (uc.estado === 'error') { cls = 'banner-red'; aviso = 'La última corrida no pudo copiar este archivo: se muestra la copia buena anterior.'; }
+  else if (rb.estado === 'error') { cls = 'banner-red'; aviso = 'La última corrida del robot falló: se muestra la copia buena anterior.'; }
+  else if (horas > 26) { cls = 'banner-amber'; aviso = 'El robot no ha revisado Drive en más de 26 horas.'; }
+  else if (uc.estado === 'sospechosa') { cls = 'banner-amber'; aviso = 'La última lectura de Drive llegó incompleta: no se quitó nada del espejo.'; }
+  else if (rb.estado === 'parcial') { cls = 'banner-amber'; aviso = 'La última corrida del robot fue parcial (algún archivo no se copió).'; }
+  const liga = ligaSegura(ub.liga);
+  // En las hojas de Google el modifiedTime de Drive no se mueve cuando la hoja se llena por fórmula o importación (ERP Cortes), así que
+  // "se modificó el …" solo se dice para los Excel (.xlsx), donde sí refleja la última edición.
+  const hojaGoogle = ub.mime === 'application/vnd.google-apps.spreadsheet' || /^https:\/\/docs\.google\.com\/spreadsheets\//.test(String(ub.liga || ''));
+  const modXlsx = ub.modificado_en_drive && !hojaGoogle;
+  return '<div class="banner ' + cls + '"><div class="flex items-center gap-2 flex-wrap"><span class="badge b-gris">Solo lectura</span><span><b>Espejo de Drive</b>, copia del ' + instanteDrive(ub.copiado_en) +
+    ' (hora de Chihuahua)' + (modXlsx ? '; el archivo se modificó por última vez el ' + instanteDrive(ub.modificado_en_drive) : '') +
+    (revisado - tCop > 3600000 ? '; el robot lo revisó el ' + instanteDrive(new Date(revisado).toISOString()) + ' y no ha cambiado' : '') + '. Se edita en Drive; aquí no se captura nada.</span>' +
+    (liga ? '<a class="lnk" href="' + esc(liga) + '" target="_blank" rel="noopener noreferrer">Abrir ' + esc(ub.archivo || 'la hoja') + '</a>' : '') + '</div>' +
+    (aviso ? '<div class="mt-1 font-medium">' + esc(aviso) + (rb.ultima_corrida ? ' <span class="text-xs">(robot: ' + horaChih(rb.ultima_corrida) + ', ' + esc(rb.estado || '—') + ')</span>' : '') + '</div>' : '') +
+    (extra ? '<div class="text-xs mt-1">' + extra + '</div>' : '') + '</div>';
+}
+function avisosEspejo(av) {
+  return (av || []).map(a => '<div class="banner banner-amber">' + icon('alert', 14) + ' ' + (typeof a === 'string' ? esc(a)
+    : esc(a.texto || a.aviso || '') + (a.aviso === 'no_encadena' ? ' Saldo final del mes anterior: <b class="num">' + pesos(a.saldo_final_mes_anterior) + '</b>; saldo inicial de este mes: <b class="num">' + pesos(a.saldo_inicial_este_mes) + '</b>.' : '')) + '</div>').join('');
+}
+function vacioEspejo(e, que) {   // sin_espejo, sin_copia o estructura_cambio: se explica, no es un error de la pantalla
+  const tit = e.codigo === 'sin_espejo' ? 'Sin espejo de Drive' : e.codigo === 'sin_copia' ? 'Todavía no hay copia' : 'La hoja cambió de forma';
+  return '<div class="banner ' + (e.codigo === 'estructura_cambio' ? 'banner-red' : 'banner-gris') + '"><b>' + tit + '.</b> ' + esc(e.message || '') +
+    (e.codigo === 'sin_espejo' ? ' Por ahora solo se espeja Doña Tota; otra empresa se agrega con configuración (contrato §4.9).' : e.codigo === 'sin_copia' ? ' El robot copia ' + esc(que) + ' a las 7:30 y 13:00.' : '') + '</div>';
+}
+const montoE = n => esNum(n) ? pesos(n) : '<span class="dim">—</span>';
+function tdE(n, cls) { return '<td class="text-right num' + (cls ? ' ' + cls : '') + '">' + (esNum(n) && Number(n) === 0 ? '<span class="dim">' + pesos(0) + '</span>' : montoE(n)) + '</td>'; }
+function tdDif(n, u) { if (!esNum(n)) return '<td class="text-right num"><span class="dim">—</span></td>'; const v = Number(n), sale = Math.abs(v) > N(u);
+  return '<td class="text-right num' + (sale ? (v < 0 ? ' neg font-medium' : ' warn font-medium') : '') + '">' + (v === 0 ? '<span class="dim">' + pesos(0) + '</span>' : pesos(v)) + '</td>'; }
+function badgeEst(e, distinto) { return '<span class="badge ' + (EST_ESP[e] || 'b-gris') + '">' + esc(e || '—') + '</span>' + (distinto ? ' <span class="badge b-ambar" title="La regla de la hoja recalculada no da este estado">≠ regla</span>' : ''); }
+const siNo = b => b ? '<span class="badge b-lem">sí</span>' : '<span class="dim">—</span>';
+function celdaCuadri(v) {
+  if (v === null || v === undefined || v === '') return '<td></td>';
+  if (typeof v === 'number') return '<td class="n">' + (v < 0 ? '−' : '') + NUM2.format(Math.abs(v)) + '</td>';
+  if (typeof v === 'boolean') return '<td>' + (v ? 'VERDADERO' : 'FALSO') + '</td>';
+  const s = String(v); if (s === '(texto)' || s === '(oculto)') return '<td class="oc">' + s + '</td>';
+  return '<td' + (/^[-+$(),.%0-9 −]+$/.test(s) ? ' class="n"' : '') + '>' + esc(s) + '</td>';
+}
+// Aun "tal cual", los renglones con nombre de colaborador o palabra de nómina/préstamo salen (texto)/(oculto) (mig. 094, fn_conta_espejo_cuadricula).
+const ocultosCuadri = g => N(g && g.renglones_sensibles) ? ' Renglones con nombre o nómina ocultos: ' + entero(g.renglones_sensibles) + '.' : '';
+const letraCol = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+function cuadricula(g) {   // {columnas, enmascarada, renglones_sensibles, filas:[{f, c:[…]}]} con el número de fila de la hoja a la izquierda
+  const fs = (g && g.filas) || []; if (!fs.length) return '<p class="text-sm text-gray-500">La pestaña está vacía en la copia.</p>';
+  const nc = Math.max(1, N(g.columnas));
+  let t = '<div class="tabla"><table class="cuadri"><thead><tr><th></th>' + Array.from({ length: nc }, (_, i) => '<th>' + letraCol(i) + '</th>').join('') + '</tr></thead><tbody>';
+  t += fs.map(f => '<tr><td class="fn">' + esc(f.f) + '</td>' + Array.from({ length: nc }, (_, i) => celdaCuadri((f.c || [])[i])).join('') + '</tr>').join('');
+  return t + '</tbody></table></div>';
+}
+function semCorta(s) { return s.etiqueta + ' · ' + (s.desde ? Number(s.desde.slice(8, 10)) + '–' + fechaCorta(s.hasta) : ''); }
+function selTiendaConc() {
+  const ts = S.ui.concTiendas || [];
+  return '<select class="sel" data-chg="concTienda" aria-label="Tienda"><option value="">Todas las tiendas</option>' + ts.map(x => '<option value="' + esc(x.branch_id) + '"' + (x.branch_id === S.ui.concBranch ? ' selected' : '') + '>' + esc(x.sucursal) + '</option>').join('') + '</select>';
+}
+function anotaTiendas(lista) {   // tiendas en el orden de la hoja, para el filtro
+  (lista || []).forEach(x => { if (x.branch_id != null && !S.ui.concTiendas.some(y => y.branch_id === x.branch_id)) S.ui.concTiendas.push({ branch_id: x.branch_id, sucursal: x.sucursal }); });
+}
+async function vConciliacion(arg, vez) {
+  const partes = String(arg || '').split('/'); const vista = VISTAS_CONC.some(v => v[0] === partes[0]) ? partes[0] : 'semana';
+  cargando('Cortes de caja', 'conciliación: espejo de ERP Cortes');
+  const datos = { vista };
+  if (vista === 'semana' && /^\d{4}-\d{1,2}$/.test(partes[1] || '')) { datos.anio = Number(partes[1].slice(0, 4)); datos.semana = Number(partes[1].slice(5)); }
+  if (vista === 'motor') { if (/^\d{4}-\d{2}$/.test(partes[1] || '')) { datos.anio = Number(partes[1].slice(0, 4)); datos.mes = Number(partes[1].slice(5, 7)); } if (S.ui.concEstado) datos.estado = S.ui.concEstado;
+                           if (/^\d{1,5}$/.test(partes[2] || '')) S.ui.concBranch = Number(partes[2]); }
+  if ((vista === 'semana' || vista === 'motor') && S.ui.concBranch != null) datos.branch_id = S.ui.concBranch;
+  if (vista === 'cambios') datos.dias = S.ui.concDias;
+  let d;
+  try { d = await traer('conta_espejo_cortes', datos); }
+  catch (e) {
+    if (vez !== S.vez || e.obsoleto) return;
+    if (['sin_espejo', 'sin_copia', 'estructura_cambio'].includes(e.codigo)) { pon(topbar('Cortes de caja', esc(S.inicio.empresa || '') + ' · conciliación', btnActualizar()) + '<div class="p-8">' + segCortes('conc') + vacioEspejo(e, 'la hoja "ERP Cortes"') + '</div>'); return; }
+    throw e;
+  }
+  if (vez !== S.vez) return;
+  const tabs = '<div class="seg" role="group" aria-label="Vista de la conciliación">' + VISTAS_CONC.map(([k, t]) => '<button class="' + (vista === k ? 'on' : '') + '" data-act="ir" data-arg="conciliacion/' + k + '">' + t + '</button>').join('') + '</div>';
+  let h = topbar('Cortes de caja', esc(S.inicio.empresa || '') + ' · conciliación: espejo de la hoja "ERP Cortes" · ' + entero(d.cortes_en_el_motor) + ' cortes en el motor, el último del ' + fecha(d.ultimo_corte), btnActualizar()) + '<div class="p-8">';
+  h += segCortes('conc') + leyendaEspejo(d.copia, 'la hoja "ERP Cortes"', 'Sin el cajero; el comentario del POS y las notas solo dicen si hay.') + avisosEspejo(d.avisos);
+  h += '<div class="flex items-center gap-2 flex-wrap mb-4">' + tabs + '</div>';
+  if (vista === 'semana') h += conciliacionSemana(d);
+  else if (vista === 'motor') h += conciliacionMotor(d);
+  else if (vista === 'resumen') h += conciliacionResumen(d);
+  else if (vista === 'falta') h += conciliacionFalta(d);
+  else h += conciliacionCambios(d);
+  pon(h + '</div>');
+}
+function conciliacionSemana(d) {
+  if (S.ui.concBranch == null) anotaTiendas(d.bloques);
+  const sems = d.semanas || []; const i = sems.findIndex(s => s.anio === d.anio && s.semana === d.semana);
+  const ant = sems[i + 1], sig = i > 0 ? sems[i - 1] : null; const k = s => s.anio + '-' + s.semana;
+  let h = '<div class="flex items-center gap-2 flex-wrap mb-4"><span class="flex items-center gap-1"><button class="btn btn-ghost p-15" data-act="ir" data-arg="conciliacion/semana/' + (ant ? k(ant) : '') + '"' + (ant ? '' : ' disabled') + ' aria-label="Semana anterior">' + icon('chevronL', 14) + '</button>' +
+    '<select class="sel" data-chg="concSemana" aria-label="Semana">' + sems.map(s => '<option value="' + esc(k(s)) + '"' + (s.anio === d.anio && s.semana === d.semana ? ' selected' : '') + '>' + esc(semCorta(s)) + '</option>').join('') + '</select>' +
+    '<button class="btn btn-ghost p-15" data-act="ir" data-arg="conciliacion/semana/' + (sig ? k(sig) : '') + '"' + (sig ? '' : ' disabled') + ' aria-label="Semana siguiente">' + icon('chevronR', 14) + '</button></span>' + selTiendaConc() +
+    '<span class="text-xs text-gray-500">Como la pestaña ' + esc(d.etiqueta || '') + ' de la hoja · amarillo = lo que captura Alan · umbral ' + pesos(d.umbral) + '</span></div>';
+  const bl = d.bloques || [];
+  if (!bl.length) return h + '<div class="banner banner-gris">No hay cortes en esa semana' + (S.ui.concBranch != null ? ' para esta tienda' : '') + '.</div>';
+  const cab = '<thead><tr>' + th('Fecha', false, ' class="fija"') + th('#', true) + th('Inicio') + th('Fin') + th('Tarjeta', true) + th('Cupón', true) + th('Uber', true) + th('Rappi', true) + th('DiDi', true) + th('Efvo sistema', true) + th('Venta', true) +
+    th('Efectivo llegado', false, ' class="cap text-right"') + th('TDC Real', false, ' class="cap text-right"') + th('Compras', false, ' class="cap text-right"') + th('Notas', false, ' class="cap"') + th('Dif. Efectivo', true) + th('Dif. TDC', true) + th('Estado') + '</tr></thead>';
+  for (const b of bl) {
+    const cs = b.cortes || []; const nEst = e => cs.filter(c => c.estado === e).length;
+    let t = '<div class="tabla"><table class="lem-table densa" style="min-width:1500px">' + cab + '<tbody>';
+    t += cs.map(c => '<tr><td class="fija num nowrap">' + fechaCorta(c.fecha) + '</td><td class="text-right num">' + esc(c.corte_n == null ? '—' : c.corte_n) + '</td><td class="num">' + esc(c.inicio || '—') + '</td><td class="num">' + esc(c.fin || '—') + '</td>' +
+      tdE(c.tarjeta) + tdE(c.cupon) + tdE(c.uber) + tdE(c.rappi) + tdE(c.didi) + tdE(c.efectivo_sistema) + tdE(c.venta, 'font-semibold') +
+      tdE(c.efectivo_llegado, 'cap') + tdE(c.tdc_real, 'cap') + tdE(c.compras, 'cap') + '<td class="cap">' + siNo(c.con_notas) + '</td>' + tdDif(c.dif_efectivo, d.umbral) + tdDif(c.dif_tdc, d.umbral) +
+      '<td class="nowrap">' + badgeEst(c.estado, c.estado_distinto) + '</td></tr>').join('');
+    t += '</tbody></table></div>';
+    const resumenEst = Object.keys(EST_ESP).filter(e => nEst(e)).map(e => '<span class="badge ' + EST_ESP[e] + '">' + esc(e) + ' ' + nEst(e) + '</span>').join(' ');
+    h += card(esc(b.sucursal || '—'), entero(cs.length) + (cs.length === 1 ? ' corte' : ' cortes') + ' en la semana', t, '<div class="flex gap-1 flex-wrap">' + resumenEst + '</div>');
+  }
+  return h;
+}
+function conciliacionMotor(d) {
+  if (S.ui.concBranch == null && !S.ui.concEstado) anotaTiendas(d.cortes);
+  const mes = d.mes; const hoyMes = String(S.inicio.hoy || '').slice(0, 7); const sig = mesMas(mes, 1);
+  const tec = S.ui.concTec; const tot = d.totales || {}; const est = tot.estados || {};
+  let h = '<div class="flex items-center gap-2 flex-wrap mb-3"><span class="flex items-center gap-1"><button class="btn btn-ghost p-15" data-act="ir" data-arg="conciliacion/motor/' + esc(mesMas(mes, -1)) + '" aria-label="Mes anterior">' + icon('chevronL', 14) + '</button><b class="text-sm text-center" style="min-width:128px">' + mesLargo(mes) + '</b>' +
+    '<button class="btn btn-ghost p-15" data-act="ir" data-arg="conciliacion/motor/' + esc(sig) + '"' + (sig <= hoyMes ? '' : ' disabled') + ' aria-label="Mes siguiente">' + icon('chevronR', 14) + '</button></span>' + selTiendaConc() +
+    '<label class="text-13 flex items-center gap-1"><input type="checkbox" data-chg="concTec"' + (tec ? ' checked' : '') + '> columnas técnicas</label></div>';
+  h += '<div class="seg mb-4" role="group" aria-label="Estado">' + FILTROS_EST.map(([k, t]) => '<button class="' + ((S.ui.concEstado || '') === k ? 'on' : '') + '" data-act="concEstado" data-arg="' + k + '">' + t + '</button>').join('') + '</div>';
+  h += '<div class="grid grid-4 mb-4">' + stat('Cortes', entero(tot.cortes), Object.keys(est).map(k => esc(k) + ' ' + entero(est[k])).join(' · ') || '—') + stat('Venta', pesos(tot.venta), 'suma de la columna Venta corte') +
+    stat('Efectivo llegado', pesos(tot.efectivo_llegado), 'contra efectivo sistema ' + pesos(tot.efectivo_sistema)) + stat('Dif. efectivo', pesos(tot.dif_efectivo), 'Dif. TDC ' + pesos(tot.dif_tdc), N(tot.dif_efectivo) < 0 ? 'var(--rojo)' : null) + '</div>';
+  const cs = d.cortes || [];
+  let t = '<div class="tabla"><table class="lem-table densa" style="min-width:' + (tec ? 2900 : 2700) + 'px"><thead><tr>' + th('Fecha', false, ' class="fija"') + th('Sucursal') + th('Corte #', true) + th('Inicio') + th('Fin') + th('Tarjeta', true) + th('Cupón', true) + th('Uber', true) + th('Rappi', true) + th('DiDi', true) +
+    th('Efectivo sistema', true) + th('Venta corte', true) + th('Comentario POS') + th('Efectivo llegado a oficinas', false, ' class="cap text-right"') + th('TDC Real (vouchers)', false, ' class="cap text-right"') + th('Compras caja', false, ' class="cap text-right"') + th('Notas', false, ' class="cap"') +
+    th('Aplicaciones', true) + th('Efectivo esperado', true) + th('Dif. Efectivo', true) + th('Dif. TDC', true) + th('Estado') + th('Semana', true) + th('Año ISO', true) + th('Mes', true) + th('cutId', true) + th('#sem', true) + (tec ? th('clave') + th('orden') : '') + '</tr></thead><tbody>';
+  t += cs.length ? cs.map(c => '<tr><td class="fija num nowrap" title="Fila ' + esc(c.fila) + ' de la hoja">' + fechaCorta(c.fecha) + '</td><td class="nowrap">' + esc(c.sucursal || '—') + '</td><td class="text-right num">' + esc(c.corte_n == null ? '—' : c.corte_n) + '</td><td class="num">' + esc(c.inicio || '—') + '</td><td class="num">' + esc(c.fin || '—') + '</td>' +
+      tdE(c.tarjeta) + tdE(c.cupon) + tdE(c.uber) + tdE(c.rappi) + tdE(c.didi) + tdE(c.efectivo_sistema) + tdE(c.venta_corte, 'font-semibold') + '<td>' + siNo(c.con_comentario_pos) + '</td>' +
+      tdE(c.efectivo_llegado, 'cap') + tdE(c.tdc_real, 'cap') + tdE(c.compras_caja, 'cap') + '<td class="cap">' + siNo(c.con_notas) + '</td>' + tdE(c.aplicaciones) + tdE(c.efectivo_esperado) + tdDif(c.dif_efectivo, d.umbral) + tdDif(c.dif_tdc, d.umbral) +
+      '<td class="nowrap">' + badgeEst(c.estado, c.estado_distinto) + '</td>' + tdN(c.semana) + '<td class="text-right num">' + esc(c.anio_iso == null ? '—' : c.anio_iso) + '</td>' + tdN(c.mes) + '<td class="text-right num">' + esc(c.cut_id == null ? '—' : c.cut_id) + '</td>' + tdN(c.sem_n) +
+      (tec ? '<td class="num text-xs">' + esc(c.clave || '') + '</td><td class="num text-xs">' + esc(c.orden || '') + '</td>' : '') + '</tr>').join('') +
+      '<tr class="total"><td class="fija">Total</td><td colspan="4">' + entero(cs.length) + ' cortes</td>' + ['tarjeta', 'cupon', 'uber', 'rappi', 'didi', 'efectivo_sistema', 'venta_corte'].map(k => tdE(cs.reduce((s, c) => s + N(c[k]), 0))).join('') + '<td></td>' +
+      ['efectivo_llegado', 'tdc_real', 'compras_caja'].map(k => tdE(cs.reduce((s, c) => s + N(c[k]), 0), 'cap')).join('') + '<td class="cap"></td>' + ['aplicaciones', 'efectivo_esperado', 'dif_efectivo', 'dif_tdc'].map(k => tdE(cs.reduce((s, c) => s + N(c[k]), 0))).join('') +
+      '<td colspan="' + (tec ? 8 : 6) + '"></td></tr>'
+    : '<tr><td colspan="27" class="text-center text-gray-500" style="padding:24px">No hay cortes con este filtro en ' + mesLargo(mes) + '.</td></tr>';
+  t += '</tbody></table></div>';
+  return h + card('Pestaña Cortes (motor) · ' + entero(cs.length) + ' cortes', 'Las columnas de la hoja, menos el cajero. Comentario del POS y notas solo dicen si hay. Amarillo = lo que captura Alan. "≠ regla" = la regla de la hoja recalculada no da el estado que dice la hoja. El mes completo de todas las tiendas pesa unos 300 KB: con una tienda abre más rápido.', t);
+}
+function conciliacionResumen(d) {
+  const cq = d.cuadra_con_hoja || {}; const dif = (cq.diferencias || []).concat((cq.diferencias_meses || []));
+  // (096) la insignia dice POR QUÉ no cuadra: diferencias, celdas que no se leen (no_legibles, p. ej. "#REF!"), tiendas del mapa de
+  // Config que no vienen en el bloque (faltan_en_hoja) y renglones de POR MES que no vienen (faltan_meses); nunca "No cuadra: 0
+  // diferencias". Solo conteos, nunca el texto de una celda. Sin la 096 la API no trae esos campos y queda como antes (salvo el bloque vacío).
+  const arrQ = x => Array.isArray(x) ? x : [];
+  const nl = arrQ(cq.no_legibles), ft = arrQ(cq.faltan_en_hoja), fm = arrQ(cq.faltan_meses);
+  const cntQ = (n, uno, varios) => n ? entero(n) + (n === 1 ? uno : varios) : '';
+  const motivos = [cntQ(dif.length, ' diferencia', ' diferencias'), cntQ(nl.length, ' celda sin leer', ' celdas sin leer'),
+    cntQ(ft.length, ' tienda sin comparar', ' tiendas sin comparar'), cntQ(fm.length, ' renglón de POR MES sin comparar', ' renglones de POR MES sin comparar')].filter(Boolean);
+  const porQue = motivos.length ? (motivos.length > 1 ? motivos.slice(0, -1).join(', ') + ' y ' + motivos[motivos.length - 1] : motivos[0])
+    : (N(cq.comparados) ? 'ver los avisos de arriba' : 'no se pudo comparar el bloque por sucursal');
+  let h = '<div class="flex items-center gap-2 flex-wrap mb-4">' + (cq.ok ? '<span class="badge b-verde">Cuadra con la hoja</span>' : '<span class="badge b-rojo">No cuadra: ' + porQue + '</span>') +
+    '<span class="text-xs text-gray-500">Se compararon ' + entero(cq.comparados) + ' tiendas del bloque por sucursal (mes ' + esc(d.mes_resumen_hoja == null ? '—' : d.mes_resumen_hoja) + ' de ' + esc(d.anio_resumen_hoja == null ? '—' : d.anio_resumen_hoja) + ' en Config)' + (cq.total_comparado ? ', el renglón TOTAL' : '') + ' y ' + entero(cq.comparados_meses) + ' renglones de la tabla POR MES, celda por celda' +
+    (nl.length ? ', salvo ' + entero(nl.length) + (nl.length === 1 ? ' celda que no se lee (ver el aviso de arriba)' : ' celdas que no se leen (ver el aviso de arriba)') : '') + '.</span></div>';
+  if (dif.length) h += '<div class="banner banner-red"><b>La hoja dice otra cosa que su propio motor:</b><ul>' + dif.slice(0, 30).map(x => '<li>' + esc(x.sucursal || x.mes) + ' · ' + esc(String(x.campo).replace(/_/g, ' ')) + ': la hoja dice <b class="num">' + esc(NUM2.format(Number(x.hoja))) + '</b>, el espejo calcula <b class="num">' + esc(NUM2.format(Number(x.espejo))) + '</b></li>').join('') + '</ul>' +
+    (dif.length > 30 ? '<p class="mt-1">… y ' + entero(dif.length - 30) + ' más.</p>' : '') + '<p class="text-xs mt-1">Suele pasar cuando la copia agarró la hoja a media captura, o si la pestaña Resumen ya no ve todos los renglones del motor.</p></div>';
+  const pm = d.por_mes || []; const pa = d.por_anio || [];
+  let t = '<div class="tabla"><table class="lem-table densa" style="min-width:860px"><thead><tr>' + th('Mes', false, ' class="fija"') + th('Faltantes', true) + th('#', true) + th('Sobrantes', true) + th('#', true) + th('⚠ Mixtos', true) + th('⏳ Sin capturar', true) + th('Dif. neta', true) + '</tr></thead><tbody>';
+  // un renglón "AÑO <año ISO>" debajo de los meses de cada año (el AÑO de la hoja es solo el del año de Config B6)
+  const filaAnio = a => a ? '<tr class="total"><td class="fija">AÑO ' + esc(a.anio) + '</td>' + tdE(a.faltantes) + tdN(a.n_faltantes) + tdE(a.sobrantes) + tdN(a.n_sobrantes) + tdN(a.mixtos) + tdN(a.sin_capturar) + tdE(a.dif_neta) + '</tr>' : '';
+  t += pm.map((m, i) => '<tr><td class="fija nowrap font-medium">' + MESES[m.mes - 1] + ' ' + m.anio + '</td>' + tdE(m.faltantes, N(m.faltantes) ? 'neg' : '') + tdN(m.n_faltantes) + tdE(m.sobrantes, N(m.sobrantes) ? 'pos' : '') + tdN(m.n_sobrantes) + tdN(m.mixtos) + tdN(m.sin_capturar) + tdE(m.dif_neta) + '</tr>' +
+    (i === pm.length - 1 || pm[i + 1].anio !== m.anio ? filaAnio(pa.find(a => a.anio === m.anio)) : '')).join('');
+  t += '</tbody></table></div>';
+  h += card('Por mes (calculado del espejo con las fórmulas de la hoja)', esc(d.regla || '') + ' Ojo: "faltantes" aquí solo mira la Dif. Efectivo; la columna Estado del motor también mira la tarjeta.', t);
+  h += card('Pestaña Resumen (tal cual, como se ve en Drive)', 'Copia de la pestaña con sus valores formateados; el número de la izquierda es la fila de la hoja.' + ocultosCuadri(d.hoja_resumen), '<div class="card-body">' + cuadricula(d.hoja_resumen) + '</div>');
+  return h;
+}
+function conciliacionFalta(d) {
+  const sucs = d.sucursales || [];
+  let t = '<div class="tabla"><table class="lem-table densa falta" style="min-width:' + (140 + 110 * sucs.length) + 'px"><thead><tr>' + th('Fecha', false, ' class="fija"') + sucs.map(s => th(esc(s))).join('') + '</tr></thead><tbody>';
+  t += (d.dias || []).map(x => '<tr><td class="fija num nowrap">' + fecha(x.fecha) + '</td>' + (x.celdas || []).map(c => c === '—' ? '<td class="h" title="Sin ningún corte ese día (hueco a revisar)">—</td>' : c ? '<td class="p" title="pendientes/total">' + esc(c) + '</td>' : '<td class="v" title="Todo capturado">✓</td>').join('') + '</tr>').join('');
+  t += '</tbody></table></div>';
+  let h = card('¿Qué falta de llegar a oficinas? · últimos 14 días al ' + fecha(d.hasta), '"⚠ p/t" = cortes sin efectivo llegado de los cortes del día; ✓ = todo capturado; "—" = la tienda no tiene ningún corte ese día (hueco a revisar). Recalculado del motor con la regla de la hoja.', t);
+  h += '<details class="card"><summary class="card-head" style="cursor:pointer"><h3>Pestaña FALTA (tal cual, como se ve en Drive)</h3></summary><div class="card-body">' + (N(d.hoja_falta && d.hoja_falta.renglones_sensibles) ? '<p class="text-xs text-gray-500 mb-2">' + ocultosCuadri(d.hoja_falta).trim() + '</p>' : '') + cuadricula(d.hoja_falta) + '</div></details>';
+  return h;
+}
+function conciliacionCambios(d) {
+  const cs = d.cambios || []; const CAMPO = { efectivo_llegado: 'Efectivo llegado', tdc_real: 'TDC real', compras_caja: 'Compras caja', estado: 'Estado', fecha: 'Fecha', sucursal: 'Sucursal' };
+  const val = (x, v) => x.campo === 'fecha' ? fecha(v) : (x.campo === 'estado' || x.campo === 'sucursal') ? esc(v == null ? '—' : v) : montoE(v);
+  let h = '<div class="seg mb-4" role="group" aria-label="Días">' + [7, 14, 30, 60].map(n => '<button class="' + (N(S.ui.concDias) === n ? 'on' : '') + '" data-act="concDias" data-arg="' + n + '">' + n + ' días</button>').join('') + '</div>';
+  let t = '<div class="tabla"><table class="lem-table densa" style="min-width:900px"><thead><tr>' + th('Copiado', false, ' class="fija"') + th('Fecha') + th('Tienda') + th('#', true) + th('Campo') + th('Antes', true) + th('Después', true) + '</tr></thead><tbody>';
+  t += cs.length ? cs.map(x => '<tr><td class="fija num nowrap">' + instanteDrive(x.copiado_en) + '</td><td class="num nowrap">' + fechaCorta(x.fecha) + '</td><td class="nowrap">' + esc(x.sucursal || '—') + '</td><td class="text-right num">' + esc(x.corte_n == null ? '—' : x.corte_n) + '</td><td>' + esc(CAMPO[x.campo] || x.campo) + '</td>' +
+      '<td class="text-right num">' + val(x, x.antes) + '</td><td class="text-right num font-medium">' + val(x, x.despues) + '</td></tr>').join('')
+    : '<tr><td colspan="7" class="text-center text-gray-500" style="padding:24px">Sin cambios en las capturas en ' + entero(d.dias) + ' días.</td></tr>';
+  t += '</tbody></table></div>';
+  const est = d.cambios_de_estructura || [];
+  if (est.length) h += '<div class="banner banner-gris">' + icon('alert', 14) + ' La pestaña Cortes cambió de estructura (columnas movidas o insertadas): ' + est.slice(0, 5).map(x => instanteDrive(x.copiado_en) + ' · ' + entero(x.columnas_antes) + ' → ' + entero(x.columnas_despues) + ' columnas').join('; ') +
+    '. Cada versión se lee con el encabezado de su copia: eso no aparece como cambio de captura.</div>';
+  h += card('Cambios en las capturas entre copias', esc(d.nota || ''), t);
+  const cap = d.capturas_sin_corte || [];
+  let c = '<div class="tabla"><table class="lem-table densa" style="min-width:560px"><thead><tr>' + th('Fila de _capturas', true) + th('Efectivo llegado', true) + th('TDC real', true) + th('Compras', true) + '</tr></thead><tbody>';
+  c += cap.length ? cap.map(x => '<tr><td class="text-right num">' + esc(x.fila) + '</td>' + tdE(x.efectivo_llegado) + tdE(x.tdc_real) + tdE(x.compras) + '</tr>').join('') : '<tr><td colspan="4" class="text-center text-gray-500" style="padding:18px">Ninguna.</td></tr>';
+  c += '</tbody></table></div>';
+  return h + card('Capturas sin corte ligado (' + entero(cap.length) + ')', 'Renglones de la pestaña interna _capturas sin cutId: un monto que Alan capturó y que ya no apunta a ningún corte (suele ser un renglón movido en la pestaña semanal). Solo montos.', c);
+}
+
+/* ── Efectivo (espejo de "Control de Efectivo"): el Excel del mes y el histórico feb–ago ── */
+async function vEfectivo(arg, vez) {
+  const a = String(arg || ''); const datos = {};
+  if (/^\d{4}-\d{2}$/.test(a)) datos.mes = a;
+  else if (/^historico\/[a-z0-9 ._-]{1,60}$/.test(a)) datos.hoja = 'hoja:' + a.slice(10);
+  cargando('Efectivo (espejo)', datos.hoja ? 'histórico' : (datos.mes ? mesLargo(datos.mes) : 'mes más reciente'));
+  let d;
+  try { d = await traer('conta_espejo_efectivo', datos); }
+  catch (e) {
+    if (vez !== S.vez || e.obsoleto) return;
+    if (['sin_espejo', 'sin_copia', 'estructura_cambio'].includes(e.codigo)) { pon(topbar('Efectivo (espejo)', esc(S.inicio.empresa || ''), btnActualizar()) + '<div class="p-8">' + vacioEspejo(e, 'la carpeta "Control de Efectivo"') + '</div>'); return; }
+    throw e;
+  }
+  if (vez !== S.vez) return;
+  const meses = d.meses || [], hist = d.historico || [];
+  const actual = d.vista === 'historico' ? 'historico/' + String(d.hoja || '').slice(5) : (d.mes || '');
+  const sel = '<select class="sel" data-chg="efeMes" aria-label="Mes o pestaña del histórico">' + (meses.length ? '<optgroup label="Excel del mes">' + meses.map(m => '<option value="' + esc(m.mes) + '"' + (actual === m.mes ? ' selected' : '') + '>' + mesLargo(m.mes) + (m.duplicado ? ' (hay 2 archivos)' : '') + '</option>').join('') + '</optgroup>' : '') +
+    (hist.length ? '<optgroup label="Histórico feb–ago (hoja TOTA)">' + hist.map(x => '<option value="historico/' + esc(String(x.hoja).slice(5)) + '"' + (actual === 'historico/' + String(x.hoja).slice(5) ? ' selected' : '') + '>' + esc(x.nombre) + '</option>').join('') + '</optgroup>' : '') + '</select>';
+  let h = topbar('Efectivo (espejo)', esc(S.inicio.empresa || '') + ' · ' + (d.vista === 'historico' ? 'histórico · ' + esc(String(d.hoja || '').slice(5)) : mesLargo(d.mes)) + ' · carpeta "Control de Efectivo"', sel + btnActualizar()) + '<div class="p-8">';
+  h += leyendaEspejo(d.copia, d.vista === 'historico' ? 'el histórico "TOTA"' : 'el Excel de este mes', d.vista === 'historico' ? '' : 'Sin descripción ni observaciones; nómina, finiquitos, préstamos y pagos que mencionan a un colaborador van agrupados por semana.') + avisosEspejo(d.avisos);
+  if (d.vista === 'historico') {
+    const g = d.cuadricula || {};
+    h += card('Pestaña ' + esc(String(d.hoja || '').slice(5)) + ' (tal cual, enmascarada)', esc(d.nota || '') + (N(g.renglones_sensibles) ? ' Renglones con montos ocultos: ' + entero(g.renglones_sensibles) + '.' : ''), '<div class="card-body">' + cuadricula(g) + '</div>');
+    pon(h + '</div>'); return;
+  }
+  if (!d.hoja) { h += '<div class="banner banner-gris">' + esc(d.nota || 'No hay Excel de caja copiado para ese mes.') + '</div>'; pon(h + '</div>'); return; }
+  const hj = d.hoja || {}, ca = d.calculado || {};
+  const distinto = (a, b) => esNum(a) && esNum(b) && Math.abs(Number(a) - Number(b)) > 0.01;
+  const sub = (txt, a, b, rot, fmt) => (txt || '') + (distinto(a, b) ? '<div class="warn font-medium mt-1">' + (rot || 'Suma de renglones') + ': ' + (fmt || pesos)(b) + '</div>' : '');
+  h += '<div class="grid grid-4 mb-4">' + stat('Saldo inicial', pesos(hj.saldo_inicial), hj.saldo_inicial_al ? 'al ' + fecha(hj.saldo_inicial_al) : 'según la hoja') +
+    stat('Entradas del mes', pesos(hj.entradas_mes), sub('según la hoja', hj.entradas_mes, ca.entradas), 'var(--verde)') +
+    stat('Compras y gastos del mes', pesos(hj.compras_y_gastos_mes), sub('según la hoja', hj.compras_y_gastos_mes, ca.salidas)) +
+    stat('Saldo final', pesos(hj.saldo_final), sub('según la hoja', hj.saldo_final, ca.saldo_final), N(hj.saldo_final) < 0 ? 'var(--rojo)' : null) + '</div>';
+  h += '<div class="grid grid-4 mb-6">' + stat('Resguardo', pesos(hj.resguardo), 'según la hoja') + stat('Movimientos capturados', entero(hj.movimientos_capturados), sub('según la hoja', hj.movimientos_capturados, ca.movimientos, 'Renglones en el espejo', entero)) +
+    stat('Sin clasificar (tipo)', pesos(ca.sin_clasificar_tipo), 'salidas cuyo tipo no está en el catálogo del espejo') + stat('Archivo', '<span class="text-13">' + esc(((d.copia || {}).ultima_buena || {}).archivo || '—') + '</span>', 'el mes sale del nombre del archivo') + '</div>';
+  const pt = hj.por_tipo || [], cs = hj.corte_semanal || [];
+  let t1 = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Tipo') + th('Importe', true) + '</tr></thead><tbody>' + (pt.length ? pt.map(x => '<tr' + (/^total/i.test(x.tipo) ? ' class="total"' : '') + '><td>' + esc(x.tipo) + '</td>' + tdE(x.importe) + '</tr>').join('') : '<tr><td colspan="2" class="text-gray-500">—</td></tr>') + '</tbody></table></div>';
+  let t2 = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Semana') + th('Entradas', true) + th('Salidas', true) + th('Saldo al cierre', true) + '</tr></thead><tbody>' + (cs.length ? cs.map(x => '<tr' + (/^total/i.test(x.semana) ? ' class="total"' : '') + '><td class="nowrap">' + esc(x.semana) + '</td>' + tdE(x.entradas) + tdE(x.salidas) + tdE(x.saldo_al_cierre) + '</tr>').join('') : '<tr><td colspan="4" class="text-gray-500">—</td></tr>') + '</tbody></table></div>';
+  h += '<div class="grid grid-2">' + card('Compras y gastos por tipo (según la hoja)', 'Como lo calcula el Excel.', t1) + card('Corte semanal (según la hoja)', 'Como lo calcula el Excel.', t2) + '</div>';
+  h += card('Movimientos (' + entero(d.movimientos.length) + ' visibles · ' + entero((d.agrupados || []).reduce((s, x) => s + N(x.movimientos), 0)) + ' agrupados)', esc(d.privacidad || '') + ' No se muestra el saldo renglón por renglón: con él se podrían deducir los montos agrupados; el corte semanal de arriba es el de la hoja.',
+    '<div class="card-body" style="padding-bottom:8px"><div class="seg" role="group" aria-label="Orden"><button class="' + (S.ui.efeOrden === 'semana' ? 'on' : '') + '" data-act="efeOrden" data-arg="semana">Por semana</button><button class="' + (S.ui.efeOrden === 'hoja' ? 'on' : '') + '" data-act="efeOrden" data-arg="hoja">Como la hoja (por fila)</button></div></div>' + tablaMovimientos(d));
+  const gr = (titulo, lista, k) => card(titulo, 'Calculado de los renglones del espejo.', '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th(k === 'concepto' ? 'Concepto' : k === 'tipo' ? 'Tipo' : 'Departamento / sucursal') + th('Entradas', true) + th('Salidas', true) + th('Mov.', true) + '</tr></thead><tbody>' +
+    (lista || []).map(x => '<tr><td>' + esc(x[k]) + '</td>' + tdE(x.entradas) + tdE(x.salidas) + tdN(x.movimientos) + '</tr>').join('') + '</tbody></table></div>');
+  h += '<div class="grid grid-2">' + gr('Por tipo', d.por_tipo, 'tipo') + gr('Por concepto (el personal, en un solo total)', d.por_concepto, 'concepto') + '</div>' + gr('Por departamento / sucursal', d.por_departamento, 'departamento');
+  h += '<details class="card"><summary class="card-head" style="cursor:pointer"><h3>Hoja RESUMEN del Excel (tal cual, enmascarada)</h3></summary><div class="card-body"><p class="text-xs text-gray-500 mb-2">Los textos que no son etiquetas conocidas salen como (texto); en renglones de nómina, préstamos o con nombres, los montos salen (oculto).</p>' + cuadricula(d.hoja_resumen) + '</div></details>';
+  pon(h + '</div>');
+}
+function lunes(iso) { const t = new Date(iso + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7)); return t.toISOString().slice(0, 10); }
+function tablaMovimientos(d) {
+  const mv = d.movimientos || [], ag = d.agrupados || []; const ini = (d.mes || '') + '-01';
+  const fila = m => '<tr><td class="text-right num text-gray-500">' + esc(m.fila) + '</td><td class="num nowrap">' + (m.fecha ? fechaCorta(m.fecha) : '—') + '</td><td>' + (m.tipo_valor === 'Sin clasificar' ? '<span class="dim">Sin clasificar</span>' : esc(m.tipo_valor || '—')) + '</td>' +
+    '<td>' + (m.departamento_valor === 'Sin clasificar' ? '<span class="dim">Sin clasificar</span>' : esc(m.departamento_valor || '—')) + '</td><td>' + (m.concepto_valor === 'Sin clasificar' ? '<span class="dim">Sin clasificar</span>' : esc(m.concepto_valor || '—')) + '</td>' +
+    tdE(m.entrada, 'pos') + tdE(m.salida) + '<td>' + esc(m.comprobante || '—') + '</td><td>' + siNo(m.con_descripcion) + '</td><td>' + siNo(m.con_observaciones) + '</td></tr>';
+  const grupo = a => '<tr class="grupo"><td></td><td class="num nowrap">' + (a.desde ? fechaCorta(a.desde) + '–' + fechaCorta(a.hasta) : 'mes') + '</td><td colspan="3"><b>' + esc(a.grupo) + '</b> · ' + entero(a.movimientos) + ' movimientos (agrupados: no se muestran uno por uno)</td>' + tdE(a.entradas) + tdE(a.salidas) + '<td colspan="3"></td></tr>';
+  let cuerpo = '';
+  if (S.ui.efeOrden === 'hoja') cuerpo = mv.slice().sort((a, b) => a.fila - b.fila).map(fila).join('') + ag.map(grupo).join('');
+  else {
+    const semanas = new Map(); const llave = f => { if (!f) return 'zz'; const l = lunes(f); return l < ini ? ini : l; };
+    mv.forEach(m => { const k = llave(m.fecha); if (!semanas.has(k)) semanas.set(k, { m: [], a: [] }); semanas.get(k).m.push(m); });
+    ag.forEach(a => { const k = a.desde ? a.desde : 'zzz'; if (!semanas.has(k)) semanas.set(k, { m: [], a: [] }); semanas.get(k).a.push(a); });
+    Array.from(semanas.keys()).sort().forEach(k => { const s = semanas.get(k);
+      cuerpo += '<tr class="semhead"><td colspan="10">' + (k === 'zz' ? 'Sin fecha' : k === 'zzz' ? 'Del mes (grupos de menos de 3 movimientos)' : 'Semana del ' + fechaCorta(k)) + '</td></tr>' + s.m.sort((a, b) => a.fila - b.fila).map(fila).join('') + s.a.map(grupo).join(''); });
+  }
+  return '<div class="tabla"><table class="lem-table densa" style="min-width:1180px"><thead><tr>' + th('Fila', true) + th('Fecha') + th('Tipo') + th('Departamento / sucursal') + th('Concepto') + th('Entrada', true) + th('Salida (compra / gasto)', true) + th('Comprobante') + th('Descripción') + th('Observaciones') + '</tr></thead><tbody>' +
+    (cuerpo || '<tr><td colspan="10" class="text-center text-gray-500" style="padding:24px">Sin movimientos.</td></tr>') + '</tbody></table></div>';
+}
+
+/* ── Eventos (delegados: no hay funciones globales en window) ── */
+document.addEventListener('click', ev => {
+  const a = ev.target.closest('[data-act]');
+  if (a) { if (a.disabled) return; ev.preventDefault(); accion(a.getAttribute('data-act'), a.getAttribute('data-arg'), a); return; }
+  const f = ev.target.closest('[data-ir]');
+  if (f && !ev.target.closest('a,button,input,select,label')) ir(f.getAttribute('data-ir'));
+});
+document.addEventListener('keydown', ev => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('.stat-card.click[data-act]')) { ev.preventDefault(); accion(ev.target.getAttribute('data-act'), ev.target.getAttribute('data-arg'), ev.target); } });
+document.addEventListener('change', ev => {
+  const el = ev.target.closest('[data-chg]'); if (!el) return; const k = el.getAttribute('data-chg');
+  if (k === 'empresa') cambiarEmpresa(el.value);
+  else if (k === 'archivos' || k === 'carpeta') { const fs = Array.from(el.files || []).map(f => ({ file: f, ruta: f.webkitRelativePath || f.name })); el.value = ''; agregarArchivos(fs); }
+  else if (k === 'soloSaldo') { S.ui.soloSaldo = !!el.checked; if (S.deb && $('provs')) $('provs').innerHTML = tablaProveedores(S.deb); }
+  else if (k === 'orden') { S.ui.orden = el.value; if (S.deb && $('provs')) $('provs').innerHTML = tablaProveedores(S.deb); }
+  else if (k === 'factSolo') { S.ui.factSolo = !!el.checked; router(); }
+  else if (k === 'tienda') ir(el.value ? 'cortes/' + el.value : 'cortes');
+  else if (k === 'concTienda') { S.ui.concBranch = /^\d{1,5}$/.test(el.value) ? Number(el.value) : null; const r = ruta(); const p = String(r.arg || '').split('/');
+                                 if (p[0] === 'motor' && p[2]) ir('conciliacion/motor/' + p[1] + (S.ui.concBranch != null ? '/' + S.ui.concBranch : '')); else router(); }
+  else if (k === 'concSemana') { if (/^\d{4}-\d{1,2}$/.test(el.value)) ir('conciliacion/semana/' + el.value); }
+  else if (k === 'concTec') { S.ui.concTec = !!el.checked; router(); }
+  else if (k === 'efeMes') { if (/^(\d{4}-\d{2}|historico\/[a-z0-9 ._-]{1,60})$/.test(el.value)) ir('efectivo/' + el.value); }
+});
+document.addEventListener('input', ev => {
+  const el = ev.target.closest('[data-inp]'); if (!el) return;
+  if (el.getAttribute('data-inp') === 'q') { S.ui.q = el.value || ''; if (S.deb && $('provs')) $('provs').innerHTML = tablaProveedores(S.deb); }
+  else if (el.getAttribute('data-inp') === 'histQ') { S.sub.histQ = el.value || ''; clearTimeout(S.sub.histT); S.sub.histT = setTimeout(() => cargarHistorial(S.vez), 450); }
+});
+document.addEventListener('dragover', ev => { if (!S.inicio || ruta().r !== 'subir') return; ev.preventDefault(); const z = $('zona'); if (z && !z.classList.contains('apagada')) z.classList.add('sobre'); });
+document.addEventListener('dragleave', ev => { const z = $('zona'); if (z && (!ev.relatedTarget || !document.documentElement.contains(ev.relatedTarget))) z.classList.remove('sobre'); });
+document.addEventListener('drop', ev => {
+  if (!S.inicio || ruta().r !== 'subir') return; ev.preventDefault();   // en Subir XML, soltar en cualquier parte de la página cuenta
+  const z = $('zona'); if (z) z.classList.remove('sobre');
+  if (S.sub.enviando || S.sub.leyendo || (z && z.classList.contains('apagada'))) { toast('Ahora no se pueden agregar archivos.'); return; }
+  archivosDeDrop(ev.dataTransfer).then(agregarArchivos);
+});
+function accion(k, arg) {
+  if (/^(sub|hist)[A-Z]/.test(k)) { subAccion(k, arg); return; }
+  if (k === 'salir') salir();
+  else if (k === 'arrancar') arrancar();
+  else if (k === 'actualizar') actualizar();
+  else if (k === 'reintentar') router();
+  else if (k === 'excTodas') { S.ui.excTodas = !S.ui.excTodas; router(); }
+  else if (k === 'mesIng') { if (arg) { S.ui.mesIng = arg; router(); } }
+  else if (k === 'mesCor') { if (arg && /^\d{4}-\d{2}$/.test(arg)) { S.ui.mesCor = arg; router(); } }
+  else if (k === 'diasFiltro') { S.ui.diasFiltro = arg || 'revisar'; router(); }
+  else if (k === 'baseVer') { const v = ($('fBase') || {}).value || ''; if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { toast('Elige una fecha.'); return; } S.ui.base = v; router(); }
+  else if (k === 'baseHoy') { S.ui.base = null; router(); }
+  else if (k === 'ir') { if (arg && /^[a-z]+(\/[A-Za-z0-9 ._-]+)*$/.test(arg)) ir(arg); }
+  else if (k === 'concEstado') { S.ui.concEstado = arg || null; router(); }
+  else if (k === 'concDias') { const n = Number(arg); if ([7, 14, 30, 60].includes(n)) { S.ui.concDias = n; router(); } }
+  else if (k === 'efeOrden') { S.ui.efeOrden = arg === 'hoja' ? 'hoja' : 'semana'; router(); }
+}
+async function actualizar() {
+  const ep = S.epoca; S.cache.clear();
+  try { const r = await api('conta_inicio', {}); if (ep !== S.epoca) return; S.inicio = r; S.empresa = r.empresa_id; }
+  catch (e) { if (ep !== S.epoca || e.obsoleto) return; if (e.sesion || e.codigo === 'sin_acceso') { if (e.sesion) errorEnVista(e); else vSinAcceso(e.message); return; } errorEnVista(e); return; }
+  pintarShell(); await router(); toast('Actualizado.');
+}
+function cambiarEmpresa(v) {
+  const n = Number(v); if (!Number.isInteger(n)) return;
+  if (S.sub.enviando || S.sub.leyendo) { toast('Espera a que termine la subida para cambiar de empresa.'); const s = $('selEmp'); if (s) s.value = String(S.empresa); return; }
+  S.empresa = n; S.cache.clear(); S.tiendas = []; S.deb = null; S.ui = uiInicial(); S.sub = subInicial(); arrancar();
+}
+
+/* ── Arranque ── */
+if (S.token) arrancar(); else { Conexion.salir(); vLogin(S.motivo); }
+</script>
+</body>
+</html>
