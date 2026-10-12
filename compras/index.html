@@ -1,0 +1,1686 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Compras · Grupo LEM</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="/punto-de-vista.js?v=097"></script>
+<style>
+  :root { --rojo:#B3282D; --rojo2:#8f1f23; --gris:#f4f4f5; --borde:#e4e4e7; --txt:#18181b; --txt2:#71717a; --verde:#15803d; --ambar:#b45309; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--gris); color:var(--txt); font-size:16px; }
+  header { background:var(--rojo); color:#fff; padding:12px 16px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:10; }
+  header h1 { font-size:17px; font-weight:700; }
+  header .u { font-size:12px; opacity:.85; text-align:right; line-height:1.5; }
+  main { max-width:640px; margin:0 auto; padding:12px; padding-bottom:90px; }
+  .card { background:#fff; border:1px solid var(--borde); border-radius:12px; padding:14px; margin-bottom:10px; }
+  .btn { display:inline-block; border:none; border-radius:10px; padding:12px 18px; font-size:16px; font-weight:600; cursor:pointer; background:var(--rojo); color:#fff; }
+  .btn:disabled { opacity:.45; }
+  .btn.sec { background:#fff; color:var(--txt); border:1px solid var(--borde); }
+  .btn.mini { padding:6px 10px; font-size:14px; }
+  .chip { display:inline-block; font-size:12px; font-weight:600; border-radius:99px; padding:2px 10px; background:var(--gris); color:var(--txt2); }
+  .chip.enviada,.chip.en_revision { background:#fef3c7; color:var(--ambar); }
+  .chip.autorizada,.chip.aprobada,.chip.modificada { background:#dcfce7; color:var(--verde); }
+  .chip.rechazada,.chip.cancelada { background:#fee2e2; color:var(--rojo); }
+  .chip.enviada_proveedor,.chip.cerrada { background:#dbeafe; color:#1d4ed8; }
+  .chip.recibida_parcial,.chip.pendiente { background:#fef3c7; color:var(--ambar); }
+  .chip.recibida,.chip.conciliada { background:#dcfce7; color:var(--verde); }
+  .rec input[type=number] { width:70px; height:42px; text-align:center; border:2px solid var(--borde); border-radius:10px; font-size:18px; font-weight:700; }
+  .rec .falta { color:var(--rojo); font-weight:700; }
+  body.ancha main { max-width:none; padding:12px 18px 90px; }
+  body.ancha .hoja table.g16 th { white-space:normal; min-width:64px; line-height:1.15; }
+  .hoja { font-family:Arial,Helvetica,sans-serif; font-size:12.5px; }
+  .hoja table { border-collapse:collapse; }
+  .hoja th, .hoja td { border:1px solid #9a9a9a; padding:3px 5px; white-space:nowrap; }
+  .hoja th { background:#6d6d6d; color:#fff; font-size:11.5px; font-weight:700; text-align:center; }
+  .hoja th.g { background:#2f5597; }
+  .hoja td.n { text-align:right; }
+  .hoja td.c { text-align:center; }
+  .hoja td.in { background:#fff2cc; padding:2px; }
+  .hoja td.in input { width:86px; border:1px solid #c9a227; border-radius:4px; padding:5px 6px; font-size:14px; font-weight:700; text-align:right; background:#fffbe6; }
+  .hoja td.sug { background:#e2efda; font-weight:700; text-align:center; }
+  .hoja td.fin { background:#c6e0b4; font-weight:800; text-align:center; font-size:14px; }
+  .hoja td.neg { color:#c00; }
+  .hoja .titulo { background:#bdd7ee; font-weight:800; font-size:16px; padding:6px 10px; text-align:center; border:1px solid #9a9a9a; }
+  .hoja .param td { border:1px solid #9a9a9a; padding:4px 8px; }
+  .hoja .param td.ro { background:#fff; font-weight:700; text-align:right; }
+  .hoja .param input { width:120px; border:1px solid #c9a227; border-radius:4px; padding:4px 6px; font-size:13px; background:#fffbe6; }
+  .hoja .param td.k { background:#f3f3f3; font-weight:600; }
+  .hoja .bloque { margin-top:14px; }
+  table.bcalc td:first-child, table.bcalc th:first-child { position:sticky; left:0; background:#fff; z-index:1; min-width:150px; }
+  table.bcalc tr.conc td { background:#f3f3f3; font-weight:700; }
+  .hoja table.inv-el th { background:#e7ecf2; color:#1f2937; font-size:12px; text-align:left; }
+  .hoja table.inv-el td { white-space:normal; vertical-align:middle; }
+  .calcbar { position:sticky; bottom:0; background:#fff; border-top:2px solid var(--rojo); padding:10px 12px; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; z-index:10; margin:10px -12px -12px; }
+  .btn.calcbig { font-size:18px; padding:16px 20px; width:100%; margin:8px 0 12px; box-shadow:0 3px 0 #7a1a1f; }
+  .cat-h { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--txt2); margin:16px 4px 6px; }
+  .item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--gris); }
+  .item:last-child { border-bottom:none; }
+  .item .info { flex:1; min-width:0; }
+  .item .n { font-weight:600; font-size:15px; }
+  .item .d { font-size:12.5px; color:var(--txt2); }
+  .step { display:flex; align-items:center; gap:6px; }
+  .step button { width:40px; height:40px; border-radius:10px; border:1px solid var(--borde); background:#fff; font-size:20px; font-weight:700; color:var(--rojo); cursor:pointer; }
+  .step input { width:44px; height:40px; text-align:center; border:1px solid var(--borde); border-radius:10px; font-size:16px; font-weight:700; }
+  .totalbar { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--borde); padding:10px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px; max-width:100%; z-index:10; }
+  .totalbar .t { font-size:14px; }
+  .totalbar .t b { font-size:17px; display:block; }
+  .presu { font-size:12.5px; color:var(--txt2); }
+  .presu.rojo { color:var(--rojo); font-weight:700; }
+  .buscador { width:100%; padding:11px 14px; border:1px solid var(--borde); border-radius:10px; font-size:16px; margin-bottom:4px; }
+  .nav { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+  .msg { text-align:center; padding:40px 16px; color:var(--txt2); }
+  .ok-big { text-align:center; padding:36px 16px; }
+  .ok-big .f { font-size:26px; font-weight:800; color:var(--verde); margin:8px 0; }
+  .evento { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--gris); font-size:14px; }
+  .evento .ts { color:var(--txt2); font-size:12px; white-space:nowrap; }
+  table.oc { width:100%; border-collapse:collapse; font-size:14px; }
+  table.oc th, table.oc td { border:1px solid var(--borde); padding:6px 8px; text-align:left; }
+  table.oc th { background:var(--gris); font-size:12.5px; }
+  .der { text-align:right; }
+  .linea-res { border:1px solid var(--borde); border-radius:10px; padding:10px; margin:8px 0; }
+  .linea-res select, .linea-res input[type=number], .linea-res input[type=text] { padding:8px; border:1px solid var(--borde); border-radius:8px; font-size:15px; }
+  .form { display:grid; grid-template-columns:1fr 1fr; gap:8px 12px; margin-top:10px; }
+  .form label { display:flex; flex-direction:column; font-size:12.5px; color:var(--txt2); gap:3px; }
+  .form input:not([type=checkbox]), .form select { padding:9px; border:1px solid var(--borde); border-radius:8px; font-size:15px; color:var(--txt); }
+  @media (max-width:520px) { .form { grid-template-columns:1fr; } }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .tile { background:#fff; border:2px solid var(--borde); border-radius:14px; padding:22px 12px; text-align:center; cursor:pointer; min-height:120px; display:flex; flex-direction:column; justify-content:center; gap:4px; font-family:inherit; }
+  .tile:active { border-color:var(--rojo); }
+  .tile .tn { font-size:17px; font-weight:700; color:var(--txt); }
+  .tile .td { font-size:12.5px; color:var(--txt2); }
+  .tile .tb { font-size:12px; font-weight:700; color:var(--rojo); }
+  .tile.excedido { border-color:var(--rojo); }
+  .tile .barra { width:100%; }
+  .tile.off { opacity:.5; cursor:not-allowed; }
+  .layout { display:block; }
+  .resumen .res-row { display:flex; justify-content:space-between; align-items:baseline; font-size:14px; padding:3px 0; }
+  .resumen .res-row.total { font-weight:700; font-size:18px; border-top:1px solid var(--borde); margin-top:4px; padding-top:8px; }
+  .barra { height:8px; background:var(--gris); border-radius:99px; overflow:hidden; margin:6px 0 2px; }
+  .barra > div { height:100%; background:var(--verde); transition:width .2s; }
+  .barra.ambar > div { background:var(--ambar); }
+  .barra.rojo > div { background:var(--rojo); }
+  .uchip { display:inline-block; background:#fff7ed; color:#9a3412; border:1px solid #fdba74; border-radius:6px; padding:2px 8px; font-size:12px; font-weight:800; letter-spacing:.02em; }
+  .item .lq { color:var(--rojo); font-weight:600; margin-top:3px; }
+  .step { flex-direction:column; align-items:center; gap:2px; }
+  .stepin { display:flex; align-items:center; gap:6px; }
+  .steplbl { font-size:11px; color:var(--txt2); text-transform:uppercase; letter-spacing:.04em; }
+  .item .d .sin { color:var(--txt); font-weight:600; }
+  .item .d .con { color:var(--txt2); }
+  @media (min-width: 900px) {
+    main { max-width:1040px; }
+    .layout { display:grid; grid-template-columns:1fr 310px; gap:16px; align-items:start; }
+    .resumen { position:sticky; top:66px; }
+  }
+  @media (max-width: 899px) {
+    .resumen { position:fixed; bottom:0; left:0; right:0; margin:0; border-radius:14px 14px 0 0; box-shadow:0 -2px 14px rgba(0,0,0,.10); padding:10px 14px; z-index:10; }
+    .resumen .res-row { font-size:13px; padding:1px 0; }
+    .resumen .res-row.total { font-size:16px; padding-top:5px; }
+    main { padding-bottom:230px; }
+  }
+  .aviso { background:#fef3c7; border:1px solid #fcd34d; border-radius:10px; padding:10px 12px; font-size:14px; margin-bottom:10px; }
+  @media print {
+    header, .no-print, .totalbar { display:none !important; }
+    body { background:#fff; } main { padding:0; max-width:100%; }
+    .card { border:none; }
+  }
+
+/* matriz consumo guisos × tiendas (admin calculadora, mig. 071): encabezado igual al resto de la hoja, celdas blancas,
+   amarillo solo en las capturadas, sin flechas en los números */
+.mtx { border-collapse: collapse; font-size: 12.5px; }
+.mtx th, .mtx td { border: 1px solid #9a9a9a; padding: 3px 4px; white-space: nowrap; }
+.hoja .mtx th { background: #6d6d6d; color: #fff; font-weight: 700; text-align: center; font-size: 11.5px; }
+.hoja .mtx td.fija, .hoja .mtx th.fija { position: sticky; left: 0; z-index: 1; text-align: left; }
+.hoja .mtx td.fija { background: #fff; }
+.hoja .mtx th.fija { background: #6d6d6d; }
+.hoja .mtx td.in { padding: 0; background: #fff; }
+.hoja .mtx td.in input { width: 74px; text-align: right; border: none; border-radius: 0; padding: 5px 4px; font-size: 13px; font-weight: 400; background: transparent; }
+.hoja .mtx td.cap { background: #fff2cc; }
+.hoja .mtx td.cap input { background: #fff2cc; font-weight: 700; }
+.mtx input::-webkit-outer-spin-button, .mtx input::-webkit-inner-spin-button, input.sf::-webkit-outer-spin-button, input.sf::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mtx input[type=number], input.sf[type=number] { -moz-appearance: textfield; appearance: textfield; }
+</style>
+</head>
+<body>
+<header>
+  <h1><a href="/" style="color:#fff;text-decoration:none" title="Volver a los módulos">⌂</a> 🛒 Compras LEM</h1>
+  <div class="u" id="hUser"></div>
+</header>
+<main id="app"><div class="msg">Cargando…</div></main>
+
+<script type="module">
+/* ── SQL Connect (Firebase → Postgres directo). Decisión 8/12-sep-2026: las pantallas ya no pasan
+   por n8n para hablar con la base; n8n queda para correos y robots. La sesión de Firebase se abre
+   con la MISMA credencial de Google del botón de entrada (signInWithCredential). ── */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithCredential, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+import { getDataConnect, mutationRef, executeMutation } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-data-connect.js";
+const fbApp = initializeApp({"apiKey": "AIzaSyC1ycKtN1atpb1monWFIJqmR4X5vmpnNoo", "authDomain": "lem-erp.firebaseapp.com", "projectId": "lem-erp", "appId": "1:902179844288:web:e887a0886fa1188da2fd25"});
+const fbAuth = getAuth(fbApp);
+const dc = getDataConnect(fbApp, { connector: "api", location: "us-central1", service: "lem-api" });
+let resolverListo; const listo = new Promise(r => { resolverListo = r; });
+onAuthStateChanged(fbAuth, () => resolverListo());
+window.LEMDC = {
+  listo,
+  usuario: () => fbAuth.currentUser,
+  entrar: (idToken) => signInWithCredential(fbAuth, GoogleAuthProvider.credential(idToken)),
+  salir: () => signOut(fbAuth).catch(() => {}),
+  llamar: async (accion, datos) => {
+    const r = await executeMutation(mutationRef(dc, "Accion", { accion, datos: JSON.stringify(datos || {}) }));
+    return (r && r.data && r.data.r && r.data.r.r) || {};
+  }
+};
+</script>
+<script>
+const CLIENT_ID = '902179844288-c4ppk03u5ss2vdqvl0chfoghhedi9ape.apps.googleusercontent.com';
+const API = 'https://rountree.app.n8n.cloud/webhook/compras-api';
+const $ = (id) => document.getElementById(id);
+const app = () => $('app');
+function aviso(m) { let b = document.getElementById('avisoErr'); if (!b) { b = document.createElement('div'); b.id = 'avisoErr'; b.className = 'aviso'; b.style.cssText = 'position:sticky;top:52px;z-index:20;margin:8px'; document.body.insertBefore(b, document.querySelector('main')); } b.textContent = '⚠️ ' + m; }
+window.addEventListener('error', (e) => aviso('Error en la página: ' + e.message));
+const store = { get(){ try { return sessionStorage.getItem('lem_tok'); } catch(e){ return null; } }, set(v){ try { sessionStorage.setItem('lem_tok', v); } catch(e){} }, del(){ try { sessionStorage.removeItem('lem_tok'); } catch(e){} } };
+const S = { token: store.get() || null, branch: null, prov: null, perfil: null, cat: null, carrito: {}, reqId: null, folio: null, t0: null };
+const UNIDADES = { PZA: ['pieza', 'piezas'], PZ: ['pieza', 'piezas'], KG: ['kilo', 'kilos'], K: ['kilo', 'kilos'], PQ: ['paquete', 'paquetes'], PKT: ['paquete', 'paquetes'], ROL: ['rollo', 'rollos'], BOL: ['bolsa', 'bolsas'], L: ['litro', 'litros'], LT: ['litro', 'litros'], U: ['unidad', 'unidades'] };
+function uDet(u, q) { const k = String(u || 'PZA').toUpperCase(); const p = UNIDADES[k] || [String(u || 'unidad').toLowerCase(), String(u || 'unidades').toLowerCase()]; return Number(q) === 1 ? p[0] : p[1]; }
+function presInfo(i) {
+  const p = String(i.presentacion || '').toLowerCase(); const n = Number(i.fraccion || 1);
+  let tipo = 'pieza';
+  if (p.startsWith('caja')) tipo = 'caja'; else if (p.includes('paq')) tipo = 'paquete'; else if (p.includes('kilo')) tipo = 'kilo'; else if (p.includes('rollo')) tipo = 'rollo'; else if (p.includes('bolsa')) tipo = 'bolsa';
+  else if (n === 1 && String(i.unidad || '').toUpperCase().startsWith('K')) tipo = 'kilo';
+  return { tipo, n, det: uDet(i.unidad, n) };
+}
+const PLURAL = { caja: 'cajas', paquete: 'paquetes', pieza: 'piezas', kilo: 'kilos', rollo: 'rollos', bolsa: 'bolsas' };
+const plural = (t, q) => Number(q) === 1 ? t : (PLURAL[t] || t + 's');
+function chipUnidad(i) { const u = presInfo(i); return '<span class="uchip">' + esc(u.tipo.toUpperCase()) + (u.n > 1 ? ' · ' + u.n + ' ' + esc(u.det) : '') + '</span>'; }
+const conIva = (p, t) => Number(p || 0) * (1 + Number(t || 0) / 100);
+const money = (n) => '$' + Number(n || 0).toLocaleString('es-MX', { maximumFractionDigits: 2 });
+const fecha = (ts) => new Date(ts).toLocaleString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+const ETQ = { generada: 'Generada', autorizada: 'Autorizada', enviada_proveedor: 'En tránsito', recibida_parcial: 'Recibida parcial', recibida: 'Recibida', cerrada: 'Cerrada', cancelada: 'Cancelada', pendiente: 'Pendiente', conciliada: 'Conciliada' };
+const etq = (e) => ETQ[e] || e;
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ── API ─────────────────────────────────────────────────
+   Ruta principal: SQL Connect (window.LEMDC, ver módulo arriba). Respaldo: webhook de n8n, que
+   además es la ÚNICA ruta para correo_oc (n8n manda el correo). Forzar n8n para diagnóstico:
+   localStorage.setItem('lem_api', 'n8n'). ── */
+const SOLO_N8N = new Set(['correo_oc']);
+const LECTURAS = new Set(['bandeja_calc','admin_calc_inventarios','perfil','catalogo','mis_requisiciones','bandeja','historial_asesor','detalle','ocs_por_recibir','por_pagar','calculadora','inv_dias','inv_dia','inv_resumen','inv_panel','inv_export','inv_config','admin_catalogo','admin_presupuestos','admin_calc_params','admin_calc_config','ver_como_opciones']);
+function apiForzada() { try { return localStorage.getItem('lem_api') || ''; } catch (e) { return ''; } }
+function emailDeToken(t) { try { return (JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).email || '').toLowerCase(); } catch (e) { return ''; } }
+async function esperarLEMDC() {
+  if (!window.LEMDC) await new Promise(r => { const t0 = Date.now(); const iv = setInterval(() => { if (window.LEMDC || Date.now() - t0 > 4000) { clearInterval(iv); r(); } }, 50); });
+  if (window.LEMDC) await Promise.race([LEMDC.listo, new Promise(r => setTimeout(r, 4000))]);
+}
+async function api(accion, datos) {
+  // Punto de vista (mig. 097): la vista elegida viaja en datos.ver_como (punto-de-vista.js); sin vista, d es lo de siempre
+  const d = window.LEM_PV ? LEM_PV.datos(accion, conEmpresa(datos)) : conEmpresa(datos);
+  if (!SOLO_N8N.has(accion) && apiForzada() !== 'n8n') {
+    // 1) ¿Está lista la sesión de SQL Connect? Si no, se usa n8n (todavía no se mandó nada).
+    let listo = false;
+    try {
+      await esperarLEMDC();
+      if (window.LEMDC && S.token) {
+        const u = LEMDC.usuario(); const em = emailDeToken(S.token);
+        if (!u || (em && (u.email || '').toLowerCase() !== em)) await LEMDC.entrar(S.token);
+      }
+      listo = !!(window.LEMDC && LEMDC.usuario());
+    } catch (e) { console.warn('SQL Connect sin sesión (' + accion + '), usando n8n:', e && e.message); }
+    // 2) Ya con sesión: la llamada va por SQL Connect. Auditoría 12-sep (S04): una ESCRITURA que
+    //    falla por red NO se repite por n8n (pudo haberse ejecutado); solo las lecturas caen a n8n.
+    if (listo) {
+      try {
+        const j = await LEMDC.llamar(accion, d);
+        if (window.LEM_PV && LEM_PV.rechazo(j)) return LEM_PV.pendiente();   // el servidor rechazó la vista: vuelve a la propia sin cerrar sesión
+        if (accion === 'ver_como_opciones') return j;                       // la barra decide en silencio (sin la 097: accion_desconocida = sin barra)
+        if (j.error) { alert('⚠️ ' + (j.detalle || j.error)); const e = new Error(j.error); e.negocio = true; throw e; }
+        return j;
+      } catch (e) {
+        if (e && e.negocio) throw e;
+        if (!LECTURAS.has(accion)) {
+          aviso('No se pudo confirmar "' + accion + '" (' + ((e && e.message) || 'sin respuesta') + '). Revisa el estado antes de volver a intentarlo.');
+          throw e;
+        }
+        console.warn('SQL Connect falló en la lectura ' + accion + ', usando n8n:', e && e.message);
+      }
+    }
+  }
+  return apiN8n(accion, d);
+}
+async function apiN8n(accion, datos, reintento) {
+  let r;
+  try {
+    r = await fetch(API, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: S.token, accion, datos: datos || {} })
+    });
+  } catch (err) { aviso(LECTURAS.has(accion) ? 'Sin conexión con la API (' + err.message + '). Revisa tu internet y reintenta.' : 'No se pudo confirmar "' + accion + '" (sin conexión: ' + err.message + '). Revisa el estado antes de volver a intentarlo.'); throw err; }
+  if (r.status === 401) {
+    // 6-oct-2026: n8n valida el pase de Google, que dura 1 hora; la sesión de SQL Connect dura días. Si esa sigue viva, no se
+    // cierra el portal (antes se perdía el aviso a Pablo y la OC quedaba "autorizada" sin pasar a tránsito): solo se avisa.
+    if (window.LEMDC && LEMDC.usuario()) {
+      if (LECTURAS.has(accion) && !reintento && await renovarToken('Para seguir hace falta confirmar tu cuenta de Google (la pide cada hora).')) return apiN8n(accion, datos, true);
+      if (!LECTURAS.has(accion)) { const e = new Error('401'); e.n8n401 = true; aviso('Tu confirmación de Google venció y "' + accion + '" no se hizo. Vuelve a intentarlo: la pantalla te pedirá confirmar tu cuenta.'); throw e; }
+    }
+    store.del(); S.token = null; if (window.LEMDC) LEMDC.salir(); vLogin('Tu sesión expiró — vuelve a entrar.'); throw new Error('401'); }
+  // Una respuesta que no es JSON (p.ej. 502/504 de la puerta de n8n) o que no es 2xx tampoco confirma nada: aviso y error sin marca de negocio.
+  const sinConfirmar = (det) => { aviso(LECTURAS.has(accion) ? 'La API no contestó bien (' + det + '). Reintenta en un momento.' : 'No se pudo confirmar "' + accion + '" (' + det + '). Revisa el estado antes de volver a intentarlo.'); return new Error(det); };
+  let j;
+  try { j = await r.json(); } catch (err) { throw sinConfirmar('HTTP ' + r.status); }
+  if (window.LEM_PV && LEM_PV.rechazo(j)) return LEM_PV.pendiente();
+  if (accion === 'ver_como_opciones') return j;
+  if (j && j.error) { alert('⚠️ ' + (j.detalle || j.error)); const e = new Error(j.error); e.negocio = true; throw e; }
+  if (!r.ok) throw sinConfirmar('HTTP ' + r.status);
+  return j;
+}
+/* Pase de Google para n8n (6-oct-2026): dura 1 hora y la pestaña puede llevar días abierta. Antes de algo que va por n8n (el
+   correo de la OC), si al pase le quedan menos de 5 minutos se pide confirmar la cuenta con el botón de Google, sin salir. */
+function tokExpira() { try { const b = S.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'); return JSON.parse(atob(b + '==='.slice((b.length + 3) % 4))).exp * 1000; } catch (e) { return 0; } }
+function renovarToken(motivo) {
+  return new Promise((resolve) => {
+    if (!window.google || CLIENT_ID.indexOf('__') === 0) { aviso('No se cargó el botón de Google (revisa bloqueadores o recarga la página): no se puede confirmar tu cuenta.'); resolve(false); return; }
+    const antes = emailDeToken(S.token || '') || ((window.LEMDC && LEMDC.usuario()) ? String(LEMDC.usuario().email || '').toLowerCase() : '');
+    let cerrado = false;
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;display:flex;align-items:center;justify-content:center;padding:16px';
+    div.innerHTML = '<div class="card" style="max-width:440px;text-align:center"><b style="font-size:16px">Confirma tu cuenta de Google</b><p class="presu" style="margin:8px 0">' + esc(motivo) + '</p>' +
+      '<div id="gbtnRe" style="display:flex;justify-content:center;margin:12px 0"></div><button class="btn sec mini" id="btnReNo">Cancelar</button></div>';
+    document.body.appendChild(div);
+    const fin = (okk) => { if (cerrado) return; cerrado = true; div.remove(); resolve(okk); };
+    $('btnReNo').onclick = () => fin(false);
+    google.accounts.id.initialize({ client_id: CLIENT_ID, itp_support: true, hd: 'grupolem.com', login_hint: antes || undefined, callback: (resp) => {
+      if (cerrado) return;
+      const em = emailDeToken(resp.credential);
+      if (antes && em !== antes) { const p = div.querySelector('.presu'); if (p) p.innerHTML = '<b style="color:var(--rojo)">Elige la cuenta ' + esc(antes) + '</b>: es con la que estás trabajando.'; return; }   // misma persona: nada cambia de usuario
+      S.token = resp.credential; store.set(S.token); fin(true); } });
+    google.accounts.id.renderButton($('gbtnRe'), { theme: 'filled_blue', size: 'large', text: 'continue_with', locale: 'es' });
+  });
+}
+async function asegurarToken(motivo) { return (S.token && tokExpira() - Date.now() > 5 * 60 * 1000) ? true : renovarToken(motivo); }
+/* Avisar a Pablo una OC autorizada (la pasa a tránsito: hasta entonces la sucursal no la ve en Recibir) */
+async function avisarPablo(ocId) {
+  const det = await api('detalle', { tipo: 'oc', id: ocId });
+  if (det.estado !== 'autorizada') return { ok: false, detalle: 'La orden ya está ' + etq(det.estado) + ': no se vuelve a avisar.' };
+  const html = (det.formato && det.formato.tipo === 'gepp') ? htmlOCGepp(det) : null;
+  return api('correo_oc', { oc_id: ocId, destino: 'pablo', html });
+}
+async function reenviarAviso(id, btn) {
+  if (!(await asegurarToken('Para mandar el aviso de la orden a Pablo hace falta confirmar tu cuenta (Google la pide cada hora).'))) return;
+  btn.disabled = true; btn.textContent = '📧 Avisando a Pablo…';
+  try { const m = await avisarPablo(Number(id)); if (m.ok) { vOC(id); return; } alert('No se envió: ' + (m.detalle || m.error)); vOC(id); return; }
+  catch (e) { /* api() ya avisó */ }
+  btn.disabled = false; btn.textContent = '📧 Avisar a Pablo y poner en tránsito';
+}
+/* El servidor contestó que no (dato inválido, sin permiso…): se puede corregir y reintentar. Si NO hubo respuesta (red), no se
+   sabe si se guardó: el botón se queda bloqueado y el aviso pide revisar antes de reintentar, para no duplicar nada. */
+const rechazoDelServidor = (e) => !!(e && e.negocio);
+
+/* ── Login ─────────────────────────────────────────────── */
+function vLogin(msj) {
+  app().innerHTML = '<div class="msg" style="padding-top:70px">' +
+    '<div style="font-size:46px">🛒</div><h2 style="color:var(--txt);margin:10px 0 4px">Compras Grupo LEM</h2>' +
+    '<p style="margin-bottom:20px">' + esc(msj || 'Entra con tu cuenta @grupolem.com') + '</p>' +
+    (CLIENT_ID.indexOf('__') === 0
+      ? '<div class="aviso">Falta configurar el Client ID de Google (lo pone el administrador en el workflow de n8n).</div>'
+      : '<div id="gbtn" style="display:flex;justify-content:center"></div>') + '</div>';
+  if (CLIENT_ID.indexOf('__') !== 0 && window.google) {
+    google.accounts.id.initialize({ client_id: CLIENT_ID, itp_support: true,
+      error_callback: (e) => aviso('Google no pudo abrir la ventana de acceso (' + ((e && e.type) || 'desconocido') + '). Si tu navegador bloquea ventanas emergentes, permítelas para este sitio y reintenta.'),
+      callback: (resp) => {
+        try { S.token = resp.credential; store.set(S.token); arrancar(); }
+        catch (err) { aviso('Falló el arranque tras el login: ' + err.message); }
+      }});
+    google.accounts.id.renderButton($('gbtn'), { theme: 'filled_blue', size: 'large', text: 'signin_with', locale: 'es' });
+  }
+}
+
+async function arrancar() {
+  try {
+    const p = await api('perfil');
+    S.perfil = p;
+    fijarEmpresa();
+    if (S.branch == null && sucs().length) S.branch = sucs()[0].branch_id;
+    $('hUser').innerHTML = esc(p.usuario) + selectorEmpresa();
+    router();
+  } catch (e) { if (e.message !== '401') aviso('No se pudo cargar tu perfil: ' + e.message); }
+  if (window.LEM_PV && S.token) LEM_PV.iniciar({ api, sinGuardar: compraSinGuardar });   // barra "Punto de vista": solo si el servidor lo permite (hoy, Sergio); un pedido a medias pide confirmar
+}
+
+/* ── Vista = el rol REAL del perfil (mig. 097). "Ver como" ya no vive aquí: lo elige solo Sergio en la barra "Punto de vista"
+   (punto-de-vista.js) y el SERVIDOR contesta como esa cuenta, así que el perfil ya trae sus roles: un admin queda en 'admin' y
+   cualquier otro en 'propia' (gerente o aprobador según su perfil). ── */
+function esAdmin() { return S.perfil && S.perfil.roles.includes('admin'); }
+function vista() { return esAdmin() ? 'admin' : 'propia'; }
+/* ── Multiempresa (11-sep-2026): el usuario elige empresa solo si tiene más de una; cada
+   empresa está aislada en la base (041/042), aquí solo se filtra lo que ya viene permitido ── */
+function fijarEmpresa() {
+  const emps = (S.perfil && S.perfil.empresas) || [];
+  if (emps.length <= 1) { S.empresa = null; return; }
+  let e = (window.LEM_PV && LEM_PV.empresa && LEM_PV.empresa()) || null;   // viendo como: la empresa de la vista
+  if (!e) try { e = Number(localStorage.getItem('lem_empresa')) || null; } catch (x) {}
+  if (!emps.some(x => x.empresa_id === e)) e = emps[0].empresa_id;
+  S.empresa = e;
+  if (!sucs().some(s => s.branch_id === S.branch)) S.branch = (sucs()[0] || {}).branch_id || null;
+}
+function sucs() { return ((S.perfil && S.perfil.sucursales) || []).filter(s => !S.empresa || s.empresa_id === S.empresa); }
+function conEmpresa(datos) { const d = Object.assign({}, datos || {}); if (S.empresa && d.empresa_id == null) d.empresa_id = S.empresa; return d; }
+function selectorEmpresa() {
+  const emps = (S.perfil && S.perfil.empresas) || [];
+  if (emps.length <= 1) return '';
+  return '<br><label style="font-size:12px;opacity:.9">Empresa <select onchange="cambiarEmpresa(this.value, this)" style="font-size:13px;border-radius:6px;padding:3px 6px;border:none">' +
+    emps.map(e => '<option value="' + e.empresa_id + '"' + (e.empresa_id === S.empresa ? ' selected' : '') + '>' + esc(e.nombre) + '</option>').join('') + '</select></label>';
+}
+function cambiarEmpresa(v, el) {
+  if (window.LEM_PV && LEM_PV.cambiarEmpresa && LEM_PV.cambiarEmpresa(v)) { if (el) el.value = String(S.empresa); return; }   // viendo como: cambia la vista
+  S.empresa = Number(v); try { localStorage.setItem('lem_empresa', String(S.empresa)); } catch (e) {}
+  S.branch = (sucs()[0] || {}).branch_id || null; S.prov = null; S.cat = null; S.carrito = {}; S.reqId = null; S.folio = null; S.t0 = null;
+  if (typeof CADM !== 'undefined') { CADM.branch = null; CADM.prov = null; CADM.provNombre = null; CADM.data = null; CADM.cons = null; CADM.pend = {}; CADM.inv = null; CADM.invPend = {}; }
+  if (typeof CSUG !== 'undefined') { CSUG.data = null; CSUG.abiertas = {}; }
+  $('hUser').innerHTML = esc(S.perfil.usuario) + selectorEmpresa();
+  router();
+}
+
+/* ── Router ────────────────────────────────────────────── */
+function nav() {
+  const p = S.perfil; const vw = vista();
+  const esG = (vw === 'propia') ? (p.roles.includes('gerente')) : true;
+  const esA = (vw === 'propia') ? (p.aprueba_proveedores.length > 0) : true;
+  let h = '<div class="nav no-print">';
+  if (esG && p.sucursales.length) h += '<button class="btn mini sec" onclick="location.hash=\'captura\'">🛒 Pedir</button>' +
+                                        '<button class="btn mini sec" onclick="location.hash=\'pedidos\'">📋 Mis pedidos</button>' +
+                                        '<button class="btn mini sec" onclick="location.hash=\'recibir\'">📥 Recibir</button>';
+  if (esA) h += '<button class="btn mini sec" onclick="location.hash=\'bandeja\'">✅ Bandeja</button><button class="btn mini sec" onclick="location.hash=\'historial\'">🕘 Historial</button><button class="btn mini sec" onclick="location.hash=\'porpagar\'">💵 Por pagar</button>';
+  if (vw === 'admin') h += '<button class="btn mini sec" onclick="location.hash=\'catalogo\'">📦 Catálogo</button><button class="btn mini sec" onclick="location.hash=\'presupuestos\'">💰 Presupuestos</button><button class="btn mini sec" onclick="location.hash=\'calcadmin\'">🧮 Calculadora</button>';
+  return h + '</div>';
+}
+function router() {
+  document.body.classList.remove('ancha');
+  const h = location.hash.slice(1) || ((vista() === 'propia' && S.perfil.aprueba_proveedores.length) ? 'bandeja' : 'captura');
+  if (h === 'captura') vCaptura();
+  else if (h === 'pedidos') vPedidos();
+  else if (h === 'bandeja') vBandeja();
+  else if (h === 'catalogo') vCatalogoAdmin();
+  else if (h === 'historial') vHistorialAsesor();
+  else if (h === 'presupuestos') vPresupuestosAdmin();
+  else if (h === 'recibir') vRecibir();
+  else if (h === 'calcadmin') vCalcAdmin();
+  else if (h === 'calcsugerido') vCalcSugerido();
+  else if (h === 'porpagar') vPorPagar();
+  else if (h.startsWith('recibir-')) vRecibirOC(h.slice(8));
+  else if (h.startsWith('req-')) vDetalle('requisicion', h.slice(4));
+  else if (h.startsWith('oc-')) vOC(h.slice(3));
+  else vCaptura();
+}
+window.addEventListener('hashchange', () => S.perfil && router());
+
+/* ── Captura del gerente ───────────────────────────────── */
+function cambiarSuc(v) { S.branch = Number(v); S.prov = null; S.cat = null; S.carrito = {}; S.reqId = null; S.folio = null; S.t0 = null; vCaptura(); }
+async function vCaptura() {
+  document.body.classList.remove('ancha');
+  const suc = sucs().find(s => s.branch_id === S.branch) || sucs()[0];
+  if (!suc) { app().innerHTML = nav() + '<div class="msg">Tu usuario no tiene sucursal asignada para pedir.</div>'; return; }
+  if (!S.cat) {
+    app().innerHTML = nav() + '<div class="msg">Cargando catálogo…</div>';
+    S.cat = await api('catalogo', { branch_id: S.branch });
+  }
+  const selector = (sucs().length > 1)
+    ? '<select onchange="cambiarSuc(this.value)" style="font-size:16px;font-weight:700;border:1px solid var(--borde);border-radius:8px;padding:6px 8px;max-width:100%">' +
+      sucs().map(s => '<option value="' + s.branch_id + '"' + (s.branch_id === S.branch ? ' selected' : '') + '>' + esc(s.nombre) + '</option>').join('') + '</select>'
+    : '<b>' + esc(suc.nombre) + '</b>';
+  let h = '<div class="card">' + selector + '</div>';
+  const prov = (S.cat.proveedores || []).find(p => p.proveedor_id === S.prov);
+  if (!prov) {
+    h += '<div class="cat-h">¿A quién le pides?</div><div class="grid2">';
+    (S.cat.proveedores || []).forEach(p => {
+      const n = Object.keys(S.carrito).filter(id => { const it = S.cat.catalogo.find(x => x.proveedor_insumo_id === Number(id)); return it && it.proveedor_id === p.proveedor_id; }).length;
+      const sp = subPorProv()[p.proveedor_id] || { sub: 0 };
+      const pres = p.presupuesto ? Number(p.presupuesto) : null;
+      const activo = p.insumos > 0;
+      const pct = pres ? Math.min(sp.sub / pres * 100, 100) : 0;
+      h += '<button class="tile' + (activo ? '' : ' off') + (pres && sp.sub > pres ? ' excedido' : '') + '" ' + (activo ? 'onclick="abrirProv(' + p.proveedor_id + ')"' : 'disabled') + '>' +
+        '<div class="tn">' + esc(p.nombre_corto) + '</div>' +
+        '<div class="td">' + (p.insumos > 0 ? p.insumos + ' insumos' : 'catálogo pendiente') + (p.calculadora ? ' · <b>🧮 calculadora</b>' : '') + '</div>' +
+        (pres ? '<div class="td" style="margin-top:6px">Presupuesto ' + money(pres) + '</div><div class="barra' + (sp.sub > pres ? ' rojo' : (pct > 85 ? ' ambar' : '')) + '" style="margin:4px 0"><div style="width:' + pct + '%"></div></div><div class="td">' + (sp.sub ? money(sp.sub) + ' sin IVA' : 'sin pedido aún') + '</div>' : (p.insumos > 0 ? '<div class="td" style="margin-top:6px;color:var(--ambar)">sin presupuesto asignado</div>' : '')) +
+        (n ? '<div class="tb">' + n + ' en el pedido</div>' : '') + '</button>';
+    });
+    h += '</div>';
+  } else {
+    const items = S.cat.catalogo.filter(i => i.proveedor_id === prov.proveedor_id);
+    const grupos = {};
+    items.forEach(i => { (grupos[i.concepto] = grupos[i.concepto] || []).push(i); });
+    h += '<div style="display:flex;align-items:center;gap:10px;margin:8px 0 4px"><button class="btn mini sec" onclick="S.prov=null;vCaptura()">← Proveedores</button><b style="font-size:17px">' + esc(prov.nombre_corto) + '</b></div>' + (prov.calculadora ? '<button class="btn calcbig" onclick="vCalculadora()">🧮 Abrir la calculadora de pedido</button>' : '') +
+      (S.calcNota ? '<div class="card" style="border-color:var(--verde)">✅ ' + esc(S.calcNota) + '</div>' : '') +
+      '<input class="buscador no-print" id="busca" placeholder="Buscar en ' + esc(prov.nombre_corto) + '…" oninput="filtrar()">';
+    for (const g in grupos) {
+      h += '<div class="cat-h" data-cat="1">' + esc(g) + '</div><div class="card">';
+      grupos[g].forEach(i => {
+        const v = S.carrito[i.proveedor_insumo_id] || 0;
+        const u = presInfo(i);
+        const pPres = i.precio ? Number(i.precio) * u.n : null;
+        const precioTxt = pPres != null
+          ? '<span class="sin">' + money(pPres) + ' ' + (u.tipo === 'kilo' || u.tipo === 'pieza' ? 'por ' + u.tipo : 'la ' + u.tipo) + ' sin IVA</span> · <span class="con">' + money(conIva(pPres, i.tasa_iva)) + ' con IVA' + (Number(i.tasa_iva) === 0 ? ' (0%)' : '') + '</span>' +
+            (u.n > 1 ? '<span class="con"> · ' + money(i.precio) + ' por ' + uDet(i.unidad, 1) + '</span>' : '')
+          : 'precio no especificado';
+        h += '<div class="item" data-n="' + esc(i.insumo.toLowerCase()) + '">' +
+          '<div class="info"><div class="n">' + esc(i.insumo) + '</div>' +
+          '<div class="d" style="margin:3px 0">' + chipUnidad(i) + '</div><div class="d">' + precioTxt + '</div>' +
+          '<div class="d lq" id="lq' + i.proveedor_insumo_id + '"></div></div>' +
+          '<div class="step"><div class="stepin">' +
+          '<button onclick="mas(' + i.proveedor_insumo_id + ',-1)">−</button>' +
+          '<input inputmode="numeric" id="q' + i.proveedor_insumo_id + '" value="' + v + '" onchange="setQ(' + i.proveedor_insumo_id + ',this.value)">' +
+          '<button onclick="mas(' + i.proveedor_insumo_id + ',1)">+</button></div><div class="steplbl">' + plural(u.tipo, 2) + '</div></div></div>';
+      });
+      h += '</div>';
+    }
+  }
+  app().innerHTML = nav() + '<div class="layout"><div>' + h + '</div>' + resumenHtml() + '</div>';
+  for (const id in S.carrito) { const lq = $('lq' + id); const it = S.cat.catalogo.find(x => x.proveedor_insumo_id === Number(id)); if (lq && it) { const u = presInfo(it), v = S.carrito[id]; lq.innerHTML = '<b>' + v + ' ' + plural(u.tipo, v) + '</b>' + (u.n > 1 ? ' = ' + (v * u.n) + ' ' + uDet(it.unidad, v * u.n) : '') + (it.precio ? ' · ' + money(Number(it.precio) * u.n * v) + ' sin IVA' : ''); } }
+  S.calcNota = null;
+  pintarTotal();
+}
+function resumenHtml() {
+  return '<div class="card resumen no-print" id="resumen">' +
+    '<div class="cat-h" id="rTitulo" style="margin:0 0 6px"></div>' +
+    '<div class="res-row"><span>Presupuesto (sin IVA)</span><b id="rPres">—</b></div>' +
+    '<div class="barra" id="rBarra"><div id="rBarraFill" style="width:0%"></div></div>' +
+    '<div class="presu" id="rAviso"></div>' +
+    '<div class="res-row" style="margin-top:6px"><span>Subtotal (sin IVA)</span><b id="rSub">$0</b></div>' +
+    '<div class="res-row"><span>IVA</span><b id="rIva">$0</b></div>' +
+    '<div class="res-row total"><span>Total</span><b id="rTot">$0</b></div>' +
+    '<div class="presu" id="tLineas" style="margin-top:4px"></div>' +
+    '<button class="btn" id="btnEnviar" onclick="enviar()" style="width:100%;margin-top:8px">Enviar pedido</button></div>';
+}
+function abrirProv(id) { S.prov = Number(id); vCaptura(); }
+function filtrar() {
+  const q = $('busca').value.toLowerCase();
+  document.querySelectorAll('.item[data-n]').forEach(el => { el.style.display = el.dataset.n.includes(q) ? '' : 'none'; });
+}
+function precioDe(id) {
+  const it = S.cat.catalogo.find(x => x.proveedor_insumo_id === id);
+  return it && it.precio ? Number(it.precio) * Number(it.fraccion || 1) : 0;
+}
+async function tocarPrimera() {
+  if (S.reqId) return;
+  if (S._iniciando) return S._iniciando;   // ya va un 'iniciar' en camino: se espera ese mismo (enviar() no debe salir con req_id vacío)
+  S.t0 = Date.now();
+  S._iniciando = (async () => {
+    try { const r = await api('iniciar', { branch_id: S.branch }); S.reqId = r.req_id; S.folio = r.folio; }
+    finally { S._iniciando = null; }
+  })();
+  return S._iniciando;
+}
+function mas(id, d) { setQ(id, (S.carrito[id] || 0) + d); }
+function setQ(id, v) {
+  v = Math.max(0, Math.round(Number(v) || 0));
+  if (v > 0) S.carrito[id] = v; else delete S.carrito[id];
+  const inp = $('q' + id); if (inp) inp.value = v;
+  const lq = $('lq' + id); if (lq) { const it = S.cat.catalogo.find(x => x.proveedor_insumo_id === id); if (it && v > 0) { const u = presInfo(it); lq.innerHTML = '<b>' + v + ' ' + plural(u.tipo, v) + '</b>' + (u.n > 1 ? ' = ' + (v * u.n) + ' ' + uDet(it.unidad, v * u.n) : '') + (it.precio ? ' · ' + money(Number(it.precio) * u.n * v) + ' sin IVA' : ''); } else lq.innerHTML = ''; }
+  if (v > 0) tocarPrimera();
+  pintarTotal();
+}
+function subPorProv() {
+  const m = {};
+  for (const id in S.carrito) {
+    const it = S.cat.catalogo.find(x => x.proveedor_insumo_id === Number(id));
+    if (!it) continue;
+    const base = it.precio ? Number(it.precio) * Number(it.fraccion || 1) * S.carrito[id] : 0;
+    const e = m[it.proveedor_id] || (m[it.proveedor_id] = { sub: 0, iva: 0, n: 0 });
+    e.sub += base; e.iva += base * Number(it.tasa_iva || 0) / 100; e.n++;
+  }
+  return m;
+}
+function pintarTotal() {
+  if (!$('rSub')) return;
+  const porProv = subPorProv();
+  const provs = S.cat.proveedores || [];
+  let n = 0; for (const k in porProv) n += porProv[k].n;
+  const excedidos = provs.filter(p => p.presupuesto && porProv[p.proveedor_id] && porProv[p.proveedor_id].sub > Number(p.presupuesto));
+  const sinPres = provs.filter(p => !p.presupuesto && porProv[p.proveedor_id]);
+  let bloqueado = n === 0;
+  if (S.prov) {
+    const p = provs.find(x => x.proveedor_id === S.prov) || {};
+    const e = porProv[S.prov] || { sub: 0, iva: 0, n: 0 };
+    $('rTitulo').textContent = p.nombre_corto || '';
+    $('rSub').textContent = money(e.sub); $('rIva').textContent = money(e.iva); $('rTot').textContent = money(e.sub + e.iva);
+    const pres = p.presupuesto ? Number(p.presupuesto) : null;
+    if (pres) {
+      const pct = e.sub / pres * 100;
+      $('rPres').textContent = money(pres); $('rBarraFill').style.width = Math.min(pct, 100) + '%';
+      $('rBarra').className = 'barra' + (e.sub > pres ? ' rojo' : (pct > 85 ? ' ambar' : ''));
+      $('rAviso').innerHTML = e.sub > pres ? '<b style="color:var(--rojo)">Te pasas por ' + money(e.sub - pres) + '</b> — puedes enviar; el asesor lo revisará.' : 'Llevas ' + Math.round(pct) + '% · te quedan ' + money(pres - e.sub);
+    } else { $('rPres').textContent = 'sin asignar'; $('rBarraFill').style.width = '0%'; $('rBarra').className = 'barra'; $('rAviso').textContent = 'Sin presupuesto asignado para este proveedor (informativo).'; }
+  } else {
+    let sub = 0, iva = 0; for (const k in porProv) { sub += porProv[k].sub; iva += porProv[k].iva; }
+    $('rTitulo').textContent = 'Pedido completo';
+    $('rSub').textContent = money(sub); $('rIva').textContent = money(iva); $('rTot').textContent = money(sub + iva);
+    const conPres = provs.filter(p => p.presupuesto);
+    const totPres = conPres.reduce((a, p) => a + Number(p.presupuesto), 0);
+    $('rPres').textContent = totPres ? money(totPres) + ' (suma)' : 'sin asignar';
+    $('rBarraFill').style.width = (totPres ? Math.min(sub / totPres * 100, 100) : 0) + '%';
+    $('rBarra').className = 'barra' + (excedidos.length ? ' rojo' : '');
+    $('rAviso').innerHTML = excedidos.length ? '<b style="color:var(--rojo)">Rebasas el presupuesto de ' + excedidos.map(p => esc(p.nombre_corto)).join(', ') + '</b> — puedes enviar; el asesor decidirá.' : (conPres.length ? 'Cada proveedor tiene su propio tope; revisa las barras de los cuadros.' : 'Sin presupuestos asignados para esta sucursal.');
+  }
+  $('tLineas').textContent = n + ' insumo' + (n === 1 ? '' : 's') + ' en el pedido';
+  $('btnEnviar').disabled = bloqueado;
+}
+async function enviar() {
+  if (!S.reqId) await tocarPrimera();
+  const lineas = [];
+  for (const id in S.carrito) lineas.push({ proveedor_insumo_id: Number(id), cantidad: S.carrito[id] });
+  const btnE = $('btnEnviar'); btnE.disabled = true;
+  let r;
+  try { r = await api('enviar', { req_id: S.reqId, lineas }); }
+  catch (e) { if (rechazoDelServidor(e)) btnE.disabled = false; return; }
+  if (S.corridaId) { try { await api('calculadora_ligar', { corrida_id: S.corridaId, req_id: S.reqId }); } catch (e) {} S.corridaId = null; }
+  const seg = S.t0 ? Math.round((Date.now() - S.t0) / 1000) : null;
+  app().innerHTML = nav() + '<div class="card ok-big">✅<div class="f">' + esc(S.folio) + '</div>' +
+    '<p>Pedido enviado con ' + r.lineas + ' insumos.' + (seg !== null ? '<br>Tardaste <b>' + seg + ' segundos</b>.' : '') + '</p>' +
+    '<p style="margin-top:14px"><button class="btn sec" onclick="location.hash=\'pedidos\'">Ver mis pedidos</button></p></div>';
+  S.carrito = {}; S.reqId = null; S.folio = null; S.t0 = null; S.prov = null;
+}
+
+/* ── Calculadora de pedido (CDC) — réplica de la hoja ──── */
+/* Cabecera y consumo promedio: los captura el ADMINISTRADOR por sucursal (🧮 Calculadora en la vista admin).
+   Mig. 085 (Sergio, 6-oct-2026): el Inventario Final sale del INVENTARIO GENERAL que administración eligió para la tienda
+   (Ajustes → Fechas y días); el gerente ya no lo captura, solo Modificador y Pedido de Gerente. Sin elección (o sin
+   inventario general) la calculadora no calcula. Lo no contado en ese general cuenta como 0. */
+const CALC = { data: null, vals: {}, sucio: false };
+// Lo tecleado en Modificador / Pedido de Gerente vive solo en memoria hasta "Pasar al pedido": CALC.sucio lo marca para el aviso
+// de cambios sin guardar del punto de vista (cambiar de vista recarga la página).
+document.addEventListener('input', (e) => { if (CALC.data && /^(mod|ped)\d+$/.test((e.target && e.target.id) || '')) CALC.sucio = true; });
+const num = (x, d) => Number(x || 0).toLocaleString('es-MX', { minimumFractionDigits: d == null ? 2 : d, maximumFractionDigits: d == null ? 2 : d });
+const fMx = (iso) => { const p = String(iso || '').slice(0, 10).split('-'); return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : ''; };
+const difDias = (a, b) => Math.round((new Date(String(b).slice(0, 10) + 'T12:00:00') - new Date(String(a).slice(0, 10) + 'T12:00:00')) / 86400000);
+const diasTxt = (n) => n + (Number(n) === 1 ? ' día' : ' días');
+const guisosSinTxt = (n) => n + (Number(n) === 1 ? ' guiso sin contar cuenta' : ' guisos sin contar cuentan') + ' como 0';
+async function vCalculadora() {
+  if (!S.cat) S.cat = await api('catalogo', { branch_id: S.branch });
+  const prov = (S.cat.proveedores || []).find(p => p.proveedor_id === S.prov && p.calculadora);
+  if (!prov) { vCaptura(); return; }
+  app().innerHTML = nav() + '<div class="msg">Cargando la calculadora de tu sucursal…</div>';
+  const d = await api('calculadora', { branch_id: S.branch, proveedor_id: S.prov });
+  if (d.error === 'sin_config') {
+    app().innerHTML = nav() + '<div class="card"><button class="btn mini sec" onclick="vCaptura()">← ' + esc(prov.nombre_corto) + '</button></div><div class="msg">📋 El administrador todavía no captura las fechas y el consumo de esta sucursal.<br>Cuando lo haga, aquí aparecerá la calculadora.</div>';
+    return;
+  }
+  if (d.error) { aviso('Calculadora: ' + (d.detalle || d.error)); vCaptura(); return; }
+  if (d.bloqueo) { pintarBloqueoCalc(d, prov); return; }
+  // otra tienda o proveedor: se empieza de cero. Mismo pedido con otro inventario general elegido: se conserva lo capturado
+  // en Pedido de Gerente (no depende del inventario) y solo se reinician los modificadores de los guisos
+  const invId = (d.config.inventario || {}).inventario_dia_id;
+  const mismaTienda = CALC.data && CALC.data.branch_id === d.branch_id && CALC.data.proveedor_id === d.proveedor_id;
+  if (!mismaTienda) { CALC.vals = {}; CALC.sucio = false; }
+  else if (((CALC.data.config || {}).inventario || {}).inventario_dia_id !== invId) d.lineas.forEach(l => { const x = CALC.vals[l.proveedor_insumo_id]; if (l.promedio != null && x) x.mod = ''; });
+  CALC.data = d; pintarCalculadora();
+}
+/* Sin inventario general elegido: la calculadora no calcula (mig. 085). sin_general = la tienda nunca ha guardado uno. */
+function pintarBloqueoCalc(d, prov) {
+  const b = d.bloqueo || {}, suc = sinChih(d.sucursal || '');
+  const txt = b.motivo === 'sin_general'
+    ? '📋 ' + esc(suc) + ' todavía no tiene un <b>inventario general</b>.<br>Primero captúralo en <b>Inventarios → 📦 Inventario general</b>. Con ese inventario administración arma el cálculo del pedido; aquí ya no se captura el inventario.'
+    : '📋 Administración todavía no elige qué <b>inventario general</b> usar para calcular el pedido de ' + esc(suc) + (b.ultimo_general ? ' (el último que se guardó es del ' + fMx(b.ultimo_general) + ')' : '') + '.<br>Avísale a administración para que lo elija; mientras, la calculadora no calcula.';
+  CALC.data = null;
+  app().innerHTML = nav() + '<div class="card"><button class="btn mini sec" onclick="vCaptura()">← ' + esc(prov.nombre_corto) + '</button></div><div class="msg">' + txt + '<br><br>' +
+    (b.motivo === 'sin_general' ? '<button class="btn sec" onclick="location.href=\'/inventarios/\'">Ir a Inventarios</button>' : '') +
+    (esAdmin() && b.motivo !== 'sin_general' ? '<button class="btn sec" onclick="irAjustesCalc()">Elegirlo en ⚙️ Ajustes de la calculadora</button>' : '') + '</div>';
+}
+function irAjustesCalc() {   // mig. 097: ya no cambia ni guarda la vista (el botón solo sale a un administrador)
+  if (location.hash === '#calcadmin') router(); else location.hash = 'calcadmin';
+}
+function leerCalc() {
+  if (!CALC.data) return;
+  CALC.data.lineas.forEach(l => {
+    const id = l.proveedor_insumo_id, mod = $('mod' + id), ped = $('ped' + id);
+    CALC.vals[id] = { mod: mod ? mod.value : '', ped: ped ? ped.value : '' };
+  });
+}
+const redondeoSql = (x) => Math.sign(x) * Math.round(Math.abs(x));   // round() de Postgres: las mitades se alejan de cero
+function lineaCalc(l, inv, mod, ped) {
+  const c = CALC.data.config, cubrir = Number(c.dias_cubrir), factor = Number(c.factor_proteccion || 0);
+  // mig. 085: inv = el del inventario general elegido (sin contar = 0); los días son llega − fecha de ese general, que SQL ya
+  // pone en config.dias_proyeccion. Misma regla que calculadora_guardar y que el pedido sugerido.
+  const proy = Number(c.dias_proyeccion);
+  const r = { mod: Number(mod) || 0, ped: ped === '' || ped == null ? null : Number(ped), proy };
+  if (l.promedio != null) {
+    // el guardado en SQL usa el promedio capturado por el admin o consumo ÷ días SIN redondear a 4 decimales: aquí igual
+    r.prom = (l.promedio_manual || l.consumo == null || !Number(c.dias_consumo)) ? Number(l.promedio) : Number(l.consumo) / Number(c.dias_consumo);
+    r.consProy = r.prom * proy; r.consPed = r.prom * (cubrir + factor);
+    if (inv !== '' && inv != null) {
+      const invU = l.inventario_en === 'gramos' ? Number(inv) / 1000 : Number(inv);
+      r.invProy = invU - r.consProy; r.invFinal = r.invProy - r.consPed;
+      r.frac = r.invFinal < 0 ? -r.invFinal / Number(l.fraccion) : 0; r.sug = Math.ceil(r.frac - 1e-9);
+      r.final = Math.max(0, r.sug + redondeoSql(r.mod));
+    } else { r.sug = null; r.final = Math.max(0, redondeoSql(r.mod)); }
+  } else { r.final = Math.max(0, redondeoSql((r.ped || 0) + r.mod)); }
+  r.costo = Math.round(r.final * Number(l.fraccion) * Number(l.precio || 0) * 100) / 100;
+  return r;
+}
+function cabeceraCalcTxt(c) {
+  const inv = c.inventario || {};
+  const invT = 'inventario general del ' + fMx(inv.fecha) + ' elegido por administración';
+  if (c.modo === 'manual') return 'fechas y consumo capturados por administración el ' + fecha(c.vigente_desde) + ' · valen hasta que llegue el pedido del ' + fMx(c.llega) + ' · ' + invT;
+  return 'fechas automáticas: ventas de los últimos ' + c.dias_consumo + ' días cargados' + (c.consumo_al_dia === false && c.ultimo_consumo ? ' <b style="color:var(--ambar)">(ventas cargadas hasta el ' + fMx(c.ultimo_consumo) + ')</b>' : '') + ' · ' + invT + ' · el pedido llega el ' + fMx(c.llega) + ' y debe cubrir ' + c.dias_cubrir + ' días';
+}
+const invTxt = (l) => l.inventario == null ? '' : Number(l.inventario).toLocaleString('es-MX', { maximumFractionDigits: 2 }) + (l.inventario_en === 'gramos' ? ' g' : '');
+/* Secos y Desechables (sin consumo en el POS): lo contado en el general elegido convertido a unidades de pedido
+   (contado ÷ fracción, porque la unidad de conteo es la unidad de precio) y, si son distintas, lo contado abajo. Sin contar = 0. */
+function existenciaTxt(l) {
+  const e = l.existencia == null ? 0 : Number(l.existencia), fr = Number(l.fraccion) || 1, u = Math.round(e / fr * 100) / 100;
+  const n = (x) => Number(x).toLocaleString('es-MX', { maximumFractionDigits: 2 });
+  return '<b>' + n(u) + '</b>' + (fr !== 1 && e ? '<div style="font-size:10px;color:var(--txt2)">' + n(e) + ' ' + esc(l.unidad_conteo || l.unidad || '') + '</div>' : '');
+}
+/* Nota bajo el Inventario Final de cada guiso: solo cuando no se contó en el general elegido (cuenta como 0) */
+function leyendaInv(l) {
+  return l.sin_contar ? '<span style="color:var(--ambar)">sin contar · cuenta 0</span>' : '';
+}
+function pintarCalculadora() {
+  const d = CALC.data, c = d.config, pm = d.parametros.pct_max || {}, inv = c.inventario || {};
+  const v = (id) => CALC.vals[id] || { mod: '', ped: '' };
+  let h = nav() + '<div class="card hoja" style="overflow-x:auto">' +
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px"><button class="btn mini sec" onclick="leerCalc();vCaptura()">← ' + esc(d.proveedor) + '</button><span style="font-size:15px;font-weight:800">🧮 Calculadora de pedido · ' + esc(d.sucursal.replace(' Chihuahua', '')) + '</span><span class="presu">' + cabeceraCalcTxt(c) + '</span></div>' +
+    '<table style="width:100%"><tr><td style="border:none;vertical-align:top;padding:0 18px 0 0">' +
+      '<table class="param"><tr><td colspan="2" style="text-align:center;background:#f3f3f3"><b>Rango de fechas de consumo</b></td></tr>' +
+      '<tr><td class="k">Del</td><td class="ro">' + fMx(c.del) + '</td></tr><tr><td class="k">Al</td><td class="ro">' + fMx(c.al) + '</td></tr>' +
+      '<tr><td class="k">Días de consumo</td><td class="ro">' + c.dias_consumo + '</td></tr>' +
+      '<tr><td class="k">Inventario general del día:</td><td class="ro">' + fMx(c.fecha_inventario) + '</td></tr>' +
+      '<tr><td class="k">Día que llega el próximo pedido</td><td class="ro">' + fMx(c.llega) + '</td></tr>' +
+      '<tr><td class="k"># Días de proyección</td><td class="ro">' + c.dias_proyeccion + '</td></tr>' +
+      '<tr><td class="k">Factor de protección (días)</td><td class="ro">' + num(c.factor_proteccion, 1) + '</td></tr>' +
+      '<tr><td class="k">Días a cubrir con el pedido</td><td class="ro">' + c.dias_cubrir + '</td></tr></table>' +
+    '</td><td style="border:none;vertical-align:top">' +
+      '<table class="param"><tr><td class="k">Presupuesto Total</td><td class="ro">' + (c.presupuesto_total ? num(c.presupuesto_total, 0) : '—') + '</td></tr></table>' +
+      '<table style="margin-top:6px"><tr><th>Concepto</th><th>Total permitido</th><th>Total pedido</th><th>% por concepto</th><th>% Máximo</th></tr>' +
+      Object.keys(pm).map(k => '<tr><td>' + esc(k) + '</td><td class="n" id="cpe_' + k.replace(/\W/g, '') + '"></td><td class="n" id="cpd_' + k.replace(/\W/g, '') + '"></td><td class="n" id="cpp_' + k.replace(/\W/g, '') + '"></td><td class="n">' + num(pm[k], 1) + '%</td></tr>').join('') + '</table>' +
+    '</td></tr></table>';
+  const guisos = d.lineas.filter(l => l.promedio != null), otros = d.lineas.filter(l => l.promedio == null);
+  const conceptosOtros = [...new Set(otros.map(l => l.concepto))];
+  const sinC = guisos.filter(l => l.sin_contar).length;
+  const alerta = inv.viejo || sinC || inv.mas_reciente;
+  h += '<div style="border-left:4px solid ' + (alerta ? 'var(--ambar)' : '#2f5597') + ';background:' + (alerta ? '#fffbeb' : '#eef4fb') + ';padding:8px 10px;margin:0 0 8px;font-size:13px;white-space:normal">' +
+    '📦 El <b>Inventario Final</b> es el <b>inventario general del ' + fMx(inv.fecha) + '</b> de esta sucursal' + (Number(inv.dias_conteo) > 0 ? ' (hace ' + diasTxt(inv.dias_conteo) + ')' : ' (de hoy)') + ', elegido por administración. ' + (Number(c.dias_proyeccion) === 1 ? 'Se descuenta ' : 'Se descuentan ') + diasTxt(c.dias_proyeccion) + ' de consumo, desde ese inventario hasta que llega el pedido.' +
+    (inv.viejo ? ' <b>⚠️ Tiene más de ' + diasTxt(c.max_dias_conteo) + ': cada día de antigüedad hace más grande el pedido.</b>' : '') +
+    (sinC ? ' <b style="color:var(--ambar)">' + (sinC === 1 ? '1 guiso no se contó en ese inventario: cuenta como 0.' : sinC + ' guisos no se contaron en ese inventario: cuentan como 0.') + '</b>' : '') +
+    (inv.mas_reciente ? ' <b style="color:var(--ambar)">Ya hay un inventario general más nuevo (del ' + fMx(inv.mas_reciente.fecha) + '); si quieres que se use ese, pídeselo a administración.</b>' : '') +
+    ' Si un número está mal, hay que corregir ese inventario general en Inventarios (o pedírselo a administración) y volver a abrir la calculadora.</div>';
+  h += '<div class="bloque"><div class="titulo">Guisos · pedido sugerido por consumo</div><table class="g16" style="width:100%"><tr><th>$ por Kg</th><th>PRODUCTO</th><th>Un</th><th>Consumo</th><th>Inventario Final</th><th>Consumo promedio diario</th><th>Consumo días de proyección</th><th>Inventario proyectado</th><th>Consumo periodo de pedido</th><th>Invent. a final de consumo</th><th>Unidad de Medida</th><th>Fracciones a pedir</th><th>Pedido Sugerido</th><th class="g">Modificador manual</th><th>Pedido Final</th><th>COSTO</th></tr>';
+  guisos.forEach(l => { const id = l.proveedor_insumo_id, x = v(id);
+    h += '<tr><td class="n">' + (l.precio != null ? money(l.precio) : '') + '</td><td><b>' + esc(l.insumo) + '</b></td><td class="c">' + esc(l.unidad || '') + '</td><td class="n">' + num(l.consumo) + '</td>' +
+      '<td class="n" id="inv' + id + '"><b>' + invTxt(l) + '</b><div style="font-size:10px;text-align:right;white-space:normal;max-width:130px;margin-left:auto;line-height:1.2">' + leyendaInv(l) + '</div></td>' +
+      '<td class="n">' + num(l.promedio) + (l.promedio_manual ? ' <span title="capturado por administración" style="color:var(--txt2)">✎</span>' : '') + '</td><td class="n" id="cpr' + id + '"></td><td class="n" id="ipr' + id + '"></td><td class="n" id="cpe' + id + '"></td><td class="n" id="ifc' + id + '"></td>' +
+      '<td class="n">' + num(l.fraccion) + '</td><td class="n" id="frc' + id + '"></td><td class="sug" id="sug' + id + '"></td>' +
+      '<td class="in"><input type="number" inputmode="numeric" id="mod' + id + '" value="' + esc(x.mod) + '" oninput="recalc()"></td>' +
+      '<td class="fin" id="fin' + id + '"></td><td class="n" id="cos' + id + '"></td></tr>'; });
+  h += '<tr><td colspan="15" style="text-align:right;background:#f3f3f3"><b>Total Guisos</b></td><td class="n" id="totGuisos"></td></tr></table></div>';
+  conceptosOtros.forEach(cn => {
+    const cid = cn.replace(/\W/g, '');
+    h += '<div class="bloque"><div class="titulo">' + esc(cn) + '</div><table style="width:100%"><tr><th>$ por Kg</th><th>PRODUCTO</th><th>Unidad de Medida</th><th title="Del inventario general elegido, en unidades de pedido; lo que no se contó vale 0">Inventario Final</th><th class="g">Pedido de Gerente</th><th class="g">Modificador Manual</th><th>Pedido Final</th><th>COSTO</th></tr>';
+    otros.filter(l => l.concepto === cn).forEach(l => { const id = l.proveedor_insumo_id, x = v(id);
+      h += '<tr><td class="n">' + (l.precio != null ? money(l.precio) : '') + '</td><td><b>' + esc(l.insumo) + '</b>' + (l.presentacion ? ' <span style="color:var(--txt2);font-size:11px">' + esc(l.presentacion) + '</span>' : '') + '</td><td class="n">' + num(l.fraccion) + '</td>' +
+        '<td class="n">' + existenciaTxt(l) + '</td>' +
+        '<td class="in"><input type="number" inputmode="numeric" min="0" id="ped' + id + '" value="' + esc(x.ped) + '" oninput="recalc()"></td>' +
+        '<td class="in"><input type="number" inputmode="numeric" id="mod' + id + '" value="' + esc(x.mod) + '" oninput="recalc()"></td>' +
+        '<td class="fin" id="fin' + id + '"></td><td class="n" id="cos' + id + '"></td></tr>'; });
+    h += '<tr><td colspan="7" style="text-align:right;background:#f3f3f3"><b>Total ' + esc(cn) + '</b></td><td class="n" id="tot_' + cid + '"></td></tr></table></div>';
+  });
+  h += '<div class="calcbar"><div><div style="font-size:12px;color:var(--txt2)">TOTAL DEL PEDIDO (sin IVA)</div><b style="font-size:20px" id="cTotal">$0</b> <span id="cCajas" style="color:var(--txt2)"></span></div>' +
+    '<button class="btn" style="font-size:17px;padding:14px 22px" id="btnPasar" onclick="pasarAlPedido(this)">Pasar al pedido →</button></div></div>';
+  document.body.classList.add('ancha');
+  app().innerHTML = h; recalc();
+}
+function recalc() {
+  const d = CALC.data; if (!d || !$('cTotal')) return;
+  const porConc = {}; let total = 0, cajas = 0;
+  d.lineas.forEach(l => {
+    const id = l.proveedor_insumo_id, mod = $('mod' + id) ? $('mod' + id).value : '', ped = $('ped' + id) ? $('ped' + id).value : '';
+    const r = lineaCalc(l, l.promedio != null && l.inventario != null ? l.inventario : '', mod, ped);
+    const set = (k, val, cls) => { const el = $(k + id); if (el) { el.textContent = val; if (cls !== undefined) el.className = cls; } };
+    if (l.promedio != null) {
+      set('cpr', num(r.consProy));
+      if (r.sug != null) {
+        set('ipr', l.inventario_en === 'gramos' ? num(r.invProy * 1000, 0) : num(r.invProy, 0), 'n' + (r.invProy < 0 ? ' neg' : ''));
+        set('cpe', num(r.consPed, 0)); set('ifc', num(r.invFinal), 'n' + (r.invFinal < 0 ? ' neg' : '')); set('frc', num(r.frac)); set('sug', r.sug);
+      } else { set('ipr', ''); set('cpe', num(r.consPed, 0)); set('ifc', ''); set('frc', ''); set('sug', ''); }
+    }
+    set('fin', r.final); set('cos', money(r.costo));
+    porConc[l.concepto] = (porConc[l.concepto] || 0) + r.costo; total += r.costo; cajas += r.final;
+  });
+  const tg = $('totGuisos'); if (tg) tg.textContent = money(porConc['Guisos'] || 0);
+  Object.keys(porConc).forEach(k => { const el = $('tot_' + k.replace(/\W/g, '')); if (el) el.textContent = money(porConc[k]); });
+  const pm = d.parametros.pct_max || {}, pres = Number(d.config.presupuesto_total) || 0;
+  Object.keys(pm).forEach(k => { const c = k.replace(/\W/g, ''), ped = porConc[k] || 0, perm = pres * Number(pm[k]) / 100;
+    if ($('cpe_' + c)) $('cpe_' + c).textContent = pres ? num(perm, 0) : '—';
+    if ($('cpd_' + c)) { $('cpd_' + c).textContent = num(ped, 0); $('cpd_' + c).className = 'n' + (pres && ped > perm ? ' neg' : ''); }
+    if ($('cpp_' + c)) $('cpp_' + c).textContent = pres ? num(ped / pres * 100, 1) + '%' : '—'; });
+  $('cTotal').textContent = money(total); $('cCajas').textContent = '· ' + cajas + ' unidades de compra';
+}
+async function pasarAlPedido(btn) {
+  const d = CALC.data, invId = (d.config.inventario || {}).inventario_dia_id;
+  // mig. 085: se manda el inventario que se mostró y de qué general; SQL lo vuelve a sacar del general elegido y, si ya no
+  // coincide (cambió la elección o alguien corrigió el general), rechaza para que se recargue la calculadora
+  const lineas = d.lineas.map(l => { const id = l.proveedor_insumo_id; const g = (k) => $(k + id) ? $(k + id).value : '';
+    const x = { proveedor_insumo_id: id, inventario: l.promedio != null ? l.inventario : null, inventario_dia_id: invId,
+             modificador: Number(g('mod')) || 0, pedido_gerente: g('ped') === '' ? null : Number(g('ped')) };
+    if (l.promedio == null) x.existencia = l.existencia == null ? 0 : Number(l.existencia);   // mig. 087: SQL la compara y la guarda
+    return x; });
+  const inv = d.config.inventario || {}, sinC = d.lineas.filter(l => l.sin_contar).length;
+  if ((sinC || inv.viejo || inv.mas_reciente) && !confirm('Este pedido se calcula con el inventario general del ' + fMx(inv.fecha) + (Number(inv.dias_conteo) > 0 ? ' (hace ' + diasTxt(inv.dias_conteo) + ')' : '') + '.' +
+      (sinC ? '\n• ' + guisosSinTxt(sinC) + ': se pide el ciclo completo.' : '') + (inv.viejo ? '\n• Tiene más de ' + diasTxt(d.config.max_dias_conteo) + ': el pedido sale más grande.' : '') +
+      (inv.mas_reciente ? '\n• Ya hay uno más nuevo (del ' + fMx(inv.mas_reciente.fecha) + ') que administración no ha elegido.' : '') + '\n\nTotal: ' + ($('cTotal') ? $('cTotal').textContent : '') + ' sin IVA. ¿Pasar al pedido?')) return;
+  btn.disabled = true;
+  let r;
+  try { r = await api('calculadora_guardar', { branch_id: S.branch, proveedor_id: S.prov, lineas }); }
+  catch (e) {   // el inventario o la elección cambió: se vuelve a abrir con lo actual (solo si la calculadora sigue en pantalla)
+    if (rechazoDelServidor(e)) { if (document.body.contains(btn)) { leerCalc(); vCalculadora(); } else btn.disabled = false; }
+    return; }
+  r.lineas.forEach(l => { if (l.final > 0) S.carrito[l.proveedor_insumo_id] = l.final; else delete S.carrito[l.proveedor_insumo_id]; });
+  CALC.sucio = false;   // ya quedó en el pedido (el carrito lo cubre)
+  S.corridaId = r.corrida_id; await tocarPrimera(); leerCalc();
+  S.calcNota = 'Calculadora aplicada: ' + r.insumos + ' insumo' + (r.insumos === 1 ? '' : 's') + ' en el pedido por ' + money(r.total) + ' sin IVA. Revisa y envía.';
+  vCaptura();
+}
+
+/* ── Administración de la calculadora: fechas para todas las tiendas, presupuestos en lote, consumos por tienda ── */
+const CADM = { branch: null, prov: null, data: null, pend: {}, inv: null, invPend: {} };   // inv/invPend: inventario general elegido por tienda (mig. 085)
+const sinChih = (n) => String(n || '').replace(' Chihuahua', '');
+async function vCalcAdmin(del, al) {
+  if (vista() !== 'admin') { location.hash = 'captura'; return; }
+  document.body.classList.add('ancha');   // la matriz de consumos (11 tiendas) necesita el ancho de la calculadora
+  app().innerHTML = nav() + '<div class="msg">Cargando…</div>';
+  if (!CADM.prov) { const cp = await api('admin_calc_params'); const p0 = (cp.proveedores || [])[0]; if (!p0) { app().innerHTML = nav() + '<div class="msg">Ningún proveedor tiene calculadora.</div>'; return; } CADM.prov = p0.proveedor_id; CADM.provNombre = p0.nombre_corto; }
+  if (!CADM.branch) CADM.branch = (sucs()[0] || {}).branch_id;
+  const d = await api('admin_calc_config', { branch_id: CADM.branch, proveedor_id: CADM.prov, del: del || null, al: al || null });
+  if (d.error) { aviso('Calculadora: ' + (d.detalle || d.error)); return; }
+  CADM.data = d;
+  try { CADM.inv = await api('admin_calc_inventarios', { proveedor_id: CADM.prov }); } catch (e) { CADM.inv = { error: (e && e.message) || 'sin respuesta' }; }
+  const f = d.defaults, cfg = d.config, res = d.resumen || {}, tiendas = d.tiendas || [], nT = tiendas.length;
+  const tienda = (sucs().find(s => s.branch_id === CADM.branch) || {}).nombre || 'esta sucursal';
+  let h = nav() + subnavCalc('ajustes') + '<div class="card"><b style="font-size:16px">🧮 Ajustes de la calculadora de ' + esc(CADM.provNombre) + '</b>' +
+    '<div class="presu" style="margin-top:6px">' + adminCabeceraTxt(cfg, res) + '</div></div>';
+  /* 1) Fechas y días: una sola captura para todas las tiendas */
+  h += '<div class="card hoja"><div class="bloque"><div class="titulo">Fechas y días · se guardan para las ' + nT + ' sucursales</div></div>' +
+    '<table class="param"><tr><td colspan="2" style="text-align:center;background:#f3f3f3"><b>Rango de fechas de consumo</b></td></tr>' +
+    '<tr><td class="k">Del</td><td class="in"><input type="date" id="a_del" value="' + f.del + '" onchange="vCalcAdmin($(\'a_del\').value,$(\'a_al\').value)"></td></tr>' +
+    '<tr><td class="k">Al</td><td class="in"><input type="date" id="a_al" value="' + f.al + '" onchange="vCalcAdmin($(\'a_del\').value,$(\'a_al\').value)"></td></tr>' +
+    '<tr><td class="k">Días de consumo</td><td class="ro">' + f.dias_consumo + '</td></tr>' +
+    '<tr><td class="k">Día que llega el próximo pedido</td><td class="in"><input type="date" id="a_llega" value="' + f.llega + '"></td></tr>' +
+    '<tr><td class="k">Factor de protección (días)</td><td class="in"><input type="number" step="0.5" min="0" id="a_factor" value="' + f.factor_proteccion + '"></td></tr>' +
+    '<tr><td class="k">Días a cubrir con el pedido</td><td class="in"><input type="number" min="1" id="a_cubrir" value="' + f.dias_cubrir + '"></td></tr></table>' +
+    '<div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="guardarCalcConfig(this)">Guardar para todas las sucursales</button>' +
+    (res.con_manual ? '<button class="btn sec" onclick="quitarCalcConfig(this,true)">Volver a fechas automáticas en todas</button>' : '') +
+    '<span class="presu" id="a_msg"></span></div>' +
+    '<div id="ie_bloque">' + invElegidoHTML() + '</div></div>';
+  /* 2) Presupuesto por sucursal, todas a la vista, un solo guardado */
+  const pendVal = (t) => (CADM.pend[t.branch_id] !== undefined ? CADM.pend[t.branch_id] : (t.presupuesto != null ? Number(t.presupuesto) : ''));
+  h += '<div class="card"><b>Presupuesto por sucursal · por pedido, sin IVA</b>' +
+    '<div class="presu">Escribe los montos que cambien y guarda una sola vez. Vacío o 0 = sin tope. Cada cambio guarda el anterior con su vigencia; la pestaña Presupuestos muestra lo mismo.</div>' +
+    '<div style="overflow-x:auto;margin-top:8px"><table class="oc"><tr><th>Sucursal</th><th class="der">Vigente</th><th>Desde</th><th class="der">Nuevo presupuesto</th></tr>';
+  tiendas.forEach(t => {
+    h += '<tr><td>' + esc(sinChih(t.nombre)) + '</td><td class="der">' + (t.presupuesto != null ? money(t.presupuesto) : '<span style="color:var(--txt2)">sin tope</span>') + '</td>' +
+      '<td style="color:var(--txt2)">' + (t.presupuesto_desde ? fMx(t.presupuesto_desde) : '') + '</td>' +
+      '<td class="der"><input type="number" min="0" step="100" inputmode="decimal" id="a_p' + t.branch_id + '" data-orig="' + (t.presupuesto != null ? Number(t.presupuesto) : '') + '" value="' + pendVal(t) + '" class="sf" oninput="presuCambio(' + t.branch_id + ',this)" style="width:130px;text-align:right;padding:6px;border:1px solid var(--borde);border-radius:6px"></td></tr>';
+  });
+  h += '</table></div><div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="guardarPresupuestos(this)">Guardar presupuestos</button><span class="presu" id="p_msg"></span></div></div>';
+  /* 3) Consumo promedio diario · guisos × las 11 tiendas, un solo guardado */
+  const cm = await api('admin_calc_consumos', { proveedor_id: CADM.prov, del: del || null, al: al || null });
+  CADM.cons = cm.error ? null : cm;
+  if (cm.error) h += '<div class="card"><b style="color:var(--ambar)">Consumos: ' + esc(cm.detalle || cm.error) + '</b></div>';
+  else {
+    const abrev = (n) => sinChih(n).replace(/^Soriana /, '').replace(/^Plaza /, '');
+    h += '<div class="card hoja"><div class="bloque"><div class="titulo">Consumo promedio diario · Guisos · las ' + cm.tiendas.length + ' sucursales</div></div>' +
+      '<div class="presu">Promedio diario por tienda con las ventas reales del rango (R27, del ' + fMx(cm.del) + ' al ' + fMx(cm.al) + ', ' + cm.dias_consumo + ' días); el gerente usa el valor capturado. Corrige solo las celdas que hagan falta: al guardar, esa tienda queda con cabecera manual hasta que llegue el pedido. Amarillo = capturado a mano (queda fijo aunque cambien las ventas); para liberarlo, vacía la celda o escribe el valor de ventas. ✎ = tienda con cabecera manual. Pasa el cursor por una celda para ver el consumo del rango.</div>' +
+      '<div style="overflow-x:auto;margin-top:8px"><table class="mtx"><tr><th class="fija">PRODUCTO</th><th>Un</th>' +
+      cm.tiendas.map(t => '<th title="' + esc(t.nombre) + '">' + esc(abrev(t.nombre)) + (t.modo === 'manual' ? ' ✎' : '') + '</th>').join('') + '</tr>';
+    cm.insumos.forEach(i => {
+      h += '<tr><td class="fija"><b>' + esc(i.insumo) + '</b></td><td class="c">' + esc(i.unidad || '') + '</td>' + cm.tiendas.map(t => {
+        const v = (t.valores || {})[i.proveedor_insumo_id];
+        if (!v) return '<td class="c" style="color:var(--txt2)" title="' + esc(abrev(t.nombre)) + ' no tiene este insumo en su catálogo">—</td>';
+        const sql = v.promedio_sql != null ? Number(v.promedio_sql) : null, cfg = v.promedio_cfg != null ? Number(v.promedio_cfg) : null;
+        return '<td class="in' + (cfg != null ? ' cap' : '') + '"><input type="number" step="0.0001" min="0" id="m_' + t.branch_id + '_' + i.proveedor_insumo_id + '" data-sql="' + (sql != null ? sql : '') + '" data-cfg="' + (cfg != null ? cfg : '') + '" value="' + (cfg != null ? cfg : (sql != null ? sql : '')) + '" title="' + esc(abrev(t.nombre)) + ' · consumo del rango ' + num(v.consumo) + ' · ventas ' + num(sql, 4) + (cfg != null ? ' · capturado ' + num(cfg, 4) : '') + '" oninput="consCambio(this)"></td>'; }).join('') + '</tr>'; });
+    h += '</table></div><div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="guardarConsumosTodas(this)">Guardar consumos de todas las sucursales</button><span class="presu" id="c_msg"></span></div></div>';
+  }
+  app().innerHTML = h;
+}
+/* ── Mig. 085 (Sergio, 6-oct-2026): inventario general con que calcula cada sucursal. Sin elegir, esa calculadora no calcula;
+   la elección se queda hasta que un administrador la cambie; los guisos no contados cuentan 0; más de max_dias_conteo días avisa. ── */
+const invGuardado = (t) => t.eleccion ? String(t.eleccion.inventario_dia_id) : '';
+function invSel(t) { const p = CADM.invPend[t.branch_id]; return p !== undefined ? p : (t.eleccion && t.eleccion.valida ? String(t.eleccion.inventario_dia_id) : ''); }
+const invPendiente = (t) => CADM.invPend[t.branch_id] !== undefined && CADM.invPend[t.branch_id] !== invGuardado(t);
+function invOpcion(g) { return fMx(g.fecha) + ' · ' + (Number(g.dias_conteo) > 0 ? 'hace ' + diasTxt(g.dias_conteo) : 'de hoy') + ' · ' + g.guisos_contados + (Number(g.guisos_contados) === 1 ? ' guiso' : ' guisos') + (g.viejo ? ' ⚠️' : ''); }
+function invElegidoHTML() {
+  const ci = CADM.inv; if (!ci) return '';
+  if (ci.error) return '<div class="presu" style="color:var(--ambar);margin-top:14px">No se pudieron leer los inventarios generales: ' + esc(ci.detalle || ci.error) + '</div>';
+  const res = ci.resumen || {}, ts = ci.tiendas || [];
+  // un pendiente que ya no está en la lista de su tienda (p. ej. ese general se vació) se descarta: no se manda ni se muestra
+  ts.forEach(t => { const p = CADM.invPend[t.branch_id]; if (p && !(t.generales || []).some(g => String(g.inventario_dia_id) === p)) delete CADM.invPend[t.branch_id]; });
+  const fechas = [...new Set(ts.flatMap(t => (t.generales || []).map(g => g.fecha)))].sort().reverse();
+  let h = '<div class="bloque" style="margin-top:18px"><div class="titulo">Inventario general con que calcula cada sucursal · ' + (res.elegidas || 0) + ' de ' + ts.length + ' elegidas' + (res.con_general_nuevo ? ' · ' + res.con_general_nuevo + ' con uno más nuevo' : '') + '</div></div>' +
+    '<div class="presu" style="white-space:normal;margin:6px 0">La calculadora de cada tienda toma su Inventario Final del inventario general que elijas aquí (el que la tienda guardó en Inventarios → 📦 Inventario general); el gerente ya no lo captura. <b>Sin elegir, la calculadora de esa tienda no calcula.</b> Los guisos que no se contaron cuentan como 0 y se descuentan los días de consumo desde la fecha del inventario hasta que llega el pedido. La elección se queda hasta que la cambies.</div>' +
+    '<div style="overflow-x:auto"><table class="oc inv-el" style="font-family:inherit;font-size:13px"><tr><th>Sucursal</th><th>Inventario general</th><th class="der">Días que descuenta</th><th class="der">Guisos contados</th><th>Elegido por</th></tr>';
+  ts.forEach(t => {
+    const gens = t.generales || [], sel = invSel(t), g = gens.find(x => String(x.inventario_dia_id) === sel), pend = invPendiente(t);
+    const celda = gens.length
+      ? '<select id="ie_' + t.branch_id + '" onchange="invCambio(' + t.branch_id + ',this.value)" style="font-size:14px;border:1px solid var(--borde);border-radius:6px;padding:5px 6px;max-width:100%' + (sel === '' ? ';color:var(--rojo)' : '') + '">' +
+          '<option value=""' + (sel === '' ? ' selected' : '') + '>— Sin elegir: no calcula —</option>' +
+          gens.map(x => '<option value="' + x.inventario_dia_id + '"' + (String(x.inventario_dia_id) === sel ? ' selected' : '') + '>' + esc(invOpcion(x)) + '</option>').join('') + '</select>'
+      : '<span style="color:var(--ambar)">sin inventario general guardado</span>';
+    const avisos = (g && g.viejo ? '<div style="color:var(--ambar);font-size:12px;margin-top:3px;white-space:normal">⚠️ Tiene ' + diasTxt(g.dias_conteo) + ' (más de ' + ci.max_dias_conteo + '): cada día de antigüedad hace más grande el pedido</div>' : '') +
+      (t.eleccion && !t.eleccion.valida && !pend ? '<div style="color:var(--rojo);font-size:12px;white-space:normal">El inventario elegido (' + fMx(t.eleccion.fecha) + ') ya no tiene productos contados: elige otro</div>' : '') +
+      (t.mas_reciente && !pend ? '<div style="color:var(--ambar);font-size:12px;margin-top:3px;white-space:normal">ℹ️ Ya hay uno más nuevo: el del ' + fMx(t.mas_reciente.fecha) + '</div>' : '');
+    h += '<tr><td><b>' + esc(sinChih(t.nombre)) + '</b></td><td>' + celda + avisos + '</td>' +
+      '<td class="der">' + (g ? (g.dias_llegada != null ? g.dias_llegada : '—') : '') + '</td>' +
+      '<td class="der">' + (g ? g.guisos_contados + ' de ' + t.guisos + (g.guisos_contados < t.guisos ? '<div style="font-size:11px;color:var(--ambar)">los demás cuentan 0</div>' : '') : '') + '</td>' +
+      '<td style="color:var(--txt2);font-size:12px">' + (pend ? '<span class="chip pendiente">sin guardar</span>' : (t.eleccion ? esc((t.eleccion.elegido_por || '').split('@')[0]) + ' · ' + fecha(t.eleccion.elegido_el) : '')) + '</td></tr>';
+  });
+  h += '</table></div>';
+  if (fechas.length) h += '<div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="presu">Atajo: elegir en todas las tiendas el inventario general del</span>' +
+    '<select id="ie_todas" style="font-size:14px;border:1px solid var(--borde);border-radius:6px;padding:5px 6px">' +
+    fechas.map(f => '<option value="' + f + '">' + fMx(f) + ' (' + ts.filter(t => (t.generales || []).some(x => x.fecha === f)).length + ' de ' + ts.length + ' tiendas)</option>').join('') + '</select>' +
+    '<button class="btn mini sec" onclick="invTodas()">Aplicar a las que lo tengan</button></div>';
+  h += '<div style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="guardarInvElegidos(this)">Guardar inventarios elegidos</button><span class="presu" id="ie_msg"></span></div>';
+  return h;
+}
+function pintarInvElegido(msg) { const el = $('ie_bloque'); if (el) el.innerHTML = invElegidoHTML(); if (msg && $('ie_msg')) $('ie_msg').textContent = msg; }
+function invCambio(b, v) { CADM.invPend[b] = v; pintarInvElegido(); }
+function invTodas() {
+  const f = $('ie_todas') && $('ie_todas').value, ts = (CADM.inv && CADM.inv.tiendas) || []; if (!f) return;
+  let n = 0, ya = 0; const sin = [];
+  ts.forEach(t => { const g = (t.generales || []).find(x => x.fecha === f);
+    if (!g) { sin.push(sinChih(t.nombre)); return; }
+    if (String(g.inventario_dia_id) === invGuardado(t)) { delete CADM.invPend[t.branch_id]; ya++; } else { CADM.invPend[t.branch_id] = String(g.inventario_dia_id); n++; } });
+  pintarInvElegido((n ? n + (n === 1 ? ' tienda cambia' : ' tiendas cambian') + ' al general del ' + fMx(f) + ' (falta guardar)' : 'Ninguna tienda cambia') + (ya ? '; ' + ya + (ya === 1 ? ' ya lo tenía' : ' ya lo tenían') : '') + (sin.length ? '; sin general de esa fecha, se quedan como estaban: ' + sin.join(', ') : '') + '.');
+}
+async function guardarInvElegidos(btn) {
+  const ts = (CADM.inv && CADM.inv.tiendas) || [], cambios = ts.filter(invPendiente);
+  if (!cambios.length) { if ($('ie_msg')) $('ie_msg').textContent = 'No hay cambios que guardar.'; return; }
+  const txt = cambios.map(t => { const v = CADM.invPend[t.branch_id], g = (t.generales || []).find(x => String(x.inventario_dia_id) === v);
+    return '• ' + sinChih(t.nombre) + ': ' + (g ? 'general del ' + fMx(g.fecha) + (g.viejo ? ' (⚠️ ' + diasTxt(g.dias_conteo) + ')' : '') + (g.guisos_contados < t.guisos ? ', ' + guisosSinTxt(t.guisos - g.guisos_contados) : '') : 'sin elegir (la calculadora no calcula)'); }).join('\n');
+  if (!confirm('¿Guardar el inventario general de ' + cambios.length + ' sucursal' + (cambios.length === 1 ? '' : 'es') + '?\n\n' + txt + '\n\nLa calculadora de cada tienda calcula con ese inventario hasta que lo cambies.')) return;
+  let r; btn.disabled = true;
+  try { r = await api('admin_calc_elegir_inventario', { proveedor_id: CADM.prov, items: cambios.map(t => ({ branch_id: t.branch_id, inventario_dia_id: CADM.invPend[t.branch_id] || null })) }); }
+  catch (e) { return; }                       // api() ya mostró el motivo
+  finally { btn.disabled = false; }
+  if (!r || r.error) { if (r && r.error) alert('No se guardó: ' + (r.detalle || r.error)); return; }
+  CADM.invPend = {}; CALC.data = null; CSUG.data = null;
+  try { CADM.inv = await api('admin_calc_inventarios', { proveedor_id: CADM.prov }); } catch (e) { CADM.inv = { error: (e && e.message) || 'sin respuesta' }; }
+  pintarInvElegido('✔ Guardado: ' + r.elegidas + ' elegida' + (r.elegidas === 1 ? '' : 's') + (r.quitadas ? ', ' + r.quitadas + ' sin elegir' : '') + '.');
+}
+function subnavCalc(act) {
+  const b = (k, t, hsh) => '<button class="btn mini ' + (act === k ? '' : 'sec') + '" onclick="location.hash=\'' + hsh + '\'">' + t + '</button>';
+  return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px">' + b('ajustes', '⚙️ Ajustes de la calculadora', 'calcadmin') + b('sugerido', '📦 Pedido sugerido por sucursal', 'calcsugerido') + '</div>';
+}
+/* ── Pedido sugerido por sucursal: el inventario general elegido de cada tienda (mig. 085) + fórmula de la calculadora ── */
+const CSUG = { data: null, abiertas: {} };
+async function vCalcSugerido() {
+  if (vista() !== 'admin') { location.hash = 'captura'; return; }
+  document.body.classList.add('ancha');
+  app().innerHTML = nav() + subnavCalc('sugerido') + '<div class="msg">Calculando el pedido sugerido de cada sucursal…</div>';
+  if (!CADM.prov) { const cp = await api('admin_calc_params'); const p0 = (cp.proveedores || [])[0]; if (!p0) { app().innerHTML = nav() + '<div class="msg">Ningún proveedor tiene calculadora.</div>'; return; } CADM.prov = p0.proveedor_id; CADM.provNombre = p0.nombre_corto; }
+  const d = await api('admin_calc_sugerido', { proveedor_id: CADM.prov });
+  if (d.error) { aviso('Pedido sugerido: ' + (d.detalle || d.error)); return; }
+  CSUG.data = d;
+  pintarSugerido();
+}
+function pintarSugerido() {
+  const d = CSUG.data; if (!d) return;
+  const res = d.resumen || {}, tiendas = d.tiendas || [], faltan = d.faltan || [];
+  let h = nav() + subnavCalc('sugerido') + '<div class="card"><b style="font-size:16px">📦 Pedido sugerido por sucursal · ' + esc(d.proveedor || CADM.provNombre) + '</b>' +
+    '<div class="presu" style="margin-top:6px">Cada tienda se calcula con la fórmula de la calculadora (fechas y consumos de Ajustes) y con el <b>inventario general que elegiste para ella</b> en ⚙️ Ajustes → Fechas y días; sin modificador manual. Los guisos que no se contaron cuentan como 0. Para ajustar y mandar el pedido, abre la calculadora de la tienda: entras como su gerente con ese mismo inventario.</div></div>';
+  const hayElegibles = faltan.some(f => f.motivo === 'sin_eleccion');
+  if (!res.con_inventario) h += '<div class="msg">' + (hayElegibles ? 'Ninguna tienda tiene todavía un inventario general elegido. Elige el de cada una en ⚙️ Ajustes de la calculadora → Fechas y días.<br><br><button class="btn sec" onclick="location.hash=\'calcadmin\'">Ir a Ajustes</button>'
+    : 'Ninguna sucursal ha guardado todavía un inventario general en Inventarios (Inventarios → 📦 Inventario general). Cuando lo guarden, lo eliges en ⚙️ Ajustes → Fechas y días y aquí sale su pedido sugerido.') + '</div>';
+  if (faltan.length) {
+    // motivo (mig. 085): 'sin_general' = la tienda nunca guardó un inventario general; 'sin_eleccion' = tiene, pero no se ha elegido
+    const sinGen = faltan.filter(f => f.motivo === 'sin_general'), sinEl = faltan.filter(f => f.motivo !== 'sin_general');
+    const msg = 'Hola, nos falta el inventario general en Inventarios (https://operaciones.grupolem.com/ → Inventarios → Inventario general): ' + sinGen.map(f => sinChih(f.nombre)).join(', ') + '. ¿Lo pueden capturar hoy? Gracias.';
+    h += '<div class="card" style="border-left:4px solid var(--ambar)"><b>Sin pedido sugerido (' + faltan.length + ' de ' + (res.tiendas || tiendas.length) + ')</b>' +
+      '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">' + faltan.map(f => f.motivo === 'sin_general'
+        ? '<span class="chip" title="nunca ha guardado un inventario general">' + esc(sinChih(f.nombre)) + ' · sin inventario general</span>'
+        : '<span class="chip pendiente" title="tiene inventario general pero no se ha elegido">' + esc(sinChih(f.nombre)) + ' · sin elegir' + (f.ultimo_general ? ' · últ. ' + fMx(f.ultimo_general) : '') + '</span>').join('') + '</div>' +
+      '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">' + (sinEl.length ? '<button class="btn mini" onclick="location.hash=\'calcadmin\'">Elegir su inventario en Ajustes</button>' : '') +
+      (sinGen.length ? '<a class="btn mini sec" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?text=' + encodeURIComponent(msg) + '">Pedir el inventario general por WhatsApp</a>' : '') + '</div></div>';
+  }
+  const con = tiendas.filter(t => t.inventario);
+  if (res.parciales) h += '<div class="card" style="border-left:4px solid var(--ambar)"><b>' + res.parciales + ' tienda' + (res.parciales === 1 ? '' : 's') + ' con guisos sin contar</b> en su inventario general: esos guisos cuentan como 0 (en el detalle salen como "sin contar").</div>';
+  if (res.con_general_nuevo) h += '<div class="card" style="border-left:4px solid var(--ambar)"><b>ℹ️ ' + res.con_general_nuevo + (res.con_general_nuevo === 1 ? ' tienda ya guardó' : ' tiendas ya guardaron') + ' un inventario general más nuevo que el elegido</b>: su pedido sigue con el elegido hasta que lo cambies en <button class="btn mini sec" onclick="location.hash=\'calcadmin\'">⚙️ Ajustes</button>.</div>';
+  if (res.viejas) h += '<div class="card" style="border-left:4px solid var(--ambar)"><b>⚠️ ' + res.viejas + ' tienda' + (res.viejas === 1 ? '' : 's') + ' con un inventario general de más de ' + diasTxt(d.max_dias_conteo) + '</b>: cada día de antigüedad hace más grande el pedido.</div>';
+  if (con.length) {
+    h += '<div class="card" style="overflow-x:auto"><table class="oc"><tr><th>Sucursal</th><th>Inventario general</th><th class="der">Sugerido guisos (sin IVA)</th><th class="der">Presupuesto</th><th class="der">% usado</th><th class="der">Cajas</th><th>Pedido</th><th></th></tr>';
+    con.forEach(t => {
+      const ped = t.pedido ? '<a href="#req-' + t.pedido.req_id + '" class="chip ' + esc(t.pedido.estado) + '" style="text-decoration:none">' + esc(t.pedido.folio) + ' · ' + esc(etq(t.pedido.estado)) + '</a>' + (t.pedido.con_calculadora ? '' : ' <span class="presu">sin calculadora</span>') : '<span style="color:var(--txt2)">sin requisición</span>';
+      const sobre = t.pct != null && Number(t.pct) > 100, cfg = t.config || {};
+      h += '<tr><td><b>' + esc(sinChih(t.nombre)) + '</b>' + (t.config && t.config.modo === 'manual' ? ' <span class="presu" title="cabecera manual">✎</span>' : '') + '</td><td' + (cfg.dias_conteo != null ? ' title="contado hace ' + diasTxt(cfg.dias_conteo) + '"' : '') + '>' + conteoTxt(t) + (t.inventario.viejo ? ' <b style="color:var(--ambar)">⚠️ ' + diasTxt(t.inventario.dias_conteo) + '</b>' : '') + (t.inventario.mas_reciente ? ' <span class="chip pendiente" title="esa tienda ya guardó un general más nuevo">hay uno del ' + fMx(t.inventario.mas_reciente.fecha) + '</span>' : '') + ' <span class="presu">· ' + esc((t.inventario.capturado_por || '').split('@')[0]) + '</span>' +
+        (t.parcial ? ' <span class="chip pendiente" title="guisos con consumo que no se contaron en este inventario general: cuentan como 0">' + guisosSinTxt(t.guisos_sin_contar).replace(' como 0', ' 0') + '</span>' : '') + '</td>' +
+        '<td class="der"><b>' + money(t.total) + '</b></td><td class="der">' + (t.presupuesto != null ? money(t.presupuesto) : '<span style="color:var(--txt2)">sin tope</span>') + '</td><td class="der"' + (sobre ? ' style="color:var(--rojo);font-weight:700"' : '') + '>' + (t.pct != null ? num(t.pct, 1) + '%' : '—') + '</td><td class="der">' + t.cajas + '</td><td>' + ped + '</td>' +
+        '<td style="white-space:nowrap"><button class="btn mini sec" onclick="toggleSug(' + t.branch_id + ')">' + (CSUG.abiertas[t.branch_id] ? 'Ocultar' : 'Ver detalle') + '</button> <button class="btn mini" onclick="abrirCalcTienda(' + t.branch_id + ')">Abrir calculadora</button></td></tr>';
+      if (CSUG.abiertas[t.branch_id]) h += '<tr><td colspan="8" style="background:#fafafa;padding:8px 10px">' + detalleSugHTML(t) + '</td></tr>';
+    });
+    h += '<tr><td colspan="2" style="text-align:right"><b>Total ' + con.length + ' tienda' + (con.length === 1 ? '' : 's') + '</b></td><td class="der"><b>' + money(res.total_sugerido || 0) + '</b></td><td class="der"><b>' + money(res.total_presupuesto || 0) + '</b></td><td class="der">' + (res.total_presupuesto ? num(100 * (res.total_sugerido || 0) / res.total_presupuesto, 1) + '%' : '—') + '</td><td colspan="3"></td></tr></table></div>';
+  }
+  app().innerHTML = h;
+}
+/* 'conteo del X · N días hasta la llegada': N = dias_desde_conteo (días que de verdad descuenta el sugerido, H2 5-oct-2026) */
+function conteoTxt(t) {
+  const c = t.config || {}, n = c.dias_desde_conteo != null ? c.dias_desde_conteo : c.dias_proyeccion;
+  return 'conteo del ' + fMx(c.fecha_conteo || t.inventario.fecha) + (n != null ? ' · ' + n + (Number(n) === 1 ? ' día' : ' días') + ' hasta la llegada' : '');
+}
+function toggleSug(b) { CSUG.abiertas[b] = !CSUG.abiertas[b]; pintarSugerido(); }   // sin volver a consultar las 11 tiendas
+function detalleSugHTML(t) {
+  const c = t.config || {};
+  let h = '<div class="presu" style="margin-bottom:6px">Consumo del ' + fMx(c.del) + ' al ' + fMx(c.al) + ' (' + c.dias_consumo + ' días) · inventario general elegido: ' + conteoTxt(t) + ' (llega el ' + fMx(c.llega) + ') · el pedido cubre ' + c.dias_cubrir + (Number(c.factor_proteccion) ? ' + ' + c.factor_proteccion + ' de protección' : '') + '.</div>' +
+    '<div style="overflow-x:auto"><table class="oc"><tr><th>PRODUCTO</th><th>Un</th><th class="der">Promedio diario</th><th class="der">Inventario</th><th class="der">Inv. proyectado</th><th class="der">Faltante</th><th class="der">Sugerido</th><th class="der">Costo</th></tr>';
+  (t.lineas || []).forEach(l => { const g = l.inventario_en === 'gramos';
+    h += '<tr><td><b>' + esc(l.insumo) + '</b></td><td>' + esc(l.unidad || '') + '</td><td class="der">' + num(l.promedio, 4) + (l.promedio_manual ? ' ✎' : '') + '</td><td class="der">' + (l.sin_contar ? '0 <span style="color:var(--ambar)">sin contar</span>' : num(l.inventario, 0) + (g ? ' g' : ' pz')) + '</td>' +
+      '<td class="der' + (l.inv_proyectado != null && l.inv_proyectado < 0 ? ' neg' : '') + '">' + (l.inv_proyectado != null ? num(l.inv_proyectado, 2) : '') + '</td><td class="der">' + (l.faltante != null ? num(l.faltante, 2) : '') + '</td><td class="der"><b>' + (l.sugerido != null ? l.sugerido : '') + '</b></td><td class="der">' + money(l.costo || 0) + '</td></tr>'; });
+  h += '<tr><td colspan="6" style="text-align:right"><b>Total guisos</b></td><td class="der"><b>' + t.cajas + '</b></td><td class="der"><b>' + money(t.total) + '</b></td></tr></table></div>';
+  const ex = (t.existencias || []).filter(e => e.existencia != null && Number(e.existencia) > 0);
+  if (ex.length) h += '<div class="presu" style="margin-top:8px"><b>Existencias del conteo sin sugerido</b> (sin consumo en el POS; el pedido se captura a mano): ' + ex.map(e => esc(e.insumo) + ' ' + num(e.existencia, 0) + ' ' + esc(e.unidad_conteo || '')).join(' · ') + '</div>';
+  return h;
+}
+function abrirCalcTienda(b) {   // mig. 097: abre la calculadora de esa tienda SIN cambiar ni guardar la vista (antes dejaba "gerente" pegado)
+  S.branch = Number(b); S.prov = CADM.prov; S.cat = null; S.carrito = {}; S.reqId = null; S.folio = null; S.t0 = null; S.corridaId = null; CALC.data = null;
+  try { history.replaceState(null, '', '#captura'); } catch (e) {}
+  vCalculadora();   // mig. 085: la calculadora usa el mismo inventario general elegido (y los mismos días) que el sugerido
+}
+function adminCabeceraTxt(cfg, res) {
+  if (!cfg) return '<b style="color:var(--ambar)">Este proveedor no tiene parámetros de calculadora.</b>';
+  res = res || {}; const n = res.tiendas || 0, m = res.con_manual || 0;
+  if (cfg.modo === 'manual') return '<b>Cabecera manual</b> capturada por ' + esc(cfg.capturado_por || '') + ' el ' + fecha(cfg.vigente_desde) + ' · vale hasta que llegue el pedido del ' + fMx(cfg.llega) + '; después el portal vuelve solo a las fechas automáticas. El gerente ve estos datos tal cual; solo captura modificador y pedido de gerente (el inventario es el general que elijas abajo para cada tienda).' +
+    (m && m < n ? ' Vigente en <b>' + m + ' de ' + n + '</b> tiendas; las demás usan fechas automáticas.' : (n ? ' Vigente en las ' + n + ' tiendas.' : '')) +
+    (res.cabeceras_distintas > 1 ? ' <b style="color:var(--ambar)">Hay ' + res.cabeceras_distintas + ' cabeceras distintas entre tiendas: guarda de nuevo para unificarlas.</b>' : '');
+  return '<b>Fechas automáticas</b> (lo que el gerente ve hoy): consumo del ' + fMx(cfg.del) + ' al ' + fMx(cfg.al) + ' (' + cfg.dias_consumo + ' días' + (cfg.consumo_al_dia === false && cfg.ultimo_consumo ? '; ventas cargadas hasta el ' + fMx(cfg.ultimo_consumo) : '') + '), el pedido llega el ' + fMx(cfg.llega) + ' y debe cubrir ' + cfg.dias_cubrir + ' días; el inventario de cada tienda es el general que elijas en Fechas y días. Captura abajo solo si este ciclo necesita otra cosa: lo capturado manda hasta el día que llegue ese pedido.' +
+    (m ? ' <b style="color:var(--ambar)">' + m + ' tienda' + (m === 1 ? '' : 's') + ' con cabecera manual propia</b> (ajuste de consumos).' : '');
+}
+async function quitarCalcConfig(btn, todas) {
+  if (!confirm(todas ? '¿Quitar la cabecera manual de todas las tiendas y volver a las fechas automáticas?' : '¿Volver a las fechas automáticas en esta sucursal?')) return;
+  let r; btn.disabled = true;
+  try { r = await api('admin_calc_config_quitar', { branch_id: CADM.branch, proveedor_id: CADM.prov, todas: !!todas }); }
+  catch (e) { return; }                       // api() ya mostró el motivo
+  finally { btn.disabled = false; }
+  if (!r || r.error) { if (r && r.error) alert('No se pudo: ' + (r.detalle || r.error)); return; }
+  CALC.data = null; await vCalcAdmin();
+  if ($('a_msg')) $('a_msg').textContent = '✔ ' + r.quitadas + ' cabecera' + (r.quitadas === 1 ? '' : 's') + ' manual' + (r.quitadas === 1 ? '' : 'es') + ' quitada' + (r.quitadas === 1 ? '' : 's') + '; el portal usa las fechas automáticas.';
+}
+function cabeceraForm() {
+  return { del: $('a_del').value, al: $('a_al').value, llega: $('a_llega').value, factor_proteccion: Number($('a_factor').value) || 0, dias_cubrir: Number($('a_cubrir').value) || 1 };
+}
+async function guardarCalcConfig(btn) {
+  const c = cabeceraForm(), n = ((CADM.data || {}).tiendas || []).length || sucs().length;
+  if (c.del > c.al) { alert('"Del" debe ser antes de "Al".'); return; }
+  if (!c.llega) { alert('Falta el día que llega el pedido.'); return; }
+  if (!confirm('¿Guardar estas fechas para las ' + n + ' sucursales?\n\nConsumo del ' + fMx(c.del) + ' al ' + fMx(c.al) + ' · llega el ' + fMx(c.llega) + ' · cubre ' + c.dias_cubrir + ' días' + (c.factor_proteccion ? ' · protección ' + c.factor_proteccion : '') + '.\nLos consumos capturados de cada tienda se conservan.')) return;
+  let r; btn.disabled = true;
+  try { r = await api('admin_guardar_calc_config', Object.assign({ branch_id: CADM.branch, proveedor_id: CADM.prov, todas: true }, c)); }
+  catch (e) { return; }
+  finally { btn.disabled = false; }
+  if (!r || r.error) { if (r && r.error) alert('No se guardó: ' + (r.detalle || r.error)); return; }
+  CALC.data = null; await vCalcAdmin();
+  if ($('a_msg')) $('a_msg').textContent = '✔ Cabecera guardada en ' + r.sucursales + ' sucursal' + (r.sucursales === 1 ? '' : 'es') + '; vale hasta que llegue el pedido del ' + fMx(c.llega) + '.';
+}
+function consCambio(inp) { const v = inp.value.trim(), sql = inp.dataset.sql; inp.dataset.tocado = '1'; inp.parentElement.classList.toggle('cap', v !== '' && (sql === '' || Math.abs(Number(v) - Number(sql)) > 1e-9)); }
+/* Arma, por tienda, los consumos que quedan capturados. Reglas: celda vacía = liberar; distinto a ventas = capturar;
+   igual a ventas = liberar si la celda se tocó, conservar si ya estaba capturado y no se tocó; lo capturado que no se ve
+   en la matriz (insumo fuera del catálogo de esa tienda) se conserva. Devuelve null si hay un valor inválido. */
+function consumosDeLaMatriz(cm) {
+  const items = [], detalle = [];
+  const igual = (a, b) => { const ka = Object.keys(a).sort(), kb = Object.keys(b).sort(); return ka.length === kb.length && ka.every((k, j) => k === kb[j] && Math.abs(a[k] - b[k]) <= 1e-9); };
+  for (const t of cm.tiendas) {
+    const previo = {}, nuevo = {};
+    Object.keys(t.consumos_cfg || {}).forEach(k => { previo[k] = Number(t.consumos_cfg[k]); if (!$('m_' + t.branch_id + '_' + k)) nuevo[k] = previo[k]; });
+    for (const i of cm.insumos) {
+      const inp = $('m_' + t.branch_id + '_' + i.proveedor_insumo_id); if (!inp) continue;
+      const v = inp.value.trim(), sql = inp.dataset.sql, cfg = inp.dataset.cfg, tocado = inp.dataset.tocado === '1';
+      if (v === '') continue;
+      if (isNaN(Number(v)) || Number(v) < 0) { alert('Revisa ' + i.insumo + ' en ' + sinChih(t.nombre) + ': el promedio debe ser un número sin signo.'); return null; }
+      const igualVentas = sql !== '' && Math.abs(Number(v) - Number(sql)) <= 1e-9;
+      if (!igualVentas) nuevo[i.proveedor_insumo_id] = Number(v);
+      else if (cfg !== '' && !tocado) nuevo[i.proveedor_insumo_id] = Number(cfg);
+    }
+    if (igual(nuevo, previo)) continue;
+    items.push({ branch_id: t.branch_id, consumos: nuevo });
+    const n = Object.keys(nuevo).length; detalle.push(sinChih(t.nombre) + ': ' + (n ? n + ' guiso' + (n === 1 ? '' : 's') + ' capturado' + (n === 1 ? '' : 's') : 'vuelve a ventas'));
+  }
+  return { items, detalle };
+}
+async function guardarConsumosTodas(btn) {
+  const cm = CADM.cons; if (!cm) return;
+  const x = consumosDeLaMatriz(cm); if (!x) return;
+  if (!x.items.length) { if ($('c_msg')) $('c_msg').textContent = 'No hay cambios que guardar.'; return; }
+  if (!confirm('¿Guardar los consumos capturados de ' + x.items.length + ' sucursal' + (x.items.length === 1 ? '' : 'es') + '?\n\n' + x.detalle.join('\n') + '\n\nEsas tiendas quedan con cabecera manual (sus fechas de hoy) hasta que llegue el pedido.')) return;
+  let r; btn.disabled = true;
+  try { r = await api('admin_guardar_consumos', { proveedor_id: CADM.prov, items: x.items }); }
+  catch (e) { return; }
+  finally { btn.disabled = false; }
+  if (!r || r.error) { if (r && r.error) alert('No se guardaron: ' + (r.detalle || r.error)); return; }
+  CALC.data = null; await vCalcAdmin();
+  if ($('c_msg')) $('c_msg').textContent = '✔ Consumos guardados en ' + r.guardadas + ' sucursal' + (r.guardadas === 1 ? '' : 'es') + (r.sin_cambio ? ' (' + r.sin_cambio + ' sin cambio)' : '') + '; los gerentes ya los ven.';
+}
+/* Punto de vista: ¿hay algo capturado que se perdería al recargar? (carrito, calculadora, ajustes del admin) */
+function presuPendiente() {
+  const ts = (CADM.data && CADM.data.tiendas) || [];
+  return Object.keys(CADM.pend || {}).some(b => { const t = ts.find(x => String(x.branch_id) === String(b)), o = t && t.presupuesto != null ? String(Number(t.presupuesto)) : '';
+    const v = String(CADM.pend[b] == null ? '' : CADM.pend[b]).trim(); return !(v === o || (v === '0' && o === '') || (v === '' && o === '0')); });
+}
+function compraSinGuardar() {
+  if (Object.keys(S.carrito || {}).length > 0) return true;
+  if (CALC.data && CALC.sucio) return true;
+  if (presuPendiente() || ((CADM.inv && CADM.inv.tiendas) || []).some(invPendiente)) return true;
+  if (document.querySelector('input[id^="m_"][data-tocado="1"]')) return true;   // matriz de consumos tocada (solo en pantalla)
+  return ['a_llega', 'a_factor', 'a_cubrir'].some(id => { const i = $(id); return !!i && i.value !== i.defaultValue; });   // Fechas y días
+}
+function presuCambio(b, inp) { CADM.pend[b] = inp.value; inp.style.borderColor = inp.value === inp.dataset.orig ? 'var(--borde)' : 'var(--ambar)'; }
+function presupuestosCambiados(tiendas) {
+  const items = [], lineas = [];
+  for (const t of tiendas) {
+    const inp = $('a_p' + t.branch_id); if (!inp) continue;
+    const v = inp.value.trim(), o = inp.dataset.orig;
+    if (v === o || (v === '0' && o === '') || (v === '' && o === '0')) continue;
+    if (v !== '' && (isNaN(Number(v)) || Number(v) < 0)) { alert('Revisa el presupuesto de ' + sinChih(t.nombre) + ': debe ser un número sin signo. No se guardó ninguno.'); inp.focus(); return null; }
+    items.push({ branch_id: t.branch_id, monto: v === '' ? null : Number(v) });
+    lineas.push(sinChih(t.nombre) + ': ' + (o === '' ? 'sin tope' : money(Number(o))) + ' → ' + (v === '' || Number(v) === 0 ? 'sin tope' : money(Number(v))));
+  }
+  return { items, lineas };
+}
+async function guardarPresupuestos(btn) {
+  const x = presupuestosCambiados((CADM.data || {}).tiendas || []); if (!x) return;
+  if (!x.items.length) { if ($('p_msg')) $('p_msg').textContent = 'No hay cambios que guardar.'; return; }
+  if (!confirm('¿Guardar ' + x.items.length + ' presupuesto' + (x.items.length === 1 ? '' : 's') + ' desde hoy?\n\n' + x.lineas.join('\n'))) return;
+  let r; btn.disabled = true;
+  try { r = await api('admin_guardar_presupuestos', { proveedor_id: CADM.prov, items: x.items }); }
+  catch (e) { return; }
+  finally { btn.disabled = false; }
+  if (!r || r.error) { if (r && r.error) alert('No se guardaron: ' + (r.detalle || r.error)); return; }
+  CADM.pend = {}; CALC.data = null; S.cat = null; await vCalcAdmin();
+  if ($('p_msg')) $('p_msg').textContent = '✔ ' + r.guardados + ' presupuesto' + (r.guardados === 1 ? '' : 's') + ' guardado' + (r.guardados === 1 ? '' : 's') + (r.sin_cambio ? ' (' + r.sin_cambio + ' sin cambio)' : '') + '; vale desde hoy.';
+}
+function calcParamsHtml(cp) {
+  let h = '';
+  ((cp && cp.proveedores) || []).forEach(pr => {
+    const q = pr.parametros || {}, pm = q.pct_max || {};
+    h += '<div class="card"><b>🧮 Calculadora de ' + esc(pr.nombre_corto) + ' — valores iniciales</b><div class="presu">Con estos valores el portal arma la cabecera automática de cada tienda: Al = ayer (o el último día con ventas cargadas), Del = los días de consumo hacia atrás, el pedido llega en los días indicados y debe cubrir los días a cubrir. Cada cambio guarda el anterior con su vigencia.</div>' +
+      '<div class="form"><label>Días de consumo (historial)<input type="number" id="cp_dc" value="' + esc(q.dias_consumo) + '"></label>' +
+      '<label>Días hasta que llega el pedido<input type="number" id="cp_dp" value="' + esc(q.dias_proyeccion) + '"></label>' +
+      '<label>Días que debe cubrir el pedido<input type="number" id="cp_cu" value="' + esc(q.dias_cubrir) + '"></label>' +
+      '<label>Factor de protección (días)<input type="number" step="0.5" id="cp_fp" value="' + esc(q.factor_proteccion) + '"></label>' +
+      '<label>% máximo Guisos<input type="number" id="cp_g" value="' + esc(pm.Guisos) + '"></label><label>% máximo Secos<input type="number" id="cp_s" value="' + esc(pm.Secos) + '"></label><label>% máximo Desechables Marca<input type="number" id="cp_d" value="' + esc(pm['Desechables Marca']) + '"></label></div>' +
+      '<div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="guardarCalcParams(' + pr.proveedor_id + ',this)">Guardar parámetros</button><span class="presu">vigente desde ' + esc(String(q.vigente_desde || '').slice(0, 10)) + ' · ' + esc(q.capturado_por || '') + '</span></div></div>';
+  });
+  return h;
+}
+async function guardarCalcParams(pid, btn) {
+  btn.disabled = true;
+  try {
+    await api('admin_guardar_calc_params', { proveedor_id: pid, dias_consumo: Number($('cp_dc').value), dias_proyeccion: Number($('cp_dp').value), dias_cubrir: Number($('cp_cu').value), factor_proteccion: Number($('cp_fp').value) || 0,
+      pct_max: { 'Guisos': Number($('cp_g').value), 'Secos': Number($('cp_s').value), 'Desechables Marca': Number($('cp_d').value) } });
+  } catch (e) { if (rechazoDelServidor(e)) btn.disabled = false; return; }
+  btn.disabled = false; btn.textContent = '✔ Guardado'; setTimeout(() => btn.textContent = 'Guardar parámetros', 1500);
+}
+
+/* ── Mis pedidos ───────────────────────────────────────── */
+async function vPedidos() {
+  app().innerHTML = nav() + '<div class="msg">Cargando…</div>';
+  const r = await api('mis_requisiciones', { branch_id: S.branch });
+  let h = nav();
+  if (!r.requisiciones.length) h += '<div class="msg">Sin pedidos en los últimos 90 días.</div>';
+  r.requisiciones.forEach(q => {
+    h += '<div class="card" onclick="location.hash=\'req-' + q.req_id + '\'" style="cursor:pointer">' +
+      '<b>' + esc(q.folio) + '</b> <span class="chip ' + esc(q.estado) + '">' + esc(etq(q.estado)) + '</span>' +
+      '<div class="d" style="font-size:13px;color:var(--txt2)">' + fecha(q.creada_el) + ' · ' + q.lineas + ' líneas' +
+      (q.ocs.length ? ' · OCs: ' + q.ocs.map(o => esc(o.folio)).join(', ') : '') + '</div></div>';
+  });
+  app().innerHTML = h;
+}
+
+/* ── Bandeja del aprobador ─────────────────────────────── */
+async function vBandeja() {
+  app().innerHTML = nav() + '<div class="msg">Cargando bandeja…</div>';
+  const r = await api('bandeja');
+  S.bandeja = r.bandeja || [];
+  Object.keys(BCALC).forEach(k => delete BCALC[k]);
+  let h = nav();
+  if (!S.bandeja.length) { app().innerHTML = h + '<div class="msg">🎉 Bandeja vacía: nada pendiente de tus proveedores.</div>'; return; }
+  h += '<div class="cat-h">Pedidos por revisar (' + S.bandeja.length + ')</div>';
+  S.bandeja.forEach(q => {
+    const lineas = q.lineas || [];
+    let sub = 0; const provs = {};
+    lineas.forEach(l => { const b = Number(l.precio || 0) * Number(l.fraccion || 1) * Number(l.solicitada); sub += b; provs[l.proveedor] = (provs[l.proveedor] || 0) + b; });
+    const pend = lineas.filter(l => l.estado_linea === 'pendiente').length;
+    h += '<div class="card" style="cursor:pointer" onclick="vBandejaDetalle(' + q.req_id + ')">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><b style="font-size:16px">' + esc(q.sucursal.replace(' Chihuahua', '')) + '</b> <span class="chip ' + esc(q.estado) + '">' + esc(q.estado === 'enviada' ? 'nuevo' : 'en revisión') + '</span>' + (q.extraordinaria ? ' <span class="chip rechazada">fuera de horario</span>' : '') +
+      '<div style="font-size:12.5px;color:var(--txt2)">' + esc(q.folio) + ' · ' + fecha(q.creada_el) + ' · ' + esc(q.creada_por.split('@')[0]) + '</div></div>' +
+      '<div style="text-align:right"><b style="font-size:16px">' + money(sub) + '</b><div style="font-size:12px;color:var(--txt2)">sin IVA</div></div></div>' +
+      '<div style="font-size:13px;color:var(--txt2);margin-top:6px">' + Object.keys(provs).map(p => { const pr = (q.presupuestos || {})[p]; const ex = pr && provs[p] > Number(pr); return esc(p) + ' ' + money(provs[p]) + (ex ? ' <span class="chip rechazada">rebasa ' + money(pr) + '</span>' : (pr ? '' : ' <span class="chip">sin presupuesto</span>')); }).join(' · ') + ' · <b>' + pend + ' línea' + (pend === 1 ? '' : 's') + ' por resolver</b></div></div>';
+  });
+  app().innerHTML = h;
+}
+/* ── Bandeja de proveedores con calculadora (hoy Cadena de Comida; mig. 087, Sergio 6-oct-2026): en vez de renglón por renglón,
+   la calculadora del pedido con los números que vio el gerente (su corrida). Si el gerente no la usó, se arma con el inventario
+   general elegido y lo que pidió. El administrador ajusta "Autorizar" por renglón y puede agregar guisos que el gerente dejó
+   en 0; queda registrado lo que pidió el gerente (cantidad_solicitada) y lo que se autorizó (cantidad_aprobada). ── */
+const BCALC = {};   // req_id → { proveedor_id → { corrida, calc, filas } }
+async function cargarBandejaCalc(q) {
+  const provs = [...new Set((q.lineas || []).filter(l => l.calculadora).map(l => l.proveedor_id))];
+  const out = {};
+  for (const p of provs) {
+    let bc = null, calc = null;
+    try { bc = await api('bandeja_calc', { req_id: q.req_id, proveedor_id: p }); } catch (e) { continue; }
+    if (!bc.corrida) { try { calc = await api('calculadora', { branch_id: q.branch_id, proveedor_id: p }); } catch (e) { calc = null; } }
+    if (!bc.corrida && (!calc || calc.bloqueo)) continue;   // sin corrida y sin inventario elegido: renglón por renglón, como antes
+    out[p] = { corrida: bc.corrida, calc, filas: filasBandejaCalc(q, p, bc.corrida, calc) };
+  }
+  BCALC[q.req_id] = out;
+}
+/* Une la calculadora (corrida o cálculo de hoy) con los renglones del pedido, por producto */
+function filasBandejaCalc(q, p, corrida, calc) {
+  const req = {}; (q.lineas || []).filter(l => l.proveedor_id === p).forEach(l => { req[l.proveedor_insumo_id] = l; });
+  const filas = [], vistos = new Set();
+  const fuente = corrida ? corrida.lineas : calc.lineas;
+  fuente.forEach(l => {
+    const pi = l.proveedor_insumo_id, r = req[pi] || null, guiso = l.promedio != null;
+    let sug = null, fin = null;
+    if (corrida) { sug = guiso ? l.sugerido : null; fin = l.final; }
+    else if (guiso) { const prev = CALC.data; CALC.data = calc; try { sug = lineaCalc(l, l.inventario == null ? '' : l.inventario, 0, '').sug; } finally { CALC.data = prev; } }
+    vistos.add(pi);
+    // precio y presentación: los del renglón del pedido; si no está pedido, los vigentes del catálogo (como la OC), no los de la corrida
+    const pr = corrida ? ((corrida.productos || {})[pi] || null) : null, base = r || pr || l;
+    filas.push({ pi, insumo: l.insumo, concepto: l.concepto, guiso, fraccion: Number(base.fraccion || l.fraccion || 1), precio: Number((base.precio != null ? base.precio : l.precio) || 0),
+                 presentacion: base.presentacion != null ? base.presentacion : l.presentacion, unidad: base.unidad != null ? base.unidad : l.unidad, activo: pr ? pr.activo !== false : true,
+                 inventario: l.inventario, inventario_en: l.inventario_en, sin_contar: !!l.sin_contar, existencia: ('existencia' in l) ? l.existencia : undefined, unidad_conteo: l.unidad_conteo,
+                 promedio: l.promedio, sugerido: sug, final_calc: fin, req: r });
+  });
+  Object.values(req).forEach(r => { if (!vistos.has(r.proveedor_insumo_id)) filas.push({ pi: r.proveedor_insumo_id, insumo: r.insumo, concepto: r.concepto, guiso: false, fraccion: Number(r.fraccion || 1), precio: Number(r.precio || 0), presentacion: r.presentacion, unidad: r.unidad, activo: true, req: r, fuera: true }); });
+  return filas;
+}
+function bandejaCalcHTML(q, p, info, prov) {
+  const c = info.corrida, cfg = c ? (c.parametros || {}) : (info.calc.config || {}), inv = c ? ((c.parametros || {}).inventario || {}) : (cfg.inventario || {});
+  const dias = c ? (cfg.dias_proyeccion != null ? cfg.dias_proyeccion : '') : cfg.dias_proyeccion;
+  const editable = info.filas.some(f => f.req && f.req.estado_linea === 'pendiente');
+  let h = !editable ? '<div class="presu" style="margin:0 0 8px;color:var(--verde)"><b>Ya autorizado en este pedido</b> (por otro administrador o antes): se muestra como quedó.</div>' : '';
+  h += '<div class="presu" style="margin:0 0 8px;white-space:normal">' + (c
+    ? '🧮 Lo que vio el gerente (' + esc(String(c.usuario || '').split('@')[0]) + ', ' + fecha(c.creada_el) + '): inventario general del ' + fMx(c.fecha_inventario || inv.fecha) + ', ' + diasTxt(dias) + ' de consumo hasta la llegada del ' + fMx(cfg.llega) + ', cubre ' + cfg.dias_cubrir + ' días.'
+    : '🧮 El gerente no usó la calculadora: se calcula con el inventario general elegido (del ' + fMx(inv.fecha) + ') y las fechas de hoy; "Pedido gerente" es lo que pidió.') +
+    (editable ? ' Cambia <b>Autorizar</b> donde haga falta (en cajas o paquetes, como el pedido): 0 quita el producto y en los que el gerente dejó en 0 puedes agregar.' : '') + '</div>';
+  h += '<div style="overflow-x:auto"><table class="oc bcalc" style="font-size:13px"><tr><th>Producto</th><th class="der">Inventario</th><th class="der">Prom. diario</th><th class="der">Sugerido</th><th class="der">Pedido gerente</th><th class="der" title="En unidades de compra (cajas, paquetes…), como el pedido">Autorizar</th><th class="der">Costo</th></tr>';
+  let conc = null;
+  info.filas.forEach(f => {
+    if (f.concepto !== conc) { conc = f.concepto; h += '<tr class="conc"><td>' + esc(conc || 'Otros') + '</td><td colspan="6"></td></tr>'; }
+    const r = f.req, sol = r ? Number(r.solicitada) : 0, pend = editable && (r ? r.estado_linea === 'pendiente' : f.activo);
+    const invH = f.guiso ? (f.inventario == null ? '' : Number(f.inventario).toLocaleString('es-MX', { maximumFractionDigits: 2 }) + (f.inventario_en === 'gramos' ? ' g' : '') + (f.sin_contar ? '<div style="font-size:10px;color:var(--ambar)">sin contar · 0</div>' : ''))
+      : (f.fuera ? '' : f.existencia === undefined ? '<span style="color:var(--txt2)" title="corrida anterior al 6-oct: no guardaba esta existencia">—</span>' : existenciaTxt({ existencia: f.existencia, fraccion: f.fraccion, unidad_conteo: f.unidad_conteo }));
+    const pres = chipUnidad({ presentacion: f.presentacion, fraccion: f.fraccion, unidad: f.unidad });
+    const autH = pend
+      ? '<input type="number" min="0" step="1" inputmode="numeric" class="calc-aut" id="ca_' + q.req_id + '_' + f.pi + '" data-req="' + q.req_id + '" data-prov="' + p + '" data-pi="' + f.pi + '" data-linea="' + (r ? r.req_linea_id : '') + '" data-sol="' + sol + '" data-precio="' + f.precio + '" data-fr="' + f.fraccion + '" value="' + sol + '" oninput="recalcBandejaCalc(' + q.req_id + ',' + p + ')" style="width:70px;text-align:right;padding:4px;border:1px solid #c9a227;border-radius:4px;background:#fffbe6">'
+      : r ? '<b>' + Number(r.aprobada || 0) + '</b> <span class="chip ' + esc(r.estado_linea) + '">' + esc(r.estado_linea) + '</span>' : (f.activo ? '' : '<span class="presu">fuera del catálogo</span>');
+    h += '<tr id="bc_' + q.req_id + '_' + f.pi + '"><td><b>' + esc(f.insumo) + '</b> ' + pres + (f.fuera ? ' <span class="chip">fuera de la calculadora</span>' : '') + (r && r.agregada_por ? ' <span class="chip">agregado por ' + esc(String(r.agregada_por).split('@')[0]) + '</span>' : '') + '</td>' +
+      '<td class="der">' + invH + '</td><td class="der">' + (f.promedio != null ? num(f.promedio, 2) : '') + '</td>' +
+      '<td class="der">' + (f.sugerido != null ? '<b>' + f.sugerido + '</b>' : '') + '</td>' +
+      '<td class="der">' + (r ? '<b>' + sol + '</b>' : '<span style="color:var(--txt2)">0</span>') + (f.final_calc != null && Number(f.final_calc) !== sol ? '<div style="font-size:10px;color:var(--txt2)">calculadora: ' + f.final_calc + '</div>' : '') + '</td>' +
+      '<td class="der">' + autH + '</td><td class="der" id="bcc_' + q.req_id + '_' + f.pi + '"></td></tr>';
+  });
+  h += '<tr><td colspan="4" class="der"><b>Total</b></td><td class="der" id="bct_sol_' + q.req_id + '_' + p + '"></td><td class="der"></td><td class="der" id="bct_' + q.req_id + '_' + p + '"></td></tr></table></div>';
+  return h;
+}
+/* Recalcula costos y totales del bloque con lo que está en "Autorizar" (y marca lo que cambió respecto al gerente) */
+function recalcBandejaCalc(reqId, p) {
+  const info = (BCALC[reqId] || {})[p]; if (!info) return;
+  let tot = 0, totSol = 0;
+  info.filas.forEach(f => {
+    const inp = $('ca_' + reqId + '_' + f.pi), r = f.req, sol = r ? Number(r.solicitada) : 0;
+    const aut = inp ? Number(inp.value || 0) : (r ? Number(r.aprobada || 0) : 0);
+    const costo = aut * f.fraccion * f.precio; tot += costo; totSol += sol * f.fraccion * f.precio;
+    const cel = $('bcc_' + reqId + '_' + f.pi); if (cel) cel.textContent = aut ? money(Math.round(costo * 100) / 100) : '';
+    const tr = $('bc_' + reqId + '_' + f.pi); if (tr) tr.style.background = inp && aut !== sol ? '#fff7d6' : '';
+  });
+  info.tot = Math.round(tot * 100) / 100;
+  const t = $('bct_' + reqId + '_' + p); if (t) t.innerHTML = '<b>' + money(info.tot) + '</b>';
+  const pie = $('btot_' + reqId); if (pie) pie.textContent = money(Math.round((Number(pie.dataset.base || 0) + Object.values(BCALC[reqId] || {}).reduce((a, x) => a + (x.tot || 0), 0)) * 100) / 100);
+  const ts = $('bct_sol_' + reqId + '_' + p); if (ts) ts.textContent = money(Math.round(totSol * 100) / 100);
+  const hd = $('bch_' + reqId + '_' + p); if (hd) { const pr = Number(hd.dataset.presupuesto || 0); hd.innerHTML = esc(hd.dataset.prov) + ' · ' + money(Math.round(tot * 100) / 100) + ' sin IVA autorizado' + (pr ? (tot > pr ? ' · <span style="color:var(--rojo)">rebasa el presupuesto de ' + money(pr) + '</span>' : ' · dentro del presupuesto de ' + money(pr)) : ' · sin presupuesto asignado') + ' · el gerente pidió ' + money(Math.round(totSol * 100) / 100); }
+}
+/* Resoluciones del bloque con calculadora: igual a lo pedido = aprobar; 0 = quitar; otra cantidad = cambiar; nuevo > 0 = agregar */
+function resolucionesCalc(reqId) {
+  const res = [], malos = [];
+  document.querySelectorAll('.calc-aut[data-req="' + reqId + '"]').forEach(inp => {
+    const v = Number(inp.value === '' ? 0 : inp.value), sol = Number(inp.dataset.sol), linea = inp.dataset.linea;
+    if (!Number.isFinite(v) || v < 0 || Math.round(v) !== v) { malos.push(inp); return; }
+    if (linea) {
+      if (v === sol) res.push({ req_linea_id: Number(linea), accion: 'aprobar' });
+      else if (v === 0) res.push({ req_linea_id: Number(linea), accion: 'rechazar', motivo: 'Quitado por administración al revisar la calculadora' });
+      else res.push({ req_linea_id: Number(linea), accion: 'modificar', cantidad: v });
+    } else if (v > 0) res.push({ accion: 'agregar', proveedor_insumo_id: Number(inp.dataset.pi), cantidad: v });
+  });
+  return { res, malos };
+}
+async function vBandejaDetalle(reqId) {
+  const q = (S.bandeja || []).find(x => x.req_id === reqId);
+  if (!q) { vBandeja(); return; }
+  if ((q.lineas || []).some(l => l.calculadora) && !BCALC[reqId]) { app().innerHTML = nav() + '<div class="msg">Cargando la calculadora del pedido…</div>'; await cargarBandejaCalc(q); }
+  const calcs = BCALC[reqId] || {};
+  let h = nav() + '<div style="display:flex;align-items:center;gap:10px;margin:4px 0 8px"><button class="btn mini sec" onclick="vBandeja()">← Bandeja</button><b style="font-size:17px">' + esc(q.folio) + '</b></div>' +
+    '<div class="card"><b>' + esc(q.sucursal) + '</b> <span class="chip ' + esc(q.estado) + '">' + esc(etq(q.estado)) + '</span>' + (q.extraordinaria ? ' <span class="chip rechazada">fuera de horario</span>' : '') +
+    '<div style="font-size:13px;color:var(--txt2)">Pedido por ' + esc(q.creada_por) + ' · ' + fecha(q.creada_el) + '</div></div>';
+  const porProv = {};
+  (q.lineas || []).forEach(l => { (porProv[l.proveedor] = porProv[l.proveedor] || []).push(l); });
+  let total = 0;
+  for (const prov in porProv) {
+    const pid = porProv[prov][0].proveedor_id, prP0 = (q.presupuestos || {})[prov];
+    if (calcs[pid]) {   // mig. 087: proveedor con calculadora (CDC): la calculadora del pedido; los totales los pone recalcBandejaCalc
+      h += '<div class="cat-h" id="bch_' + q.req_id + '_' + pid + '" data-prov="' + esc(prov) + '" data-presupuesto="' + (prP0 || '') + '">' + esc(prov) + '</div><div class="card">' + bandejaCalcHTML(q, pid, calcs[pid], prov) + '</div>';
+      continue;
+    }
+    let subP = 0;
+    let bloque = '';
+    porProv[prov].forEach(l => {
+      const u = presInfo(l);
+      const base = Number(l.precio || 0) * u.n * Number(l.solicitada); subP += base;
+      const idl = 'r' + l.req_linea_id;
+      bloque += '<div class="linea-res" data-linea="' + l.req_linea_id + '">' +
+        '<div><b>' + esc(l.insumo) + '</b> ' + chipUnidad(l) + '</div>' +
+        '<div style="font-size:14px;margin:4px 0">Pidió <b>' + l.solicitada + ' ' + plural(u.tipo, l.solicitada) + '</b>' + (u.n > 1 ? ' (' + (l.solicitada * u.n) + ' ' + uDet(l.unidad, 2) + ')' : '') + (l.precio ? ' · ' + money(base) + ' sin IVA' : '') +
+        (l.estado_linea !== 'pendiente' ? ' <span class="chip ' + esc(l.estado_linea) + '">' + esc(l.estado_linea) + '</span>' : '') + '</div>' +
+        (l.estado_linea === 'pendiente'
+          ? '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
+            '<select id="' + idl + 'a" onchange="$(\'' + idl + 'c\').style.display=this.value===\'modificar\'?\'\':\'none\';$(\'' + idl + 'm\').style.display=this.value===\'rechazar\'?\'\':\'none\'">' +
+            '<option value="aprobar">✔ Aprobar</option><option value="modificar">✎ Cambiar cantidad</option><option value="rechazar">✗ Rechazar</option></select>' +
+            '<input type="number" id="' + idl + 'c" value="' + l.solicitada + '" min="0" style="width:80px;display:none" placeholder="' + plural(u.tipo, 2) + '">' +
+            '<input type="text" id="' + idl + 'm" placeholder="Motivo del rechazo" style="flex:1;display:none">' +
+            '</div>'
+          : '') + '</div>';
+    });
+    total += subP;
+    const prP = (q.presupuestos || {})[prov];
+    h += '<div class="cat-h">' + esc(prov) + ' · ' + money(subP) + ' sin IVA' + (prP ? (subP > Number(prP) ? ' · <span style="color:var(--rojo)">rebasa el presupuesto de ' + money(prP) + '</span>' : ' · dentro del presupuesto de ' + money(prP)) : ' · sin presupuesto asignado') + '</div><div class="card">' + bloque + '</div>';
+  }
+  h += '<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div class="presu">Total del pedido: <b style="font-size:16px;color:var(--txt)" id="btot_' + q.req_id + '" data-base="' + total + '">' + money(total) + '</b> sin IVA</div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sec" style="color:var(--rojo);border-color:var(--rojo)" onclick="rechazarTodo(' + q.req_id + ', this)">✗ Rechazar pedido completo</button><button class="btn" onclick="autorizar(' + q.req_id + ', this)">Autorizar</button></div></div>' +
+    '<div class="no-print" style="margin:4px 0 20px"><a href="#req-' + q.req_id + '" style="font-size:13px">Ver historial completo →</a></div>';
+  app().innerHTML = h;
+  Object.keys(calcs).forEach(pid => recalcBandejaCalc(q.req_id, Number(pid)));
+  window.scrollTo(0, 0);
+}
+async function rechazarTodo(reqId, btn) {
+  const motivo = prompt('¿Por qué se rechaza el pedido completo? (obligatorio)');
+  if (motivo === null) return;
+  if (!motivo.trim()) { alert('Escribe el motivo del rechazo.'); return; }
+  const resoluciones = [];
+  document.querySelectorAll('.linea-res[data-linea]').forEach(el => { if ($('r' + el.dataset.linea + 'a')) resoluciones.push({ req_linea_id: Number(el.dataset.linea), accion: 'rechazar', motivo: motivo.trim() }); });
+  document.querySelectorAll('.calc-aut[data-req="' + reqId + '"]').forEach(inp => { if (inp.dataset.linea) resoluciones.push({ req_linea_id: Number(inp.dataset.linea), accion: 'rechazar', motivo: motivo.trim() }); });
+  if (!resoluciones.length) { alert('No hay líneas pendientes.'); return; }
+  btn.disabled = true;
+  try { await api('resolver', { req_id: reqId, resoluciones }); }
+  catch (e) { if (rechazoDelServidor(e)) btn.disabled = false; return; }
+  app().innerHTML = nav() + '<div class="card ok-big">✗<p><b>Pedido rechazado completo.</b></p><p style="color:var(--txt2)">Motivo: ' + esc(motivo.trim()) + '</p><p style="margin-top:14px"><button class="btn sec" onclick="vBandeja()">Volver a la bandeja</button></p></div>';
+}
+async function autorizar(reqId, btn) {
+  const resoluciones = [];
+  document.querySelectorAll('.linea-res[data-linea]').forEach(el => {
+    const id = Number(el.dataset.linea);
+    const sel = $('r' + id + 'a'); if (!sel) return;
+    const a = sel.value;
+    if (a === 'aprobar') resoluciones.push({ req_linea_id: id, accion: 'aprobar' });
+    else if (a === 'modificar') resoluciones.push({ req_linea_id: id, accion: 'modificar', cantidad: Number($('r' + id + 'c').value) });
+    else resoluciones.push({ req_linea_id: id, accion: 'rechazar', motivo: $('r' + id + 'm').value });
+  });
+  const falta = resoluciones.find(r => r.accion === 'rechazar' && !r.motivo.trim());
+  if (falta) { alert('Todo rechazo necesita motivo.'); return; }
+  // mig. 087: renglones de la calculadora (Cadena de Comida)
+  const rc = resolucionesCalc(reqId);
+  if (rc.malos.length) { alert('Las cantidades a autorizar deben ser números enteros de 0 o más.'); rc.malos[0].focus(); return; }
+  if (rc.res.length) {
+    const cambios = rc.res.filter(x => x.accion !== 'aprobar'), agregados = rc.res.filter(x => x.accion === 'agregar').length, quitados = rc.res.filter(x => x.accion === 'rechazar').length;
+    const totTxt = Object.keys(BCALC[reqId] || {}).map(pid => { const t = $('bct_' + reqId + '_' + pid); return t ? t.textContent : ''; }).join(' + ');
+    const pie = $('btot_' + reqId);
+    if (!confirm('¿Autorizar el pedido de Cadena de Comida por ' + totTxt + ' sin IVA?' + (pie ? ' (total del pedido con los demás proveedores: ' + pie.textContent + ')' : '') + (cambios.length ? '\n\nCambios respecto a lo que pidió el gerente: ' + (cambios.length - agregados - quitados) + ' cantidad(es) cambiada(s), ' + quitados + ' quitado(s), ' + agregados + ' agregado(s).' : '\n\nSin cambios: se autoriza tal como lo pidió el gerente.'))) return;
+    resoluciones.push(...rc.res);
+  }
+  if (resoluciones.some(r => r.accion !== 'rechazar') && !(await asegurarToken('Al autorizar se manda el aviso de la orden de compra a Pablo y para eso hay que confirmar tu cuenta (Google la pide cada hora). Sin eso la orden no pasa a tránsito y la sucursal no la ve en Recibir.'))) return;
+  btn.disabled = true;
+  let r;
+  try { r = await api('resolver', { req_id: reqId, resoluciones }); }
+  catch (e) { if (rechazoDelServidor(e)) btn.disabled = false; return; }
+  let h = '<div class="card ok-big">✅<p>Requisición resuelta.</p>' + (r.saltadas ? '<p style="color:var(--ambar)">⚠️ ' + r.saltadas + ' renglón(es) ya los había resuelto otro administrador: se dejaron como estaban. Revisa el pedido en su historial.</p>' : '');
+  if (r.ocs.length) {
+    h += '<p style="margin-top:8px">Órdenes de compra generadas:</p>';
+    r.ocs.forEach(o => { h += '<p><a href="#oc-' + o.oc_id + '"><b>' + esc(o.folio) + '</b> — ' + esc(o.proveedor) + '</a> <span id="mail-' + o.oc_id + '" class="chip">📧 avisando a Pablo…</span></p>'; });
+    setTimeout(() => r.ocs.forEach(async o => {
+      const el = document.getElementById('mail-' + o.oc_id); if (!el) return;
+      try { const m = await avisarPablo(o.oc_id); el.textContent = m.ok ? '📧 enviada a Pablo · en tránsito' : '⚠️ ' + (m.detalle || m.error); el.className = 'chip ' + (m.ok ? 'recibida' : 'rechazada'); }
+      catch (e) { el.innerHTML = '⚠️ no se pudo avisar a Pablo: abre la orden y usa «📧 Avisar a Pablo»'; el.className = 'chip rechazada'; }
+    }), 50);
+  } else h += '<p>No se generaron OCs (todo rechazado o pendiente de otro asesor).</p>';
+  h += '<p style="margin-top:14px"><button class="btn sec" onclick="vBandeja()">Volver a la bandeja</button></p></div>';
+  app().innerHTML = nav() + h;
+}
+
+/* ── Administración del catálogo (solo admin) ─────────── */
+const CA = { data: null, prov: null, edit: null };
+async function vCatalogoAdmin() {
+  if (vista() !== 'admin') { location.hash = 'captura'; return; }
+  app().innerHTML = nav() + '<div class="msg">Cargando catálogo…</div>';
+  CA.data = await api('admin_catalogo');
+  if (!CA.prov) CA.prov = CA.data.proveedores[0].proveedor_id;
+  pintarCatalogoAdmin();
+}
+function pintarCatalogoAdmin() {
+  const d = CA.data;
+  let h = nav() + '<div class="card"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">';
+  d.proveedores.forEach(p => {
+    const cnt = d.insumos.filter(i => i.proveedor_id === p.proveedor_id).length;
+    h += '<button class="btn mini ' + (CA.prov === p.proveedor_id ? '' : 'sec') + '" onclick="CA.prov=' + p.proveedor_id + ';CA.edit=null;pintarCatalogoAdmin()">' + esc(p.nombre_corto) + ' <span style="opacity:.7">(' + cnt + ')</span></button>';
+  });
+  h += '<span style="flex:1"></span><button class="btn mini" onclick="CA.edit={proveedor_id:CA.prov,fraccion:1,activo:true};pintarCatalogoAdmin();window.scrollTo(0,0)">＋ Nuevo insumo</button></div></div>';
+  const pv = d.proveedores.find(p => p.proveedor_id === CA.prov) || {};
+  h += '<div class="card"><b>Correo de pedidos de ' + esc(pv.nombre_corto || '') + '</b><div class="presu">Todavía no se usa: por ahora Pablo reenvía la OC. Cuando se capture aquí y se active el envío directo, la OC saldrá a este correo con copia a pfranco@grupolem.com.</div>' +
+    '<div class="form"><label>Correo(s) del proveedor<input id="pv_mail" value="' + esc(pv.email_pedidos || '') + '" placeholder="pedidos@proveedor.com" onchange="guardarProveedor(' + CA.prov + ')"></label>' +
+    '<label>Copia adicional (opcional)<input id="pv_cc" value="' + esc(pv.email_cc || '') + '" placeholder="vendedor@proveedor.com" onchange="guardarProveedor(' + CA.prov + ')"></label></div></div>';
+  if (CA.edit) h += formInsumo(CA.edit);
+  const items = d.insumos.filter(i => i.proveedor_id === CA.prov);
+  if (!items.length && !CA.edit) h += '<div class="msg">Este proveedor no tiene insumos todavía. Usa "＋ Nuevo insumo".</div>';
+  const grupos = {};
+  items.forEach(i => { (grupos[i.concepto] = grupos[i.concepto] || []).push(i); });
+  for (const g in grupos) {
+    h += '<div class="cat-h">' + esc(g) + '</div><div class="card">';
+    grupos[g].forEach(i => {
+      h += '<div class="item" style="cursor:pointer' + (i.activo ? '' : ';opacity:.45') + '" onclick="editarInsumo(' + i.proveedor_insumo_id + ')">' +
+        '<div class="info"><div class="n">' + esc(i.nombre) + (i.activo ? '' : ' <span class="chip">inactivo</span>') + '</div>' +
+        '<div class="d">' + esc(i.presentacion || 'sin presentación') + ' · ' + (i.fraccion || 1) + ' ' + esc(i.unidad || 'u') + ' por presentación' + (i.codigo ? ' · cód. ' + esc(i.codigo) : '') + '</div></div>' +
+        '<div style="text-align:right"><b>' + (i.precio != null ? money(i.precio) + '/' + esc(i.unidad || 'u') : '—') + '</b> <span class="chip">IVA ' + Number(i.tasa_iva || 0) + '%</span>' +
+        '<div class="d" style="font-size:12px;color:var(--txt2)">' + (i.precio != null ? money(conIva(i.precio, i.tasa_iva) * (i.fraccion || 1)) + ' por presentación c/IVA' : 'sin precio') + '</div></div></div>';
+    });
+    h += '</div>';
+  }
+  app().innerHTML = h;
+}
+function editarInsumo(id) { CA.edit = Object.assign({}, CA.data.insumos.find(i => i.proveedor_insumo_id === id)); pintarCatalogoAdmin(); window.scrollTo(0, 0); }
+function formInsumo(e) {
+  const d = CA.data;
+  const sel = (id, opts, val) => '<select id="' + id + '">' + opts.map(o => '<option value="' + o.v + '"' + (String(o.v) === String(val) ? ' selected' : '') + '>' + esc(o.t) + '</option>').join('') + '</select>';
+  const inp = (id, label, val, extra) => '<label>' + label + '<input id="' + id + '" value="' + esc(val == null ? '' : val) + '" ' + (extra || '') + '></label>';
+  return '<div class="card" style="border-color:var(--rojo)"><b>' + (e.proveedor_insumo_id ? 'Editar insumo' : 'Nuevo insumo') + '</b>' +
+    '<div class="form">' +
+    inp('f_nombre', 'Nombre del producto', e.nombre, 'placeholder="Ej. Pepsi 400 ml"') +
+    '<label>Proveedor' + sel('f_prov', d.proveedores.map(p => ({ v: p.proveedor_id, t: p.nombre_corto })), e.proveedor_id) + '</label>' +
+    '<label>Categoría' + sel('f_concepto', d.conceptos.map(c => ({ v: c.concepto_id, t: c.nombre })), e.concepto_id || 1) + '</label>' +
+    inp('f_unidad', 'Unidad de costo (Kg, PZA, Lt…)', e.unidad, 'placeholder="Kg"') +
+    inp('f_precio', 'Costo por unidad, SIN IVA ($)', e.precio, 'type="number" step="0.01" inputmode="decimal" placeholder="118.25"') +
+    '<label>IVA' + sel('f_iva', [{ v: 16, t: '16 %' }, { v: 0, t: '0 % (exento / tasa cero)' }, { v: 8, t: '8 % (frontera)' }], e.tasa_iva == null ? 16 : e.tasa_iva) + '</label>' +
+    inp('f_pres', 'Presentación / embalaje', e.presentacion, 'placeholder="Caja de 12 Kg"') +
+    inp('f_frac', 'Unidades por presentación', e.fraccion || 1, 'type="number" step="0.001" inputmode="decimal"') +
+    inp('f_codigo', 'Código del proveedor (opcional)', e.codigo, 'placeholder="1000"') +
+    '<label><input type="checkbox" id="f_activo"' + (e.activo !== false ? ' checked' : '') + '> Activo (visible para los gerentes)</label>' +
+    '</div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn" onclick="guardarInsumo()">Guardar</button><button class="btn sec" onclick="CA.edit=null;pintarCatalogoAdmin()">Cancelar</button></div>' +
+    (e.proveedor_insumo_id && e.precio != null ? '<div class="presu" style="margin-top:8px">Precio vigente desde ' + esc(e.precio_desde || '') + '. Si cambias el costo, el anterior se guarda con su vigencia (nunca se borra).</div>' : '') + '</div>';
+}
+async function guardarInsumo() {
+  const datos = {
+    proveedor_insumo_id: CA.edit.proveedor_insumo_id || null,
+    nombre: $('f_nombre').value, proveedor_id: Number($('f_prov').value), concepto_id: Number($('f_concepto').value),
+    unidad: $('f_unidad').value, precio: $('f_precio').value === '' ? null : Number($('f_precio').value),
+    presentacion: $('f_pres').value, fraccion: Number($('f_frac').value) || 1, codigo: $('f_codigo').value, activo: $('f_activo').checked, tasa_iva: Number($('f_iva').value)
+  };
+  if (!datos.nombre.trim()) { alert('Falta el nombre del producto.'); return; }
+  const r = await api('admin_guardar_insumo', datos);
+  if (r.ok) { CA.edit = null; CA.prov = datos.proveedor_id; S.cat = null; await vCatalogoAdmin(); }
+}
+
+/* ── Administración de presupuestos (solo admin) ──────── */
+const PA = { data: null };
+async function vPresupuestosAdmin() {
+  if (vista() !== 'admin') { location.hash = 'captura'; return; }
+  app().innerHTML = nav() + '<div class="msg">Cargando presupuestos…</div>';
+  PA.data = await api('admin_presupuestos');
+  const cp = await api('admin_calc_params');
+  const d = PA.data;
+  const val = (b, p) => { const x = d.presupuestos.find(y => y.branch_id === b && y.proveedor_id === p); return x ? Number(x.monto) : ''; };
+  let h = nav() + calcParamsHtml(cp) + '<div class="card"><b>Presupuesto por pedido, sin IVA</b><div class="presu">Escribe el monto y sal del campo para guardar. Vacío o 0 = sin tope. Cada cambio guarda el anterior con su vigencia.</div></div>' +
+    '<div class="card" style="overflow-x:auto"><table class="oc"><tr><th>Sucursal</th>' + d.proveedores.map(p => '<th class="der">' + esc(p.nombre_corto) + '</th>').join('') + '</tr>';
+  d.sucursales.forEach(s => {
+    h += '<tr><td>' + esc(s.nombre.replace(' Chihuahua', '')) + '</td>' + d.proveedores.map(p =>
+      '<td class="der"><input type="number" min="0" step="100" inputmode="decimal" value="' + val(s.branch_id, p.proveedor_id) + '" style="width:110px;text-align:right;padding:6px;border:1px solid var(--borde);border-radius:6px" onchange="guardarPresupuesto(' + s.branch_id + ',' + p.proveedor_id + ',this)"></td>').join('') + '</tr>';
+  });
+  h += '</table></div>';
+  app().innerHTML = h;
+}
+async function guardarPresupuesto(b, p, inp) {
+  inp.style.borderColor = 'var(--ambar)';
+  try { await api('admin_guardar_presupuesto', { branch_id: b, proveedor_id: p, monto: inp.value === '' ? null : Number(inp.value) }); inp.style.borderColor = 'var(--verde)'; S.cat = null; }
+  catch (e) { inp.style.borderColor = 'var(--rojo)'; }
+}
+
+/* ── Historial del asesor ──────────────────────────────── */
+async function vHistorialAsesor() {
+  app().innerHTML = nav() + '<div class="msg">Cargando historial…</div>';
+  const r = await api('historial_asesor');
+  let h = nav() + '<div class="cat-h">Pedidos resueltos (últimos 90 días)</div>';
+  if (!r.historial.length) h += '<div class="msg">Todavía no hay pedidos resueltos.</div>';
+  r.historial.forEach(q => {
+    h += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+      '<div><b style="font-size:16px">' + esc(q.sucursal.replace(' Chihuahua', '')) + '</b> <span class="chip ' + esc(q.estado) + '">' + esc(etq(q.estado)) + '</span>' +
+      '<div style="font-size:12.5px;color:var(--txt2)">' + esc(q.folio) + ' · pedido ' + fecha(q.creada_el) + (q.resuelta_el ? ' · resuelto ' + fecha(q.resuelta_el) : '') + ' · ' + esc(q.creada_por.split('@')[0]) + '</div></div>' +
+      '<a href="#req-' + q.req_id + '" class="btn mini sec">Ver detalle</a></div>' +
+      '<div style="font-size:13px;color:var(--txt2);margin-top:6px">' + q.lineas + ' líneas · ' + q.aprobadas + ' aprobadas · ' + q.rechazadas + ' rechazadas</div>' +
+      (q.ocs.length ? '<div style="margin-top:6px">' + q.ocs.map(o => '<a href="#oc-' + o.oc_id + '" class="chip ' + esc(o.estado) + '" style="text-decoration:none;margin-right:6px">' + esc(o.folio) + ' · ' + esc(o.proveedor) + ' · ' + money(o.total) + '</a>').join('') + '</div>' : '') + '</div>';
+  });
+  app().innerHTML = h;
+}
+
+/* ── Detalle + timeline ────────────────────────────────── */
+async function vDetalle(tipo, id) {
+  app().innerHTML = nav() + '<div class="msg">Cargando…</div>';
+  const d = await api('detalle', { tipo, id: Number(id) });
+  let h = nav() + '<div class="card"><b style="font-size:18px">' + esc(d.folio) + '</b> <span class="chip ' + esc(d.estado) + '">' + esc(etq(d.estado)) + '</span>' +
+    '<div style="font-size:13px;color:var(--txt2)">' + esc(d.sucursal) + ' · ' + esc(d.creada_por || '') + '</div></div><div class="card">';
+  (d.lineas || []).forEach(l => {
+    h += '<div class="item"><div class="info"><div class="n">' + esc(l.insumo) + '</div><div class="d">' + esc(l.proveedor || '') +
+      (l.motivo_rechazo ? ' · ✗ ' + esc(l.motivo_rechazo) : '') + '</div></div>' +
+      '<div style="text-align:right"><b>' + (l.aprobada != null ? l.aprobada : l.solicitada) + '</b>' +
+      (l.aprobada != null && Number(l.aprobada) !== Number(l.solicitada) ? '<div class="d" style="text-decoration:line-through">' + l.solicitada + '</div>' : '') +
+      ' <span class="chip ' + esc(l.estado_linea) + '">' + esc(l.estado_linea) + '</span></div></div>';
+  });
+  h += '</div><div class="card"><div class="cat-h" style="margin-top:0">Historial</div>';
+  (d.eventos || []).forEach(e => {
+    h += '<div class="evento"><span class="ts">' + fecha(e.ts) + '</span><div><b>' + esc(e.evento) + '</b> — ' + esc(e.usuario) +
+      (e.despues && e.despues.motivo ? '<div style="color:var(--txt2)">' + esc(e.despues.motivo) + '</div>' : '') + '</div></div>';
+  });
+  h += '</div>';
+  app().innerHTML = h;
+}
+
+/* ── Orden de compra (imprimible) ──────────────────────── */
+async function vOC(id) {
+  app().innerHTML = nav() + '<div class="msg">Cargando OC…</div>';
+  const d = await api('detalle', { tipo: 'oc', id: Number(id) });
+  let h;
+  if (d.formato && d.formato.tipo === 'gepp') {
+    h = nav() + '<div class="card" style="overflow-x:auto">' + htmlOCGepp(d) +
+      '<div class="presu no-print" style="margin-top:8px">Formato de GEPP. Se llenan en automático solo Piezas y Compra; precio pactado e IVA son los del formato del proveedor. Nuestro total real (catálogo): ' + money(d.subtotal) + ' + IVA ' + money(d.iva) + ' = <b>' + money(d.total) + '</b>.</div>';
+  } else {
+  h = nav() + '<div class="card">' +
+    '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px">' +
+    '<div><b style="font-size:20px">Orden de Compra</b><div style="font-size:22px;font-weight:800;color:var(--rojo)">' + esc(d.folio) + '</div></div>' +
+    '<div style="text-align:right;font-size:13px"><b>Operadora de Franquicias LEM</b><br>Doña Tota · Chihuahua<br>' + new Date(d.creada_el).toLocaleDateString('es-MX') + '</div></div>' +
+    '<hr style="border:none;border-top:1px solid var(--borde);margin:10px 0">' +
+    '<div style="font-size:14px"><b>Proveedor:</b> ' + esc(d.proveedor) + (d.proveedor_rfc ? ' (' + esc(d.proveedor_rfc) + ')' : '') +
+    '<br><b>Entregar en:</b> ' + esc(d.sucursal) + '<br><b>Requisición origen:</b> ' + esc(d.req_folio) +
+    ' · <b>Autorizó:</b> ' + esc(d.autorizada_por || '') + ' <span class="chip ' + esc(d.estado) + '">' + esc(etq(d.estado)) + '</span></div>' +
+    '<table class="oc" style="margin-top:12px"><tr><th>Código</th><th>Insumo</th><th>Presentación</th><th class="der">Cant.</th><th class="der">Importe</th><th class="der">IVA</th></tr>';
+  (d.lineas || []).forEach(l => {
+    h += '<tr><td>' + esc(l.codigo || '—') + '</td><td>' + esc(l.insumo) + '</td><td>' + esc(l.presentacion || '') + '</td>' +
+      '<td class="der">' + l.cantidad + '</td><td class="der">' + (l.importe ? money(l.importe) : '—') + '</td><td class="der">' + (l.iva != null ? money(l.iva) + ' <span style="color:var(--txt2);font-size:11px">(' + Number(l.tasa_iva || 0) + '%)</span>' : '—') + '</td></tr>';
+  });
+  h += '<tr><td colspan="4" class="der">Subtotal</td><td class="der">' + money(d.subtotal) + '</td><td></td></tr>' +
+       '<tr><td colspan="4" class="der">IVA</td><td class="der">' + money(d.iva) + '</td><td></td></tr>' +
+       '<tr><th colspan="4" class="der">Total (informativo — el gasto es el CFDI)</th><th class="der">' + money(d.total) + '</th><th></th></tr></table>';
+  }
+  if (d.estado === 'autorizada') h += '<div class="no-print" style="margin-top:12px;border-left:4px solid var(--ambar);background:#fffbeb;padding:8px 10px;font-size:13px">Esta orden está autorizada pero <b>todavía no está en tránsito</b>: la sucursal no la ve en 📥 Recibir hasta que se avise a Pablo (o se marque que ya se envió por otro medio).</div>';
+  h += '<div class="no-print" style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">' +
+    '<button class="btn" onclick="imprimirOC(' + id + ')">🖨 Imprimir / PDF</button>';
+  const CORREO_PROVEEDOR = false; // 5-sep: por ahora Pablo reenvía la OC; activar cuando los proveedores tengan correo en Catálogo
+  const puedeMandar = d.puede_mandar != null ? !!d.puede_mandar : (vista() === 'admin' || (vista() === 'propia' && S.perfil.aprueba_proveedores.length));
+  if (CORREO_PROVEEDOR && puedeMandar && (d.estado === 'autorizada' || d.estado === 'enviada_proveedor')) h += '<button class="btn" id="btnCorreo" onclick="correoProveedor(' + id + ', this)">📧 ' + (d.estado === 'autorizada' ? 'Enviar al proveedor por correo' : 'Reenviar al proveedor') + '</button>';
+  if (puedeMandar && d.estado === 'autorizada') h += '<button class="btn" onclick="reenviarAviso(' + id + ', this)">📧 Avisar a Pablo y poner en tránsito</button>';
+  if (puedeMandar && d.estado === 'autorizada') h += '<button class="btn sec" onclick="marcarOC(' + id + ',\'enviada_proveedor\')">📤 Ya la envié por otro medio</button>';
+  if (puedeMandar && ['enviada_proveedor', 'recibida_parcial', 'recibida'].includes(d.estado)) h += '<button class="btn sec" onclick="if(confirm(\'¿Cerrar la OC? Ya no se podrá recibir nada más.\'))marcarOC(' + id + ',\'cerrada\')">Cerrar OC</button>';
+  h += '</div>';
+  if ((d.eventos || []).length) {
+    h += '<div class="no-print" style="margin-top:14px"><div class="cat-h" style="margin-top:0">Historial</div>';
+    d.eventos.forEach(e => { h += '<div class="evento"><span class="ts">' + fecha(e.ts) + '</span><div><b>' + esc(etq(e.evento)) + '</b> — ' + esc(e.usuario) + (e.despues && e.despues.nota ? '<div style="color:var(--txt2)">' + esc(e.despues.nota) + '</div>' : '') + '</div></div>'; });
+    h += '</div>';
+  }
+  h += '</div>';
+  app().innerHTML = h;
+}
+async function imprimirOC(id) { try { await api('marcar_oc', { oc_id: Number(id), accion_oc: 'pdf_descargado' }); } catch (e) {} window.print(); }
+async function marcarOC(id, acc) { await api('marcar_oc', { oc_id: Number(id), accion_oc: acc }); vOC(id); }
+
+async function guardarProveedor(pid) {
+  const r = await api('admin_guardar_proveedor', { proveedor_id: pid, email_pedidos: $('pv_mail').value, email_cc: $('pv_cc').value });
+  if (r.ok) { const p = CA.data.proveedores.find(x => x.proveedor_id === pid); p.email_pedidos = $('pv_mail').value; p.email_cc = $('pv_cc').value; $('pv_mail').style.borderColor = 'var(--verde)'; }
+}
+async function correoProveedor(id, btn) {
+  btn.disabled = true; btn.textContent = '📧 Enviando…';
+  try {
+    const det = await api('detalle', { tipo: 'oc', id: Number(id) }); const html = (det.formato && det.formato.tipo === 'gepp') ? htmlOCGepp(det) : null;
+    const r = await api('correo_oc', { oc_id: Number(id), destino: 'proveedor', html });
+    if (r.ok) { alert('Orden enviada a ' + r.enviado_a + (r.cc ? ' con copia a ' + r.cc : '') + ' desde facturas@grupolem.com.'); vOC(id); }
+    else { alert('No se envió: ' + (r.detalle || r.error)); btn.disabled = false; btn.textContent = '📧 Enviar al proveedor por correo'; }
+  } catch (e) { alert('No se pudo enviar el correo. Revisa que el proveedor tenga correo de pedidos en 📦 Catálogo.'); btn.disabled = false; btn.textContent = '📧 Enviar al proveedor por correo'; }
+}
+
+/* ── Formato de OC de GEPP (Pepsi) ─────────────────────── */
+function htmlOCGepp(d) {
+  const f = d.formato || {}, sd = f.sucursal || {};
+  const fechaOC = new Date(d.creada_el).toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const m2 = (n) => '$' + Number(n || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const B = 'border:1px solid #222;padding:4px 6px;font-size:12px;';
+  const box = (t, extra) => '<div style="border:1px solid #222;padding:5px 8px;font-size:12.5px;text-align:center;margin-bottom:5px;' + (extra || '') + '">' + t + '</div>';
+  const lineas = (d.lineas || []).filter(l => Number(l.cantidad) > 0);
+  let cajas = 0, total = 0, filas = '';
+  lineas.forEach(l => {
+    const lf = l.formato || {};
+    const compra = Number(l.cantidad), piezas = compra * Number(l.fraccion || 1);
+    const precio = lf.precio_pactado != null ? Number(lf.precio_pactado) : Number(l.precio || 0) * Number(l.fraccion || 1);
+    const monto = precio * compra; cajas += compra; total += monto;
+    filas += '<tr><td style="' + B + 'text-align:center;background:#dce6f1">' + esc(lf.sku || l.codigo || '') + '</td><td style="' + B + 'text-align:center;background:#dce6f1">' + esc(lf.sku || l.codigo || '') + '</td>' +
+      '<td style="' + B + '">' + esc(lf.nombre || l.insumo) + (lf.sku ? '' : ' <span style="color:#c00;font-size:10px">(fuera del formato)</span>') + '</td>' +
+      '<td style="' + B + 'text-align:center;font-weight:700">' + piezas + '</td><td style="' + B + '">' + esc(lf.presentacion || l.presentacion || '') + '</td>' +
+      '<td style="' + B + 'text-align:center;font-weight:700;font-size:14px">' + compra + '</td><td style="' + B + 'text-align:center">' + esc(lf.unidad || 'CAJA') + '</td>' +
+      '<td style="' + B + 'text-align:right">' + m2(precio) + '</td><td style="' + B + '"></td><td style="' + B + 'text-align:center">' + esc(lf.iva || (Number(l.tasa_iva) > 0 ? 'SI' : 'NO')) + '</td><td style="' + B + '"></td>' +
+      '<td style="' + B + 'text-align:right">' + m2(monto) + '</td></tr>';
+  });
+  const th = (t) => '<th style="' + B + 'background:#8a8a8a;color:#fff;text-align:center;font-size:11px">' + t + '</th>';
+  return '<div style="font-family:Arial,Helvetica,sans-serif;color:#111;max-width:980px;border:1px solid #222;padding:8px">' +
+    '<table style="width:100%;border-collapse:collapse;margin-bottom:8px"><tr>' +
+    '<td style="width:90px;padding:4px"><div style="display:inline-block;background:#c0262d;color:#fff;font-weight:900;font-size:11px;line-height:1;padding:6px 6px;border-radius:3px">DOÑA<br>TOTA</div></td>' +
+    '<td style="background:#bdd7ee;text-align:center;font-weight:800;font-size:20px;padding:8px">' + esc(f.titulo || 'ORDEN DE COMPRA DOÑA TOTA FRANQUICIAS') + '</td>' +
+    '<td style="width:170px;background:#e6e6e6;text-align:center;font-weight:800;font-size:14px;padding:8px">FOLIO ' + esc(d.folio) + '</td></tr></table>' +
+    '<table style="width:100%;border-collapse:collapse"><tr><td style="width:50%;vertical-align:top;padding:0 14px 0 4px">' +
+      '<div style="text-align:center;font-weight:700;font-size:11px">DIAS DE PEDIDO</div>' +
+      '<table style="width:100%;border-collapse:collapse;margin-bottom:5px"><tr><td style="' + B + 'text-align:center;width:50%">' + fechaOC + '</td><td style="' + B + 'text-align:center">' + esc(sd.dias_pedido || 'no especificado') + '</td></tr></table>' +
+      box('<b style="font-size:19px">' + esc(sd.nombre_formato || d.sucursal) + '</b>') + box(esc(sd.linea_sucursal || 'SUCURSAL DOÑA TOTA ' + d.sucursal.toUpperCase())) +
+      box(esc(sd.ciudad || 'CHIHUAHUA, CHIH')) + box(esc(sd.direccion || 'dirección no especificada')) + box('<b>' + esc(sd.contacto || 'GERENTE EN TURNO') + '</b>', 'background:#e6e6e6') +
+    '</td><td style="width:50%;vertical-align:top;padding:0 4px">' +
+      '<table style="width:100%;border-collapse:separate;border-spacing:0 5px;font-size:12.5px">' +
+      '<tr><td style="text-align:right;padding-right:6px;white-space:nowrap"><b>NUD</b></td><td style="' + B + 'text-align:center;width:110px;font-weight:700">' + esc(sd.codigo_cliente || '—') + '</td><td style="font-size:11px;padding-left:6px">' + esc(f.nota_codigo || '') + '</td></tr>' +
+      '<tr><td style="text-align:right;padding-right:6px">Nombre Comercial:</td><td colspan="2" style="' + B + 'text-align:center;font-weight:800;font-size:15px">' + esc(f.nombre_comercial || d.proveedor) + '</td></tr>' +
+      '<tr><td style="text-align:right;padding-right:6px">Razón Social:</td><td colspan="2" style="' + B + 'text-align:center">' + esc(f.razon_social || d.proveedor) + '</td></tr>' +
+      '<tr><td style="text-align:right;padding-right:6px">Correo:</td><td colspan="2" style="' + B + 'text-align:center">' + esc(f.correo || '') + '</td></tr>' +
+      '<tr><td style="text-align:right;padding-right:6px">Dirección:</td><td colspan="2" style="' + B + 'text-align:center">' + esc(f.direccion || '') + '</td></tr>' +
+      '<tr><td style="text-align:right;padding-right:6px">Dirigido a:</td><td colspan="2" style="' + B + 'text-align:center">' + esc(f.dirigido_a || '') + '</td></tr></table>' +
+    '</td></tr></table>' +
+    '<table style="width:100%;border-collapse:collapse;margin-top:10px"><tr>' + th('SKU<br>PROVEEDOR') + th('SKU') + th('NOMBRE DEL PRODUCTO') + th('Piezas') + th('Presentacion') + th('COMPRA') + th('UNIDAD DE<br>COMPRA') + th('PRECIO<br>PACTADO') + th('ÚLTIMO<br>PRECIO<br>FACTURA') + th('IVA') + th('VIGENCIA DEL<br>PRECIO') + th('MONTO TOTAL') + '</tr>' + filas +
+    '<tr><td colspan="4" style="border:none"></td><td style="' + B + 'background:#bdd7ee;font-weight:700">Total de cajas</td><td style="' + B + 'background:#bdd7ee;text-align:center;font-weight:800">' + cajas + '</td><td colspan="4" style="border:none"></td>' +
+    '<td style="border:none;text-align:right;font-size:11px;padding-right:6px">TOTAL DE COMPRA</td><td style="' + B + 'text-align:right;font-weight:800">' + m2(total) + '</td></tr></table>' +
+    (lineas.length ? '' : '<div style="color:#c00;font-size:12px;margin-top:6px">Sin renglones con cantidad.</div>') +
+    '</div>';
+}
+
+/* ── Recepción del gerente ─────────────────────────────── */
+async function vRecibir() {
+  app().innerHTML = nav() + '<div class="msg">Buscando pedidos en camino…</div>';
+  const r = await api('ocs_por_recibir', { branch_id: S.branch });
+  S.porRecibir = r.ocs || [];
+  let h = nav() + '<div class="cat-h">Pedidos en camino (' + S.porRecibir.length + ')</div>';
+  if (!S.porRecibir.length) h += '<div class="msg">No hay pedidos en camino. Cuando el asesor autorice y se mande al proveedor, aparecerán aquí.</div>';
+  S.porRecibir.forEach(o => {
+    const tot = o.lineas.length, comp = o.lineas.filter(l => Number(l.recibida) >= Number(l.cantidad)).length;
+    h += '<div class="card" style="cursor:pointer" onclick="location.hash=\'recibir-' + o.oc_id + '\'"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+      '<div><b style="font-size:17px">' + esc(o.proveedor) + '</b> <span class="chip ' + esc(o.estado) + '">' + esc(etq(o.estado)) + '</span><div style="font-size:12.5px;color:var(--txt2)">' + esc(o.folio) + ' · enviada ' + fecha(o.enviada_el) + '</div></div>' +
+      '<div style="text-align:right"><b style="font-size:16px">' + tot + ' producto' + (tot === 1 ? '' : 's') + '</b>' + (comp ? '<div style="font-size:12px;color:var(--txt2)">' + comp + ' ya completos</div>' : '') + '</div></div>' +
+      '<div style="margin-top:8px"><span class="btn mini">📥 Recibir</span></div></div>';
+  });
+  app().innerHTML = h;
+}
+async function vRecibirOC(id) {
+  if (!S.porRecibir) { const r = await api('ocs_por_recibir', { branch_id: S.branch }); S.porRecibir = r.ocs || []; }
+  const o = S.porRecibir.find(x => String(x.oc_id) === String(id));
+  if (!o) { location.hash = 'recibir'; return; }
+  let h = nav() + '<div class="card"><b style="font-size:18px">' + esc(o.proveedor) + '</b> <span class="chip ' + esc(o.estado) + '">' + esc(etq(o.estado)) + '</span><div style="font-size:13px;color:var(--txt2)">' + esc(o.folio) + '</div>' +
+    '<div class="presu" style="margin-top:6px">Escribe cuánto <b>llegó hoy</b> de cada producto. Si llegó todo, usa el botón verde.</div></div><div class="card rec">';
+  o.lineas.forEach(l => {
+    const pend = Number(l.cantidad) - Number(l.recibida);
+    const u = presInfo(l);
+    h += '<div class="item"><div class="info"><div class="n">' + esc(l.insumo) + '</div><div class="d">Pediste <b>' + l.cantidad + ' ' + plural(u.tipo, l.cantidad) + '</b>' + (u.n > 1 ? ' (' + u.n + ' ' + u.det + ' c/u)' : '') + (Number(l.recibida) > 0 ? ' · ya recibiste ' + l.recibida : '') + '</div></div>' +
+      (pend <= 0 ? '<span class="chip recibida">✔ completo</span>' :
+        '<div style="text-align:right"><div class="d">llegaron</div><input type="number" min="0" max="' + pend + '" step="1" inputmode="numeric" value="' + pend + '" data-l="' + l.oc_linea_id + '" data-p="' + pend + '" oninput="pintarFalta(this)"><div class="d falta" id="f-' + l.oc_linea_id + '"></div></div>') + '</div>';
+  });
+  h += '</div><div class="card"><label style="font-size:13px;color:var(--txt2)">Nota (opcional: qué faltó, qué llegó mal)<input id="rec_nota" style="width:100%;padding:10px;border:1px solid var(--borde);border-radius:8px;font-size:15px;margin-top:4px" placeholder="Ej. faltaron 2 cajas de Pepsi 400"></label>' +
+    '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" style="background:var(--verde)" onclick="recibirTodo(' + o.oc_id + ', this)">✅ Llegó todo</button>' +
+    '<button class="btn sec" onclick="guardarRecepcion(' + o.oc_id + ', this)">💾 Guardar lo que llegó</button><a class="btn sec" href="#recibir">Cancelar</a></div></div>';
+  app().innerHTML = h;
+}
+function pintarFalta(inp) { const p = Number(inp.dataset.p), v = Number(inp.value || 0); const f = $('f-' + inp.dataset.l); if (v > p) { inp.value = p; f.textContent = ''; return; } f.textContent = v < p ? 'faltan ' + (p - v) : ''; }
+function lineasRecepcion() { return Array.from(document.querySelectorAll('.rec input[type=number]')).map(i => ({ oc_linea_id: Number(i.dataset.l), recibida: Number(i.value || 0) })); }
+async function recibirTodo(id, btn) { document.querySelectorAll('.rec input[type=number]').forEach(i => { i.value = i.dataset.p; }); await guardarRecepcion(id, btn); }
+async function guardarRecepcion(id, btn) {
+  const lineas = lineasRecepcion();
+  if (!lineas.some(l => l.recibida > 0)) { alert('No has marcado nada como recibido.'); return; }
+  const faltan = lineas.filter(l => { const i = document.querySelector('.rec input[data-l="' + l.oc_linea_id + '"]'); return Number(i.dataset.p) > l.recibida; }).length;
+  if (faltan && !confirm('Quedan ' + faltan + ' producto' + (faltan === 1 ? '' : 's') + ' con faltante. ¿Guardar así? (podrás recibir el resto después)')) return;
+  btn.disabled = true;
+  S.porRecibir = null;   // pase lo que pase, al volver a esta pantalla se piden al servidor los pendientes reales (no los de antes de guardar)
+  let r;
+  try { r = await api('recibir_oc', { oc_id: id, lineas, nota: $('rec_nota').value }); }
+  catch (e) { if (rechazoDelServidor(e)) btn.disabled = false; return; }
+  S.porRecibir = null;
+  app().innerHTML = nav() + '<div class="card ok-big">' + (r.completa ? '✅<p><b>Pedido recibido completo.</b></p>' : '📦<p><b>Recepción parcial guardada.</b></p><p>Lo que falte lo recibes después desde 📥 Recibir.</p>') +
+    '<p style="margin-top:8px;color:var(--txt2)">Se generó la cuenta por pagar <b>' + esc(r.cxp.folio) + '</b> por ' + money(r.cxp.total) + ' (con IVA) para contabilidad.</p>' +
+    '<p style="margin-top:14px"><a class="btn sec" href="#recibir">Volver a pedidos en camino</a></p></div>';
+}
+
+/* ── Por pagar (asesor / contabilidad) ─────────────────── */
+async function vPorPagar() {
+  app().innerHTML = nav() + '<div class="msg">Cargando cuentas por pagar…</div>';
+  const r = await api('por_pagar');
+  const lst = r.por_pagar || [];
+  const pend = lst.filter(c => c.estado === 'pendiente'), conc = lst.filter(c => c.estado !== 'pendiente');
+  const tot = (a) => a.reduce((x, c) => x + Number(c.total), 0);
+  let h = nav() + '<div class="card"><b>Lo que debemos por lo recibido</b><div class="presu">Cada recepción de sucursal genera una cuenta por pagar. Amárrala a la factura (CFDI) del proveedor: el gasto real es el CFDI.</div>' +
+    '<div style="display:flex;gap:16px;margin-top:8px"><div><div class="d" style="font-size:12px;color:var(--txt2)">Pendientes</div><b style="font-size:18px">' + money(tot(pend)) + '</b> <span style="color:var(--txt2)">(' + pend.length + ')</span></div>' +
+    '<div><div class="d" style="font-size:12px;color:var(--txt2)">Conciliadas</div><b style="font-size:18px">' + money(tot(conc)) + '</b> <span style="color:var(--txt2)">(' + conc.length + ')</span></div></div></div>';
+  if (!lst.length) h += '<div class="msg">Todavía no hay recepciones.</div>';
+  const card = (c) => {
+    let x = '<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><div><b style="font-size:16px">' + esc(c.proveedor) + '</b> · ' + esc(c.sucursal.replace(' Chihuahua', '')) + ' <span class="chip ' + esc(c.estado) + '">' + esc(etq(c.estado)) + '</span>' +
+      '<div style="font-size:12.5px;color:var(--txt2)">' + esc(c.folio) + ' · de <a href="#oc-' + c.oc_id + '">' + esc(c.oc_folio) + '</a> · recibido ' + fecha(c.recibido_el) + ' por ' + esc(String(c.recibido_por).split('@')[0]) + (c.completa ? '' : ' · <span class="chip recibida_parcial">parcial</span>') + '</div></div>' +
+      '<div style="text-align:right"><b style="font-size:17px">' + money(c.total) + '</b><div style="font-size:12px;color:var(--txt2)">' + money(c.subtotal) + ' + IVA ' + money(c.iva) + '</div></div></div>';
+    if (c.estado === 'pendiente') {
+      x += '<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><select id="cf-' + c.cxp_id + '" style="padding:8px;border:1px solid var(--borde);border-radius:8px;font-size:14px;max-width:100%">' +
+        '<option value="">— Elegir factura (CFDI) —</option>' + (c.candidatos || []).map(k => '<option value="' + k.uuid + '">' + esc((k.serie || '') + (k.folio || '')) + ' · ' + String(k.fecha).slice(0, 10) + ' · ' + money(k.total) + (Math.abs(Number(k.dif)) < 1 ? ' ✔ cuadra' : ' (dif ' + money(k.dif) + ')') + '</option>').join('') + '</select>' +
+        '<button class="btn mini" onclick="conciliar(' + c.cxp_id + ')">Amarrar</button>' + (!(c.candidatos || []).length ? '<span class="d" style="font-size:12px;color:var(--txt2)">sin facturas de este proveedor en la base todavía</span>' : '') + '</div>';
+    } else if (c.cfdi) {
+      x += '<div style="margin-top:8px;font-size:13px">Factura <b>' + esc((c.cfdi.serie || '') + (c.cfdi.folio || '')) + '</b> · ' + String(c.cfdi.fecha).slice(0, 10) + ' · ' + money(c.cfdi.total) + (Math.abs(Number(c.cfdi.total) - Number(c.total)) >= 1 ? ' <span class="chip rechazada">dif ' + money(Number(c.cfdi.total) - Number(c.total)) + '</span>' : ' <span class="chip recibida">cuadra</span>') +
+        ' <button class="btn mini sec" onclick="desconciliar(' + c.cxp_id + ')">Desamarrar</button></div>';
+    }
+    return x + '</div>';
+  };
+  if (pend.length) { h += '<div class="cat-h">Pendientes de amarrar</div>'; pend.forEach(c => { h += card(c); }); }
+  if (conc.length) { h += '<div class="cat-h">Conciliadas</div>'; conc.forEach(c => { h += card(c); }); }
+  app().innerHTML = h;
+}
+async function conciliar(id) { const u = $('cf-' + id).value; if (!u) { alert('Elige la factura.'); return; } const r = await api('conciliar_cxp', { cxp_id: id, uuid: u }); if (r.error) alert(r.detalle || r.error); vPorPagar(); }
+async function desconciliar(id) { if (!confirm('¿Desamarrar esta cuenta de la factura?')) return; await api('conciliar_cxp', { cxp_id: id, uuid: null }); vPorPagar(); }
+
+/* ── Arranque ──────────────────────────────────────────── */
+window.addEventListener('load', () => { S.token ? arrancar() : vLogin(); });
+</script>
+</body>
+</html>
