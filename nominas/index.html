@@ -950,7 +950,9 @@ function porHoraHtml() {
         : Number(dm.horas_ideales) > Number(dm.horas_disponibles)
         ? '<span style="color:#8C1F1B;font-weight:600">La venta pediría ' + Number(dm.horas_ideales) + ': faltan ' + (Number(dm.horas_ideales) - Number(dm.horas_disponibles)) + ' horas-persona.</span> La recomendación reparte las que hay: 2 al cierre y las horas de más venta primero; las de menos venta pueden quedar con 1.'
         : 'Alcanza para lo que pide la venta (' + Number(dm.horas_ideales) + ' horas-persona).') + '</p>' : '') +
-    '<p class="text-xs text-gray-500 mb-3">Recomendado con la venta promedio de esta sucursal del ' + fmtCorta(dm.desde) + ' al ' + fmtCorta(dm.hasta) + ': ' + Number(dm.capacidad) + ' tickets por persona por hora, mínimo ' + Number(dm.minimo_apertura) + ' en la hora de apertura y ' + Number(dm.minimo_resto) + ' el resto del día. El número chico es el promedio de tickets de esa hora.</p>' +
+    (dm.entrada_trabajo   // mig. 124: el día va del horario de trabajo de la sucursal, no solo de las horas con venta
+      ? '<p class="text-xs text-gray-500 mb-3">Horario de trabajo de la sucursal: <b>' + hCorta(dm.entrada_trabajo) + ' a ' + hCorta(dm.salida_trabajo) + '</b>. Recomendado con la venta promedio del ' + fmtCorta(dm.desde) + ' al ' + fmtCorta(dm.hasta) + ': ' + Number(dm.capacidad) + ' tickets por persona por hora, mínimo ' + Number(dm.minimo_apertura) + ' en la apertura y en la preparación (antes de que empiece la venta) y ' + Number(dm.minimo_resto) + ' desde que hay venta hasta la salida. El número chico es el promedio de tickets de esa hora.</p>'
+      : '<p class="text-xs text-gray-500 mb-3">Recomendado con la venta promedio de esta sucursal del ' + fmtCorta(dm.desde) + ' al ' + fmtCorta(dm.hasta) + ': ' + Number(dm.capacidad) + ' tickets por persona por hora, mínimo ' + Number(dm.minimo_apertura) + ' en la hora de apertura y ' + Number(dm.minimo_resto) + ' el resto del día. El número chico es el promedio de tickets de esa hora.</p>') +
     '<div class="overflow-auto">' + t + '</div><div class="mt-3 flex flex-wrap gap-2 text-xs">' +
     [['#ECF7E8', '#2A5A0E', 'Completo'], ['#FFF4ED', '#9A3412', 'Falta 1'], ['#FCE7E5', '#8C1F1B', 'Faltan 2 o más'], ['#EFF6FF', '#0F4471', 'Sobran 2 o más']]
       .map(([b, f, tx]) => '<span style="padding:3px 8px;border-radius:6px;background:' + b + ';color:' + f + '">' + tx + '</span>').join('') + '</div></div>';
@@ -958,9 +960,15 @@ function porHoraHtml() {
 function coberturaHtml() { const d = S.horario; return DIAS.map((x, k) => { const n = d.lineas.filter(l => l.dias && l.dias[k] && l.dias[k].tipo === 'trabaja').length; return '<div class="rounded-lg text-sm" style="padding:6px 12px;background:' + (n === 0 ? '#FCE7E5' : 'var(--bg)') + ';border:1px solid var(--border)"><span class="text-gray-500">' + x + '</span> <span class="num font-medium" style="color:' + (n === 0 ? '#8C1F1B' : 'var(--text)') + '">' + n + '</span></div>'; }).join(''); }
 function findesHtml() { const d = S.horario; const f = []; d.lineas.forEach(l => { const ds = [4, 5, 6].filter(k => l.dias && l.dias[k] && l.dias[k].tipo === 'descanso').map(k => ['viernes', 'sábado', 'domingo'][k - 4]); if (ds.length) f.push({ n: partesNombre(l.nombre)[0], ds }); }); if (!f.length) return '';
   return '<div class="mt-4 rounded-lg p-3" style="background:#FFF4ED;border:1px solid #FDBA8C"><div class="flex items-center gap-15 text-sm font-medium mb-1" style="color:#9A3412">' + icon('alert', 14) + 'Descansos en fin de semana (' + f.length + ')</div><p class="text-xs mb-2" style="color:#9A3412">Viernes, sábado y domingo son días pico. Estos descansos quedarán visibles para el asesor y la administración:</p>' + f.map(x => '<div class="text-xs" style="color:#7C2D12">• <strong>' + esc(x.n) + '</strong> descansa ' + x.ds.join(' y ') + '</div>').join('') + '</div>'; }
-function abrirHcell(i, k) { const l = S.horario.lineas[i]; const val = (l.dias && l.dias[k]) || {}; const t = val.tipo || 'trabaja'; const dn = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+/* Turno que propone el modal de una celda vacía: desde la entrada del horario de trabajo (mig. 124) con las horas de un turno, sin pasar
+   de la salida; sin horario de trabajo (sucursal no habilitada o sin la 124), de 9:00 a 17:00 como antes */
+function turnoInicial() {
+  const dm = S.horDem; if (!dm || !dm.entrada_trabajo) return ['09:00', '17:00'];
+  const a = minDia(dm.entrada_trabajo); return [minTxt(a), minTxt(Math.min(a + (Number(dm.horas_turno) || 8) * 60, minDia(dm.salida_trabajo)))];
+}
+function abrirHcell(i, k) { const l = S.horario.lineas[i]; const val = (l.dias && l.dias[k]) || {}; const t = val.tipo || 'trabaja'; const dn = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']; const ti = turnoInicial();
   modal('<h2 class="text-lg font-medium">' + esc(partesNombre(l.nombre)[0]) + '</h2><p class="text-sm text-gray-500 mb-4" style="margin-top:2px">' + dn[k] + ' · ¿Qué tiene asignado?</p><div class="grid grid-3" style="gap:8px" id="htipos">' + [['trabaja', 'Trabaja'], ['descanso', 'Descanso'], ['vacaciones', 'Vacaciones'], ['pcgs', 'Permiso c/goce'], ['psgs', 'Permiso s/goce']].map(([v, tt]) => '<button class="tipo-btn' + (t === v ? ' on' : '') + '" data-v="' + v + '" onclick="elegirHtipo(this)">' + tt + '</button>').join('') + '</div>' +
-    '<div class="grid grid-2 mt-4" style="gap:12px" id="hhoras"' + (t === 'trabaja' ? '' : ' hidden') + '><div>' + lbl('Hora de entrada') + '<input class="inp num" type="time" id="hent" value="' + esc(val.entrada || '09:00') + '"></div><div>' + lbl('Hora de salida') + '<input class="inp num" type="time" id="hsal" value="' + esc(val.salida === '24:00' ? '00:00' : (val.salida || '17:00')) + '"></div></div>' +
+    '<div class="grid grid-2 mt-4" style="gap:12px" id="hhoras"' + (t === 'trabaja' ? '' : ' hidden') + '><div>' + lbl('Hora de entrada') + '<input class="inp num" type="time" id="hent" value="' + esc(val.entrada || ti[0]) + '"></div><div>' + lbl('Hora de salida') + '<input class="inp num" type="time" id="hsal" value="' + esc((val.salida || ti[1]) === '24:00' ? '00:00' : (val.salida || ti[1])) + '"></div></div>' +
     '<p class="text-sm text-gray-500 mt-3" id="hnota">' + ({ trabaja: '', descanso: 'Este colaborador descansa ese día.', vacaciones: 'Este colaborador estará de vacaciones ese día.', pcgs: 'Permiso <strong>con</strong> goce de sueldo. En la pre-nómina aparecerá como PCGS.', psgs: 'Permiso <strong>sin</strong> goce de sueldo. En la pre-nómina aparecerá como PSGS.' }[t]) + '</p><div class="flex justify-between gap-2 mt-5 pt-4" style="border-top:1px solid var(--border)"><button class="btn btn-ghost text-gray-500" onclick="setHcell(' + i + ',' + k + ',null)">Limpiar</button><div class="flex gap-2"><button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button><button class="btn btn-primary" onclick="guardarHcell(' + i + ',' + k + ')">Guardar</button></div></div>', 420); }
 function elegirHtipo(b) { [...document.querySelectorAll('#htipos .tipo-btn')].forEach(x => x.classList.remove('on')); b.classList.add('on'); const v = b.dataset.v; $('hhoras').hidden = v !== 'trabaja'; $('hnota').innerHTML = { trabaja: '', descanso: 'Este colaborador descansa ese día.', vacaciones: 'Este colaborador estará de vacaciones ese día.', pcgs: 'Permiso <strong>con</strong> goce de sueldo. En la pre-nómina aparecerá como PCGS.', psgs: 'Permiso <strong>sin</strong> goce de sueldo. En la pre-nómina aparecerá como PSGS.' }[v]; }
 function guardarHcell(i, k) { const v = (document.querySelector('#htipos .tipo-btn.on') || { dataset: {} }).dataset.v || 'trabaja'; setHcell(i, k, v === 'trabaja' ? { tipo: v, entrada: $('hent').value, salida: $('hsal').value === '00:00' ? '24:00' : $('hsal').value } : { tipo: v }); }   // 00:00 de salida = fin del día
@@ -1053,11 +1061,18 @@ async function guardarDisp(i) {
 const H_FIJO = { descanso: true, vacaciones: true, pcgs: true, psgs: true };
 function minDia(t) { const p = String(t || '').split(':'); return Number(p[0]) * 60 + Number(p[1] || 0); }
 function horaTxt(h) { return (h < 10 ? '0' : '') + h + ':00'; }
+function minTxt(m) { const h = Math.floor(m / 60), mm = m % 60; return (h < 10 ? '0' : '') + h + ':' + (mm < 10 ? '0' : '') + mm; }
+function hCorta(t) { return String(Number(String(t).slice(0, 2))) + String(t).slice(2, 5); }   // '07:00' → '7:00'
 async function sugerirAcomodo() {
   const d = S.horario, dm = S.horDem; if (!d || !dm) return;
   if (!(dm.horas || []).length) { toast('No hay venta suficiente de las semanas anteriores para sugerir un acomodo.'); return; }
   if (!S.horDisp) { toast('No se pudo cargar la disponibilidad del equipo. Recarga la página antes de sugerir el acomodo.'); return; }   // sin ella, todos parecerían disponibles todo el día
   const TH = Number(dm.horas_turno) || 8;   // Sergio: siempre turnos de 8 horas (lem.horario_parametros.horas_turno)
+  // mig. 124: el turno cabe en minutos dentro del horario de trabajo y de la disponibilidad de la persona (Fuentes Mares sale a las
+  // 21:30: el turno de la tarde es 13:30–21:30). Sin la 124, el horario es el de las horas con venta, como antes.
+  const salT = dm.salida_trabajo ? minDia(dm.salida_trabajo) : null, entT = dm.entrada_trabajo ? minDia(dm.entrada_trabajo) : null;
+  const turnoSugerido = m => ({ entrada: minTxt(m), salida: minTxt(m + TH * 60) });
+  const horasDe = m => { const r = []; for (let h = Math.floor(m / 60); h <= Math.ceil((m + TH * 60) / 60) - 1; h++) r.push(h); return r; };   // misma regla que lem.fn_horario_programadas
   const pasado = k => diaPasado(d.lunes, k);
   const activos = d.lineas.filter(l => !l.estatus || l.estatus === 'activo');
   if (activos.some(l => l.dias && Object.values(l.dias).some(v => v && v.tipo === 'trabaja'))
@@ -1071,8 +1086,10 @@ async function sugerirAcomodo() {
   };
   // libre: no trabaja ese día (descanso/vacaciones/permiso marcado, día pasado, tienda cerrada o sin disponibilidad para un turno
   // completo dentro del horario de la tienda; misma regla que lem.fn_horario_capacidad). forzado: el descanso que pone la sugerencia.
+  // cabe: los inicios posibles del turno en minutos (cada hora en punto que cabe, más el primero y el último posibles), o null
   const cabe = (cid, k) => { const v = ventana(cid, k); if (!v || abre(k) == null) return null;
-    const lo = Math.max(abre(k), Math.ceil(v[0] / 60)), hi = Math.min(cierra(k), Math.floor(v[1] / 60)) - TH; return lo <= hi ? [lo, hi] : null; };
+    const lo = Math.max(entT != null ? entT : abre(k) * 60, v[0]), hi = Math.min(salT != null ? salT : cierra(k) * 60, v[1]) - TH * 60;
+    if (lo > hi) return null; const r = [lo]; for (let m = Math.ceil(lo / 60) * 60; m <= hi; m += 60) if (m !== lo) r.push(m); if (r[r.length - 1] !== hi) r.push(hi); return r; };
   const libre = {}, forzado = {}; let noCupo = 0;
   activos.forEach(l => { const m = libre[l.colaborador_id] = {}; forzado[l.colaborador_id] = {};
     for (let k = 0; k < 7; k++) {
@@ -1095,21 +1112,20 @@ async function sugerirAcomodo() {
     if (abre(k) == null || pasado(k)) continue;
     const a0 = abre(k), c0 = cierra(k), cub = {};
     const gente = activos.filter(l => !libre[l.colaborador_id][k]).map(l => ({ l, r: cabe(l.colaborador_id, k) }))
-      .sort((x, y) => (x.r[1] - x.r[0]) - (y.r[1] - y.r[0]));
+      .sort((x, y) => (x.r[x.r.length - 1] - x.r[0]) - (y.r[y.r.length - 1] - y.r[0]));
     if (!gente.length) sinNadie.push(DIAS[k]);
     for (const { l, r } of gente) {
-      const lo = r[0], hi = r[1];
       let best = null, bestP = -1;
-      for (let s = lo; s <= hi; s++) {
+      for (const s of r) {
         let p = 0;
-        for (let h = s; h < s + TH; h++) if (nec[k][h] != null) {   // apertura y cierre primero (Sergio: "para el cierre son dos")
+        for (const h of horasDe(s)) if (nec[k][h] != null) {   // apertura y cierre primero (Sergio: "para el cierre son dos")
           const c = cub[h] || 0, peso = (h === a0 || h === c0 - 1) ? 3000 : 1000;
           p += Math.max(0, nec[k][h] - c) * peso + tk[k][h] / (c + 1);
         }
         if (p > bestP) { bestP = p; best = s; }
       }
       (turnos[l.colaborador_id] = turnos[l.colaborador_id] || {})[k] = best;
-      for (let h = best; h < best + TH; h++) cub[h] = (cub[h] || 0) + 1;
+      for (const h of horasDe(best)) cub[h] = (cub[h] || 0) + 1;
     }
   }
   let nT = 0, nD = 0;
@@ -1119,7 +1135,7 @@ async function sugerirAcomodo() {
       const v = l.dias[k]; if ((v && H_FIJO[v.tipo]) || pasado(k)) continue;
       const s = turnos[l.colaborador_id] && turnos[l.colaborador_id][k];
       if (forzado[l.colaborador_id][k]) { l.dias[k] = { tipo: 'descanso' }; nD++; }
-      else if (s != null) { l.dias[k] = { tipo: 'trabaja', entrada: horaTxt(s), salida: horaTxt(s + TH) }; nT++; }
+      else if (s != null) { l.dias[k] = Object.assign({ tipo: 'trabaja' }, turnoSugerido(s)); nT++; }
       else delete l.dias[k];   // no puede ese día o la tienda no abre: queda vacío, no como descanso
     }
   });
@@ -1137,7 +1153,7 @@ function pdfHorario() {
   const celda = v => !v ? '—' : v.tipo === 'trabaja' ? (v.entrada || '?') + '–' + (v.salida || '?') : ({ descanso: 'Descanso', vacaciones: 'Vacaciones', pcgs: 'Permiso', psgs: 'Permiso' }[v.tipo] || '—');
   const cob = DIAS.map((x, k) => d.lineas.filter(l => l.dias && l.dias[k] && l.dias[k].tipo === 'trabaja').length);
   modal('<div class="no-print flex items-center justify-between pb-4 mb-4" style="border-bottom:1px solid var(--border)"><div class="text-sm text-gray-500">Vista previa del horario</div><div class="flex gap-2"><button class="btn btn-secondary" onclick="cerrarModal()">Cerrar</button><button class="btn btn-primary" onclick="window.print()">' + icon('file', 14) + 'Imprimir / Guardar PDF</button></div></div>' +
-    '<div class="hoja" style="padding:8px"><div class="flex items-center justify-between mb-6" style="border-bottom:2px solid #1A1A1A;padding-bottom:12px"><div><div style="font-size:20px;font-weight:700;letter-spacing:-0.02em">Horario de la semana</div><div style="font-size:13px;color:#555">' + esc(d.sucursal) + '</div></div><div style="text-align:right;font-size:12px;color:#555"><div>' + fmtFecha(d.lunes) + ' al ' + fmtFecha(d.domingo) + '</div>' + (d.estado === 'definido' ? '' : '<div style="color:#7A4B05;font-weight:600">Borrador</div>') + '</div></div>' +
+    '<div class="hoja" style="padding:8px"><div class="flex items-center justify-between mb-6" style="border-bottom:2px solid #1A1A1A;padding-bottom:12px"><div><div style="font-size:20px;font-weight:700;letter-spacing:-0.02em">Horario de la semana</div><div style="font-size:13px;color:#555">' + esc(d.sucursal) + '</div>' + (S.horDem && S.horDem.entrada_trabajo ? '<div style="font-size:11px;color:#888">Horario de trabajo: ' + hCorta(S.horDem.entrada_trabajo) + ' a ' + hCorta(S.horDem.salida_trabajo) + '</div>' : '') + '</div><div style="text-align:right;font-size:12px;color:#555"><div>' + fmtFecha(d.lunes) + ' al ' + fmtFecha(d.domingo) + '</div>' + (d.estado === 'definido' ? '' : '<div style="color:#7A4B05;font-weight:600">Borrador</div>') + '</div></div>' +
     '<div class="hoja-scroll" style="overflow-x:auto"><table><thead><tr><th>Colaborador</th>' + DIAS.map((x, i) => '<th style="text-align:center;min-width:70px">' + x + '<br><span style="font-weight:400;color:#888">' + Number(addDays(d.lunes, i).slice(8, 10)) + '</span></th>').join('') + '</tr></thead><tbody>' +
     d.lineas.map(l => '<tr><td><div style="font-weight:600">' + esc(partesNombre(l.nombre)[0]) + '</div><div style="font-size:9px;color:#888">' + esc(l.puesto || '') + '</div></td>' + [0, 1, 2, 3, 4, 5, 6].map(k => '<td style="text-align:center;font-size:10.5px">' + esc(celda(l.dias && l.dias[k])) + '</td>').join('') + '</tr>').join('') +
     '<tr><td style="font-weight:600">Trabajan</td>' + cob.map(n => '<td style="text-align:center;font-weight:600">' + n + '</td>').join('') + '</tr></tbody></table></div></div>', 900);
