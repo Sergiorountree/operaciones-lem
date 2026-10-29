@@ -923,8 +923,9 @@ function porHoraHtml() {
   const dm = S.horDem; if (!dm || !(dm.horas || []).length) return '';
   const prog = progPorHora(), idx = {}; dm.horas.forEach(x => { idx[x.dia + '-' + x.hora] = x; });
   const hs = dm.horas.map(x => Number(x.hora)), h0 = Math.min(...hs), h1 = Math.max(...hs); let faltan2 = 0;
-  let t = '<table class="lem-table" style="min-width:' + (90 + (h1 - h0 + 1) * 46) + 'px"><thead><tr><th style="min-width:60px">Día</th>';
-  for (let h = h0; h <= h1; h++) t += '<th style="text-align:center;width:46px;white-space:nowrap;font-size:10.5px" title="De ' + h + ':00 a ' + (h + 1) + ':00">' + h + '–' + (h + 1) + '</th>';   // la columna 21 es de 21:00 a 22:00
+  // table-layout fijo: el día ocupa 60 px y las horas se reparten el resto, pegadas al día (antes el día se quedaba con casi todo el ancho)
+  let t = '<table class="lem-table" style="table-layout:fixed;min-width:' + (60 + (h1 - h0 + 1) * 46) + 'px"><thead><tr><th style="width:60px">Día</th>';
+  for (let h = h0; h <= h1; h++) t += '<th style="text-align:center;white-space:nowrap;font-size:10.5px;padding:10px 2px;letter-spacing:0" title="De ' + h + ':00 a ' + (h + 1) + ':00">' + h + '–' + (h + 1) + '</th>';   // la columna 21 es de 21:00 a 22:00
   t += '</tr></thead><tbody>';
   for (let k = 0; k < 7; k++) {
     t += '<tr><td class="font-medium text-sm">' + DIAS[k] + '</td>';
