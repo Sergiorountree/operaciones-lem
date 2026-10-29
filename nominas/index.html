@@ -924,7 +924,7 @@ function porHoraHtml() {
   const prog = progPorHora(), idx = {}; dm.horas.forEach(x => { idx[x.dia + '-' + x.hora] = x; });
   const hs = dm.horas.map(x => Number(x.hora)), h0 = Math.min(...hs), h1 = Math.max(...hs); let faltan2 = 0;
   let t = '<table class="lem-table" style="min-width:' + (90 + (h1 - h0 + 1) * 46) + 'px"><thead><tr><th style="min-width:60px">Día</th>';
-  for (let h = h0; h <= h1; h++) t += '<th style="text-align:center;width:46px">' + h + '</th>';
+  for (let h = h0; h <= h1; h++) t += '<th style="text-align:center;width:46px;white-space:nowrap;font-size:10.5px" title="De ' + h + ':00 a ' + (h + 1) + ':00">' + h + '–' + (h + 1) + '</th>';   // la columna 21 es de 21:00 a 22:00
   t += '</tr></thead><tbody>';
   for (let k = 0; k < 7; k++) {
     t += '<tr><td class="font-medium text-sm">' + DIAS[k] + '</td>';
