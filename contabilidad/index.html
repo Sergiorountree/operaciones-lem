@@ -199,7 +199,7 @@ const INACTIVIDAD_MIN = 15;
 const INACTIVIDAD_MS = INACTIVIDAD_MIN * 60 * 1000;
 const ACCIONES = new Set(['conta_inicio', 'conta_resultados', 'conta_facturas', 'conta_factura_decidir', 'conta_debemos', 'conta_ingresos', 'conta_cortes', 'conta_xml_subir', 'conta_xml_subidas', 'conta_espejo_cortes', 'conta_espejo_efectivo', 'ver_como_opciones']);   // ver_como_opciones: barra "Punto de vista" (mig. 097)
 const ss = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }, del(k) { try { sessionStorage.removeItem(k); } catch (e) {} } };
-const uiInicial = () => ({ excTodas: false, q: '', soloSaldo: true, orden: 'abierto', base: null, factSolo: false, mesIng: null, mesCor: null, diasFiltro: 'revisar',
+const uiInicial = () => ({ excTodas: false, q: '', soloSaldo: true, orden: 'abierto', base: null, factSolo: false, mesIng: null, ingDesde: null, ingHasta: null, mesCor: null, diasFiltro: 'revisar',
                            concBranch: null, concEstado: null, concTec: false, concDias: 14, concTiendas: [], efeOrden: 'semana',
                            resMes: null, resDest: 'consolidado', resVista: 'una', resDet: null,
                            facMes: null, facFiltro: 'todas', facQ: '', facAbiertos: {}, facSel: {}, facDet: null, facForm: null, facCtx: null, facError: null, facGuardando: false });
@@ -985,11 +985,29 @@ async function vIngresos(arg, vez) {
   else t += '<tr><td colspan="13" class="text-center text-gray-500" style="padding:24px">Sin tiendas con venta este mes.</td></tr>';
   t += '</tbody></table></div>';
   h += card('Por tienda · ' + mesLargo(d.mes), 'Ordenadas por ingreso. La variación es contra el mes anterior de la misma tienda.', t);
-  // Mes por mes
+  // Mes por mes, con periodo Desde/Hasta y total del periodo (se suma aquí, sobre los mismos montos que manda el servidor)
+  const todos = (d.meses || []).slice().sort((a, b) => a.mes < b.mes ? -1 : a.mes > b.mes ? 1 : 0);
+  const lista = todos.map(x => x.mes);
+  let desde = lista.includes(S.ui.ingDesde) ? S.ui.ingDesde : lista[0];
+  let hasta = lista.includes(S.ui.ingHasta) ? S.ui.ingHasta : lista[lista.length - 1];
+  if (desde && hasta && desde > hasta) { const t0 = desde; desde = hasta; hasta = t0; }
+  const per = todos.filter(x => x.mes >= desde && x.mes <= hasta);
+  const esTodo = per.length === todos.length;
+  const suma = k => Math.round(per.reduce((s, x) => s + N(x[k]), 0) * 100) / 100;
+  const prom = k => per.length ? Math.round(suma(k) / per.length * 100) / 100 : 0;
+  const opc = sel => lista.map(ms => '<option value="' + esc(ms) + '"' + (ms === sel ? ' selected' : '') + '>' + mesLargo(ms) + '</option>').join('');
+  const ctrlPer = lista.length ? '<div class="flex items-center gap-2 flex-wrap"><label class="text-13 flex items-center gap-1">Desde <select class="sel" data-chg="ingDesde" aria-label="Desde">' + opc(desde) + '</select></label>' +
+    '<label class="text-13 flex items-center gap-1">Hasta <select class="sel" data-chg="ingHasta" aria-label="Hasta">' + opc(hasta) + '</select></label>' +
+    '<button class="btn btn-ghost text-13" data-act="ingTodo"' + (esTodo ? ' disabled' : '') + '>Todo</button></div>' : '';
   let m = '<div class="tabla"><table class="lem-table densa" style="min-width:1160px"><thead><tr>' + th('Mes', false, ' class="fija"') + th('Total', true) + CANALES.map(([k, tx]) => th(tx, true)).join('') + th('Con IVA', true) + th('Tiendas', true) + '</tr></thead><tbody>';
-  m += (d.meses || []).map(x => '<tr class="link' + (x.mes === d.mes ? ' sel' : '') + '" data-act="mesIng" data-arg="' + esc(x.mes) + '"><td class="fija nowrap font-medium">' + mesLargo(x.mes) + '</td>' + tdP(x.total, 'font-semibold') + CANALES.map(([k]) => tdP(x[k])).join('') + tdP(x.con_iva) + tdN(x.tiendas) + '</tr>').join('');
+  m += per.map(x => '<tr class="link' + (x.mes === d.mes ? ' sel' : '') + '" data-act="mesIng" data-arg="' + esc(x.mes) + '"><td class="fija nowrap font-medium">' + mesLargo(x.mes) + '</td>' + tdP(x.total, 'font-semibold') + CANALES.map(([k]) => tdP(x[k])).join('') + tdP(x.con_iva) + tdN(x.tiendas) + '</tr>').join('');
+  if (per.length) {
+    m += '<tr class="total"><td class="fija nowrap">Total del periodo <span class="text-11 text-gray-500">(' + entero(per.length) + (per.length === 1 ? ' mes' : ' meses') + ')</span></td>' + tdP(suma('total')) + CANALES.map(([k]) => tdP(suma(k))).join('') + tdP(suma('con_iva')) + '<td></td></tr>';
+    if (per.length > 1) m += '<tr class="total"><td class="fija nowrap">Promedio por mes</td>' + tdP(prom('total')) + CANALES.map(([k]) => tdP(prom(k))).join('') + tdP(prom('con_iva')) + '<td></td></tr>';
+  } else m += '<tr><td colspan="' + (CANALES.length + 4) + '" class="text-center text-gray-500" style="padding:24px">Sin meses con ventas en la base.</td></tr>';
   m += '</tbody></table></div>';
-  h += card('Mes por mes', 'Todos los meses con ventas en la base. Clic en un mes para verlo por tienda.', m);
+  h += card('Mes por mes', 'Elige el periodo con Desde y Hasta; abajo se totaliza. Clic en un mes para verlo por tienda.', m, ctrlPer,
+    per.length ? 'Periodo: ' + mesLargo(desde) + ' a ' + mesLargo(hasta) + ' · ' + entero(per.length) + ' de ' + entero(todos.length) + ' meses. Total y canales sin IVA.' : '');
   pon(h + '</div>');
 }
 
@@ -1728,6 +1746,7 @@ document.addEventListener('change', ev => {
   else if (k === 'soloSaldo') { S.ui.soloSaldo = !!el.checked; if (S.deb && $('provs')) $('provs').innerHTML = tablaProveedores(S.deb); }
   else if (k === 'orden') { S.ui.orden = el.value; if (S.deb && $('provs')) $('provs').innerHTML = tablaProveedores(S.deb); }
   else if (k === 'factSolo') { S.ui.factSolo = !!el.checked; router(); }
+  else if (k === 'ingDesde' || k === 'ingHasta') { if (/^\d{4}-\d{2}$/.test(el.value)) { S.ui[k] = el.value; router(); } }
   else if (k === 'tienda') ir(el.value ? 'cortes/' + el.value : 'cortes');
   else if (k === 'concTienda') { S.ui.concBranch = /^\d{1,5}$/.test(el.value) ? Number(el.value) : null; const r = ruta(); const p = String(r.arg || '').split('/');
                                  if (p[0] === 'motor' && p[2]) ir('conciliacion/motor/' + p[1] + (S.ui.concBranch != null ? '/' + S.ui.concBranch : '')); else router(); }
@@ -1762,6 +1781,7 @@ function accion(k, arg) {
   else if (k === 'reintentar') router();
   else if (k === 'excTodas') { S.ui.excTodas = !S.ui.excTodas; router(); }
   else if (k === 'mesIng') { if (arg) { S.ui.mesIng = arg; router(); } }
+  else if (k === 'ingTodo') { S.ui.ingDesde = null; S.ui.ingHasta = null; router(); }
   else if (k === 'mesCor') { if (arg && /^\d{4}-\d{2}$/.test(arg)) { S.ui.mesCor = arg; router(); } }
   else if (k === 'diasFiltro') { S.ui.diasFiltro = arg || 'revisar'; router(); }
   else if (k === 'baseVer') { const v = ($('fBase') || {}).value || ''; if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) { toast('Elige una fecha.'); return; } S.ui.base = v; router(); }
