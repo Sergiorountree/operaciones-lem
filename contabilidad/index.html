@@ -1361,7 +1361,9 @@ const INGRESO_RES = new Set(['ventas_tdc', 'ventas_efectivo', 'venta_uber', 'ven
 function chipConf(c) { const x = CONF_RES[c] || [c || '—', 'conf-sf', '']; return '<span class="conf ' + x[1] + '" title="' + esc(x[2]) + '">' + esc(x[0]) + '</span>'; }
 function comoRes(c) { const k = String(c || ''); return COMO_RES[k] || (k.startsWith('sin_llave:') ? 'Sin llave (' + esc(COMO_RES[k.slice(10)] || k.slice(10)) + ')' : esc(k || '—')); }
 function nombreDestino(d, x) { const r = (d.destinos || []).find(y => y.destino === x); return r ? r.nombre : (x === 'sin_asignar' ? 'Sin asignar' : x === 'consolidado' ? 'Consolidado' : 'Sucursal ' + x); }
-function proveedorRes(p) { p = p || {}; return p.persona_fisica ? '<span class="chip chip-pf" title="Persona física: sin nombre ni RFC (clave de esta consulta)">Persona física</span>' : '<div class="font-medium">' + esc(p.nombre || p.rfc || '—') + '</div><div class="text-11 text-gray-500 num">' + esc(p.rfc || '') + '</div>'; }
+const pfConNombre = p => !!(p && p.persona_fisica && p.rfc);   // mig. 132: admin y contabilidad reciben nombre y RFC; consulta, solo la clave
+function proveedorRes(p) { p = p || {}; return p.persona_fisica && !p.rfc ? '<span class="chip chip-pf" title="Persona física: sin nombre ni RFC (clave de esta consulta)">Persona física</span>' :
+    pfConNombre(p) ? '<div class="font-medium">' + esc(p.nombre) + '</div><div class="text-11 text-gray-500"><span class="num">' + esc(p.rfc) + '</span> · persona física</div>' : '<div class="font-medium">' + esc(p.nombre || p.rfc || '—') + '</div><div class="text-11 text-gray-500 num">' + esc(p.rfc || '') + '</div>'; }
 function celdaRes(r, dest) { return (r.celdas || {})[dest] || null; }
 function hojaRes(r, dest) { const c = celdaRes(r, dest); return c && c.hoja != null ? c.hoja : ((r.hoja_sin_celda || {})[dest] != null ? r.hoja_sin_celda[dest] : null); }
 function montoRes(c) {   // celda → texto: sin celda = 0; monto null = no publicable (con su parcial si lo hay)
@@ -1578,7 +1580,7 @@ function pintarListaFac() {
   for (const g of gs) {
     const ab = !!S.ui.facAbiertos[g.clave];
     const comos = [...new Set(g.facturas.flatMap(f => f.decision ? ['corregida'] : (f.comos || [])))];
-    t += '<tr class="link' + (ab ? ' sel' : '') + '" data-act="facProv" data-arg="' + esc(g.clave) + '"><td class="nombre-prov">' + (g.pf ? '<span class="chip chip-pf" title="Sin nombre ni RFC junto a un monto">Personas físicas</span>' : '<div class="font-medium">' + esc(g.nombre) + '</div><div class="text-11 text-gray-500 num">' + esc(g.rfc || '') + '</div>') + '</td>' +
+    t += '<tr class="link' + (ab ? ' sel' : '') + '" data-act="facProv" data-arg="' + esc(g.clave) + '"><td class="nombre-prov">' + (g.pf ? '<span class="chip chip-pf" title="' + (g.facturas.some(f => pfConNombre(f.proveedor)) ? 'Ábrelo para ver quién es cada una' : 'Sin nombre ni RFC junto a un monto') + '">Personas físicas</span>' + (g.facturas.some(f => pfConNombre(f.proveedor)) ? '<div class="text-11 text-gray-500">' + entero(new Set(g.facturas.map(f => f.proveedor.rfc)).size) + ' personas</div>' : '') : '<div class="font-medium">' + esc(g.nombre) + '</div><div class="text-11 text-gray-500 num">' + esc(g.rfc || '') + '</div>') + '</td>' +
       '<td class="text-right num">' + entero(g.facturas.length) + '</td>' + tdP(g.monto) +
       '<td class="text-right num">' + (g.nsin ? '<span class="neg">' + pesos(g.sin) + '</span><div class="text-11 text-gray-500">' + g.nsin + ' fact.</div>' : '<span class="dim">—</span>') + '</td>' +
       '<td class="text-xs" style="white-space:normal;max-width:320px">' + comos.slice(0, 3).map(c => c === 'corregida' ? 'Corregida a mano' : comoRes(c)).join(' · ') + (comos.length > 3 ? ' …' : '') + '</td>' +
@@ -1597,7 +1599,7 @@ function tablaFacturasProv(g, puede) {
     return '<tr class="link' + (S.ui.facDet === f.uuid ? ' sel' : '') + '">' +
       (puede ? '<td style="width:30px">' + (f.bloqueo ? '<span class="text-gray-400" title="' + esc(f.bloqueo) + '">' + icon('lock', 13) + '</span>' : '<input type="checkbox" data-chg="facSel" value="' + esc(f.uuid) + '"' + (S.ui.facSel[f.uuid] ? ' checked' : '') + ' aria-label="Marcar la factura ' + esc(fol || f.uuid.slice(0, 8)) + '">') + '</td>' : '') +
       '<td class="num nowrap"' + v + '>' + fecha(f.fecha) + (f.tipo === 'E' ? '<div class="text-11 text-gray-500">nota de crédito</div>' : '') + '</td>' +
-      '<td class="num nowrap"' + v + '>' + (fol ? esc(fol) : '<span class="text-gray-500">' + esc(f.uuid.slice(0, 8)) + '</span>') + (g.pf ? '<div class="text-11 text-gray-500">' + esc((f.proveedor || {}).clave || '') + '</div>' : '') + '</td>' +
+      '<td class="num nowrap"' + v + '>' + (fol ? esc(fol) : '<span class="text-gray-500">' + esc(f.uuid.slice(0, 8)) + '</span>') + (g.pf ? (pfConNombre(f.proveedor) ? '<div class="text-xs font-medium" style="font-family:var(--font-sans);white-space:normal;max-width:260px">' + esc(f.proveedor.nombre) + '</div><div class="text-11 text-gray-500">' + esc(f.proveedor.rfc) + '</div>' : '<div class="text-11 text-gray-500">' + esc((f.proveedor || {}).clave || '') + '</div>') : '') + '</td>' +
       '<td class="text-xs"' + v + ' style="white-space:normal;max-width:220px">' + (f.conceptos || []).map(k => esc(facConcepto(k))).join(', ') + '</td>' +
       '<td class="text-xs"' + v + '>' + facDestino(f) + '</td>' +
       '<td class="text-xs"' + v + ' style="white-space:normal;max-width:230px">' + facComo(f) + (f.aviso ? '<div class="text-11 warn">' + esc(f.aviso) + '</div>' : '') + '</td>' +
@@ -1618,13 +1620,13 @@ async function pintarDetalleFac(vez) {
   const cerrar = '<button class="btn btn-ghost sm" data-act="facCerrar">Cerrar</button>';
   if (!S.ui.facDet && S.ui.facForm) {   // varias facturas marcadas: solo el formulario
     const fs = (L.facturas || []).filter(f => S.ui.facForm.uuids.includes(f.uuid)); S.ui.facCtx = { fs };
-    const provs = [...new Set(fs.map(f => (f.proveedor || {}).persona_fisica ? 'Persona física' : (f.proveedor || {}).nombre))];
+    const provs = [...new Set(fs.map(f => (f.proveedor || {}).persona_fisica && !pfConNombre(f.proveedor) ? 'Persona física' : (f.proveedor || {}).nombre))];
     el.innerHTML = card('Corregir ' + fs.length + ' facturas', esc(provs.slice(0, 3).join(', ') + (provs.length > 3 ? '…' : '')) + ' · ' + pesos(fs.reduce((s, f) => s + N(f.monto), 0)) + ' · cada una queda con su propia regla', '<div class="card-body"><div id="facForm">' + formFac(L, fs) + '</div></div>', cerrar);
     try { el.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {}
     return;
   }
   const u = S.ui.facDet; const f = (L.facturas || []).find(x => x.uuid === u) || { uuid: u, proveedor: {} };
-  const nomP = f.proveedor.persona_fisica ? 'Persona física' : (f.proveedor.nombre || 'Factura');
+  const nomP = f.proveedor.persona_fisica && !pfConNombre(f.proveedor) ? 'Persona física' : (f.proveedor.nombre || 'Factura');
   const titulo = esc(nomP) + ' · ' + esc((f.serie ? f.serie + '-' : '') + (f.folio || u.slice(0, 8)));
   el.innerHTML = card(titulo, 'Cargando el detalle…', '<div class="card-body"><p class="text-sm text-gray-500">Cargando…</p></div>', cerrar);
   try { el.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (e) {}
@@ -1634,7 +1636,7 @@ async function pintarDetalleFac(vez) {
   if (vez !== S.vez || S.ui.facDet !== u) return;
   const D = r.detalle || {}; const fa = D.factura || {}; const pf = (fa.proveedor || {}).persona_fisica;
   const kv = (k, v) => '<div class="kv"><div class="k">' + k + '</div><div class="v">' + v + '</div></div>';
-  let b = '<div class="grid grid-2" style="padding:0 20px 6px"><div>' + kv('Proveedor', pf ? '<span class="chip chip-pf">Persona física</span>' : esc((fa.proveedor || {}).nombre || '') + '<div class="text-11 text-gray-500 num">' + esc((fa.proveedor || {}).rfc || '') + '</div>') +
+  let b = '<div class="grid grid-2" style="padding:0 20px 6px"><div>' + kv('Proveedor', pf && !pfConNombre(fa.proveedor) ? '<span class="chip chip-pf">Persona física</span>' : esc((fa.proveedor || {}).nombre || '') + '<div class="text-11 text-gray-500"><span class="num">' + esc((fa.proveedor || {}).rfc || '') + '</span>' + (pf ? ' · persona física' : '') + '</div>') +
     kv('Fecha', fecha(fa.fecha) + (fa.tipo === 'E' ? ' · nota de crédito' : '')) + kv('UUID', '<span class="num text-xs" style="overflow-wrap:anywhere">' + esc(fa.uuid || u) + '</span>') + '</div><div>' +
     kv('Subtotal (sin IVA)', pesos(fa.subtotal)) + kv('Total con IVA', pesos(fa.total)) + kv('En el estado de resultados', '<b>' + pesos(fa.monto) + '</b>') +
     (fa.uuid_relacionado ? kv('Factura relacionada', '<span class="num text-xs">' + esc(fa.uuid_relacionado.slice(0, 8)) + '…</span>' + (fa.tipo === 'E' ? '<div class="text-11 text-gray-500">la nota sigue a su factura</div>' : '')) : '') + '</div></div>';
