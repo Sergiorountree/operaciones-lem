@@ -1478,6 +1478,15 @@ async function pintarDetalleRes(d, vez) {
     b = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Plataforma') + th('Tienda') + th('Monto', true) + th('Confianza') + th('Nota') + '</tr></thead><tbody>' +
       (fs.length ? fs.map(y => '<tr><td class="nowrap">' + esc(PLAT_RES[y.plataforma] || y.plataforma) + '</td><td class="nowrap">' + esc(tienda(y.branch_id)) + '</td>' + tdP(y.monto) + '<td>' + chipConf(y.confianza) + '</td><td class="text-xs" style="white-space:normal;max-width:420px">' + esc(y.nota || '') + '</td></tr>').join('')
         : '<tr><td colspan="5" class="text-center text-gray-500" style="padding:18px">Sin movimientos.</td></tr>') + '</tbody></table></div>';
+  } else if (det.tipo === 'nomina') {
+    // mig. 137: la nómina semanal de cada tienda (archivo de Alan), por tienda y sin personas
+    const fs = det.filas || [];
+    b = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Tienda') + th('Semanas') + th('Monto', true) + th('Nota') + '</tr></thead><tbody>' +
+      (fs.length ? fs.map(y => '<tr><td class="nowrap">' + esc(tienda(y.branch_id)) + '</td><td class="num nowrap">' + esc(y.periodos || '—') + '<div class="text-11 text-gray-500">' + N(y.semanas) + ' de ' + N(y.semanas_mes) + '</div></td>' +
+          '<td class="text-right num font-semibold">' + (y.completo ? pesos(y.monto) : '<span class="text-gray-400">—</span>' + (N(y.monto) ? '<div class="text-11 text-gray-400">parcial ' + pesos(y.monto) + '</div>' : '')) + '</td>' +
+          '<td class="text-xs" style="white-space:normal;max-width:420px">' + esc(y.nota || '') + '</td></tr>').join('')
+        : '<tr><td colspan="4" class="text-center text-gray-500" style="padding:18px">Sin nómina en esta celda.</td></tr>') + '</tbody></table></div>' +
+      '<p class="text-11 text-gray-500" style="padding:8px 16px 0">' + esc(det.nota || '') + '</p>';
   } else {
     // mig. 123: el almacén central (ubicacion 'almacen') y los traspasos entre almacén y tiendas
     const cv = det.costo_venta || [], tr = det.traspasos || []; const conTr = tr.length > 0 || cv.some(y => N(y.traspasos));
