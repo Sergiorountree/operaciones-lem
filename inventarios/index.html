@@ -488,7 +488,7 @@ async function vRegistro() {
   let pw = null; try { pw = await perdidasDe(S.branch, null); } catch (x) { S.cache['perd|' + S.branch + '|cerrada'] = { error: 'fallo' }; }   // la tarjeta es opcional: si falla, el Registro sigue y no se reintenta en cada visita
   const t = tablaRegistroHTML(d, true);
   h += '<div class="vista-hdr" style="padding-top:0"><div class="acciones">' + chipsDia(d, t.fuera) + '</div><div class="acciones"><button class="btn btn-sm" ' + (d.anterior ? 'onclick="S.diario.fecha=\'' + d.anterior + '\';vRegistro()"' : 'disabled') + '>‹ ' + (d.anterior ? fmtDia(d.anterior) : 'anterior') + '</button><button class="btn btn-sm" ' + (d.siguiente ? 'onclick="S.diario.fecha=\'' + d.siguiente + '\';vRegistro()"' : 'disabled') + '>' + (d.siguiente ? fmtDia(d.siguiente) : 'siguiente') + ' ›</button></div></div>' +
-    '<div class="destacados">' + rachaCardHTML(e, dias) + problemasHTML(prev && !prev.error ? prev : null) + '</div>' + (e && e.por_acabarse ? acabarseHTML(e.por_acabarse) : '') + perdidasCardHTML(pw) + leyendaHTML(cap && cap.habilitada) + t.html + efCardsHTML(d.lineas) +
+    '<div class="destacados">' + rachaCardHTML(e, dias) + problemasHTML(prev && !prev.error ? prev : null) + '</div>' + (e && e.por_acabarse ? acabarseHTML(e.por_acabarse) : '') + perdidasCardHTML(pw) + leyendaHTML(cap && cap.habilitada) + (cap && cap.habilitada && (d.lineas || []).length && d.lineas.every(l => l.dritzline == null) ? '<div class="nota">El consumo Dritzline de este día todavía no llega del POS. Se carga solo, a más tardar a las 2 pm del día siguiente.</div>' : '') + t.html + efCardsHTML(d.lineas) +
     '<p class="hint">' + (cap && cap.habilitada ? 'Lo que guardas aquí se ve al momento. Si algo quedó mal, pide a administración que lo corrija.' : 'Lo capturado en la app aparece aquí en la sincronización de la 1:30 am.') + '</p>';
   M().innerHTML = h;
 }
@@ -555,12 +555,14 @@ async function capGuardar(btn) {
   const r = S.cap.r; if (btn) btn.disabled = true;
   let x; try { x = await api('inv_diario_guardar', { branch_id: r.branch_id, fecha: r.fecha, lineas: capLineas() }); } catch (e) { if (btn) btn.disabled = false; return; }
   cerrarModal(); capBorrarBorrador(r); S.cache = {}; S.kpis = null;
-  toast('✅ ' + (r.existe ? 'Corrección guardada' : 'Inventario guardado'));
+  const dz = x.dritzline_al_guardar;   // mig. 140: el Dritzline del POS se carga al guardar un día nuevo
+  toast('✅ ' + (r.existe ? 'Corrección guardada' : 'Inventario guardado') + (dz ? (dz.completo ? ' · consumo Dritzline cargado' : ' · el consumo Dritzline se carga cuando llegue el reporte del POS') : ''));
   if (S.tab === 'capturar') { S.cap.r = null; vCapturarAdmin(); } else { S.diario.fecha = x.fecha; pintar(); }
 }
 function capHdrHTML(r) {
-  if (r.es_ayer) return '<div class="cap-hdr ayer"><b>⚠️ Tienes pendiente cerrar el día de AYER (' + esc(fmtDia(r.fecha)) + ')</b><p>Captúralo antes de la ' + esc(r.hora_limite.replace(/^0/, '')) + ' hrs. Después se pasa a hoy.</p></div>';
-  return '<div class="cap-hdr"><b>📝 Registrando el inventario de hoy · ' + esc(fmtDia(r.fecha)) + '</b><p>Escribe lo que hay en Baño María, Refrigerador y Congelador. El resto se calcula solo.</p></div>';
+  // mig. 140: el Dritzline no se ve mientras se captura; se carga al guardar (el de hoy, cuando llegue el reporte del POS de mañana)
+  if (r.es_ayer) return '<div class="cap-hdr ayer"><b>⚠️ Tienes pendiente cerrar el día de AYER (' + esc(fmtDia(r.fecha)) + ')</b><p>Captúralo antes de la ' + esc(r.hora_limite.replace(/^0/, '')) + ' hrs. Después se pasa a hoy. El consumo Dritzline aparece cuando guardes.</p></div>';
+  return '<div class="cap-hdr"><b>📝 Registrando el inventario de hoy · ' + esc(fmtDia(r.fecha)) + '</b><p>Escribe lo que hay en Baño María, Refrigerador y Congelador. El resto se calcula solo. El consumo Dritzline de hoy se carga mañana, cuando llegue el reporte del POS.</p></div>';
 }
 // Gerente: el día que le toca
 function vCapturaGerente(r) {
@@ -582,15 +584,15 @@ async function vCapturarAdmin() {
   let r; try { r = await api('inv_diario', { branch_id: b, fecha: f }); } catch (e) { M().innerHTML = h + '<div class="vacio">' + esc(e.detalle || e.message) + '</div>'; return; }
   S.cap.r = r; S.cap.fecha = r.fecha;
   if (!r.habilitada) { M().innerHTML = h + '<div class="vacio">' + esc(r.motivo || 'Este día no se captura en el portal.') + '</div>'; return; }
-  const robot = r.productos.some(p => p.adm_dritzline_fuente === 'robot');
+  const robot = r.productos.some(p => p.adm_dritzline_fuente === 'robot' || p.adm_dritzline_fuente === 'al_guardar');
   h += '<section class="card"><div class="row"><h3 style="margin:0">Administración · ' + esc(fmtDia(r.fecha)) + '</h3><button class="btn btn-ok" onclick="capAdmGuardar(this)">Guardar saldo inicial, entradas y Dritzline</button></div>' +
-    '<p class="hint" style="margin:6px 0 10px">Saldo inicial: déjalo vacío para que salga del día anterior' + (r.dia_anterior ? ' (' + esc(fmtDia(r.dia_anterior)) + ')' : '') + '. Si pones alguno, se usan los tuyos para todo el día (los vacíos cuentan 0), igual que en la app. La entrada puede ser negativa.' + (robot ? ' El Dritzline marcado <span class="tag-robot">robot</span> lo puso el robot de las 2 pm.' : '') + '</p>' +
+    '<p class="hint" style="margin:6px 0 10px">Saldo inicial: déjalo vacío para que salga del día anterior' + (r.dia_anterior ? ' (' + esc(fmtDia(r.dia_anterior)) + ')' : '') + '. Si pones alguno, se usan los tuyos para todo el día (los vacíos cuentan 0), igual que en la app. La entrada puede ser negativa.' + (robot ? ' El Dritzline marcado <span class="tag-robot">robot</span> lo puso el robot de las 2 pm; el marcado <span class="tag-robot">POS</span> se cargó del POS al guardar el registro.' : '') + '</p>' +
     '<div class="tbl" style="margin:0"><table class="simple adm-cap"><thead><tr><th>Producto</th><th class="num">Saldo inicial</th><th class="num">Entrada</th><th class="num">Dritzline</th></tr></thead><tbody>' +
     CATS.map(k => { const ls = r.productos.filter(l => l.categoria === k); if (!ls.length) return ''; return '<tr><td colspan="4" style="background:var(--band);font-weight:700">' + CAT_LABEL[k] + '</td></tr>' + ls.map(l => { const id = l.inventario_producto_id; const ph = r.hay_si_admin ? '0' : fmt(l.saldo_inicial);
       return '<tr><td>' + esc(l.producto) + '<span class="unidad">' + esc(unidadTxt(l.unidad)) + '</span></td>' +
         '<td class="num"><input class="cap" type="number" inputmode="decimal" step="any" min="0" id="asi_' + id + '" value="' + (l.adm_saldo_inicial != null && num(l.adm_saldo_inicial) ? num(l.adm_saldo_inicial) : '') + '" placeholder="' + esc(ph) + '"></td>' +
         '<td class="num"><input class="cap" type="number" inputmode="decimal" step="any" id="aen_' + id + '" value="' + (l.adm_entradas != null && num(l.adm_entradas) ? num(l.adm_entradas) : '') + '" placeholder="0"></td>' +
-        '<td class="num"><input class="cap" type="number" inputmode="decimal" step="any" min="0" id="adz_' + id + '" value="' + (l.adm_dritzline != null ? num(l.adm_dritzline) : '') + '" placeholder="—">' + (l.adm_dritzline_fuente === 'robot' ? '<span class="tag-robot">robot</span>' : '') + '</td></tr>'; }).join(''); }).join('') +
+        '<td class="num"><input class="cap" type="number" inputmode="decimal" step="any" min="0" id="adz_' + id + '" value="' + (l.adm_dritzline != null ? num(l.adm_dritzline) : '') + '" placeholder="—">' + (l.adm_dritzline_fuente === 'robot' ? '<span class="tag-robot">robot</span>' : l.adm_dritzline_fuente === 'al_guardar' ? '<span class="tag-robot">POS</span>' : '') + '</td></tr>'; }).join(''); }).join('') +
     '</tbody></table></div></section>';
   const ed = r.existe ? r.puede_corregir : r.puede_guardar;
   h += '<section class="card"><div class="row"><h3 style="margin:0">Conteo del gerente</h3>' + (r.existe ? '<span class="badge ' + (r.estado === 'editado' ? 'b-warn' : 'b-ok') + '">' + (r.estado === 'editado' ? '✏️ Corregido por ' + esc(r.editado_por || '') : '✓ Capturado por ' + esc(r.capturado_por || '')) + '</span>' : '<span class="badge b-gris">Todavía sin captura</span>') + '</div>' +
@@ -601,7 +603,7 @@ async function vCapturarAdmin() {
 }
 async function capAdmGuardar(btn) {
   const r = S.cap.r; if (!r) return;
-  const lineas = r.productos.map(l => { const id = l.inventario_producto_id; return { inventario_producto_id: id, saldo_inicial: capNum($('asi_' + id).value), entradas: capNum($('aen_' + id).value) || 0, dritzline: capNum($('adz_' + id).value) }; });
+  const lineas = r.productos.map(l => { const id = l.inventario_producto_id; return { inventario_producto_id: id, saldo_inicial: capNum($('asi_' + id).value), entradas: capNum($('aen_' + id).value) || 0, dritzline: capNum($('adz_' + id).value), dritzline_antes: l.adm_dritzline != null ? num(l.adm_dritzline) : null }; });   // mig. 140: solo cambia el Dritzline que sí tocaste
   if (lineas.some(l => (l.saldo_inicial != null && l.saldo_inicial < 0) || (l.dritzline != null && l.dritzline < 0))) { toast('⚠️ El saldo inicial y el Dritzline no pueden ser negativos'); return; }
   if (btn) btn.disabled = true;
   try { await api('inv_diario_adm_guardar', { branch_id: r.branch_id, fecha: r.fecha, lineas }); } catch (e) { if (btn) btn.disabled = false; return; }
