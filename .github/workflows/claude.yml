@@ -69,7 +69,36 @@ jobs:
             echo "Ya hay un PR abierto para ${BRANCH}."
             exit 0
           fi
-          TITULO=$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json title --jq .title)
+          # 9-nov-2026: el título y la descripción salen del comentario de Claude (su enlace "Create PR"),
+          # que trae las cuatro secciones de .claude/CLAUDE.md; antes era un texto fijo.
+          # "Closes #n" hace que el issue se cierre solo al mergear.
+          gh api "repos/${REPO}/issues/${ISSUE_NUMBER}/comments?per_page=100" \
+            --jq '[.[] | select(.user.login=="claude[bot]") | .body] | last // ""' > "$RUNNER_TEMP/comentario.md"
+          python3 - "$ISSUE_NUMBER" "$RUNNER_TEMP/comentario.md" "$RUNNER_TEMP/titulo.txt" "$RUNNER_TEMP/cuerpo.md" <<'PY'
+          import re, sys, urllib.parse
+          numero, comentario, sal_titulo, sal_cuerpo = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+          texto = open(comentario, encoding='utf-8').read()
+          titulo, cuerpo = '', ''
+          m = re.search(r'\]\((https://github\.com/\S+/compare/\S+)', texto)
+          if m:
+              url = m.group(1)
+              if url.endswith(')'):
+                  url = url[:-1]          # paréntesis que cierra el enlace de Markdown
+              q = urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)
+              titulo = (q.get('title') or [''])[0].strip()
+              cuerpo = (q.get('body') or [''])[0].strip()
+          if not cuerpo:
+              cuerpo = 'Rama escrita por Claude (Opus 5.5). Claude no dejó una descripción; revisar el diff completo.'
+          if not re.search(r'(?i)\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\s+#' + re.escape(numero) + r'\b', cuerpo):
+              cuerpo += '\n\nCloses #' + numero
+          cuerpo += '\n\n---\nPR abierto por la Action de Claude (Opus 5.5). No se publica hasta que una persona autorizada lo apruebe y lo mergee.'
+          open(sal_titulo, 'w', encoding='utf-8').write(titulo)
+          open(sal_cuerpo, 'w', encoding='utf-8').write(cuerpo + '\n')
+          PY
+          TITULO=$(cat "$RUNNER_TEMP/titulo.txt")
+          if [ -z "$TITULO" ]; then
+            TITULO=$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json title --jq .title)
+          fi
           gh pr create --repo "$REPO" --base main --head "$BRANCH" \
             --title "$TITULO" \
-            --body "Resuelve #${ISSUE_NUMBER}. Rama escrita por Claude (Opus 5.5). No se publica hasta que una persona autorizada lo apruebe y lo mergee."
+            --body-file "$RUNNER_TEMP/cuerpo.md"
