@@ -147,7 +147,7 @@ async function llamar(ruta, cuerpo, gen) {
 
 function vLogin(msj) {
   $('hUser').innerHTML = '';
-  $('app').innerHTML = '<div class="login"><div style="font-size:42px">💬</div><h2>Asistente de ventas</h2><p>' + esc(msj || 'Entra con tu cuenta @grupolem.com') + '</p><div id="gbtn" style="display:flex;justify-content:center"></div></div>';
+  $('app').innerHTML = '<div class="login"><div style="font-size:42px" aria-hidden="true">💬</div><h2>Asistente de ventas</h2><p>' + esc(msj || 'Entra con tu cuenta @grupolem.com') + '</p><div id="gbtn" style="display:flex;justify-content:center"></div></div>';
   if (window.google) {
     google.accounts.id.initialize({ client_id: CLIENT_ID, itp_support: true,
       callback: (resp) => { nuevaSesion(); S.token = resp.credential; store.set(S.token); arrancar(); } });
