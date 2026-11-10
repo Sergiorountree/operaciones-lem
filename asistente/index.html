@@ -184,7 +184,7 @@ function pintarChat(p) {
     'Puede comparar periodos y darte la venta por día. Por ahora no ve inventario, nómina ni cuentas.' +
     (p.ultima_fecha_con_ventas ? ' Hay venta hasta el <b>' + esc(fCorta(p.ultima_fecha_con_ventas)) + '</b>.' : '') + '</p>' +
     '<div class="ejemplos">' + EJEMPLOS.map((e, i) => '<button type="button" onclick="usarEjemplo(' + i + ')">' + esc(e) + '</button>').join('') + '</div></div></div>' +
-    '<form id="f" onsubmit="enviar(event)"><textarea id="q" rows="1" maxlength="1000" placeholder="Escribe tu pregunta…" onkeydown="teclaEnter(event)"></textarea><button id="b">Enviar</button></form>' +
+    '<form id="f" onsubmit="enviar(event)"><textarea id="q" aria-label="Escribe tu pregunta" rows="1" maxlength="1000" placeholder="Escribe tu pregunta…" onkeydown="teclaEnter(event)"></textarea><button id="b">Enviar</button></form>' +
     '<div class="nota">Piloto. Las cifras salen de la base y se revisan antes de mostrarse; si algo no cuadra, avísale a Sergio.</div>';
   $('q').focus();
 }
