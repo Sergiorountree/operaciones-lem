@@ -212,17 +212,19 @@ function confirmar(titulo, resumen, boton, hacer) {
 async function ejecutar() {
   const hacer = T.pend; if (!hacer) return;
   const b = $('bConf'); b.disabled = true; errorEn('eConf', '');
-  try {
-    const r = await hacer();
-    if (r && r.error) { errorEn('eConf', r.detalle || r.error); b.disabled = false; return; }
-    const id = T.det ? T.det.ticket.ticket_id : null;
-    cerrarConf();
-    await recargar();
-    if (id) await abrirDetalle(id); else cerrarModal();
-  } catch (e) {
+  let r;
+  try { r = await hacer(); }
+  catch (e) {
     if (e && e.expirada) { cerrarModal(); store.del(); S.token = null; vLogin('Tu sesión expiró — vuelve a entrar.'); return; }
-    errorEn('eConf', 'No se pudo conectar (' + ((e && e.message) || 'error') + '). Reintenta.'); b.disabled = false;
+    errorEn('eConf', 'No se pudo conectar (' + ((e && e.message) || 'error') + '). Puede que sí se haya guardado: cierra y revisa la lista antes de reintentar.'); b.disabled = false; return;
   }
+  if (r && r.error) { errorEn('eConf', r.detalle || r.error); b.disabled = false; return; }
+  /* Ya se guardó. Lo que sigue solo refresca la pantalla: si falla, se cierra el formulario y se avisa, para que nadie
+     vuelva a guardar lo mismo (10-nov-2026, revisión de Codex en el PR #10). */
+  const id = T.det ? T.det.ticket.ticket_id : null;
+  cerrarModal();
+  try { await recargar(); if (id) await abrirDetalle(id); }
+  catch (e) { aviso('Se guardó, pero no se pudo actualizar la lista. Recarga la página para verla al día.'); }
 }
 
 /* ── Levantar un ticket ── */
