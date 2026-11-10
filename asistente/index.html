@@ -180,7 +180,7 @@ function pintarNoDisponible(t) {
 }
 function pintarChat(p) {
   $('app').innerHTML =
-    '<div id="hilo"><div class="intro"><h2>Pregúntale por la venta</h2><p>Venta sin IVA por tienda y fecha, la misma del semáforo de Ventas. ' +
+    '<div id="hilo" aria-live="polite"><div class="intro"><h2>Pregúntale por la venta</h2><p>Venta sin IVA por tienda y fecha, la misma del semáforo de Ventas. ' +
     'Puede comparar periodos y darte la venta por día. Por ahora no ve inventario, nómina ni cuentas.' +
     (p.ultima_fecha_con_ventas ? ' Hay venta hasta el <b>' + esc(fCorta(p.ultima_fecha_con_ventas)) + '</b>.' : '') + '</p>' +
     '<div class="ejemplos">' + EJEMPLOS.map((e, i) => '<button type="button" onclick="usarEjemplo(' + i + ')">' + esc(e) + '</button>').join('') + '</div></div></div>' +
