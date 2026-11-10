@@ -1,0 +1,4 @@
+# Quién debe aprobar un cambio antes de que entre a main.
+# Solo tiene efecto cuando la protección de la rama exige la revisión de los dueños del código.
+# Modo supervisado: todo el repositorio pide aprobación.
+* @Sergiorountree
