@@ -1,0 +1,4 @@
+# GitHub Pages (Jekyll). 9-nov-2026: AGENTS.md son reglas para agentes, no una página del portal.
+# Sin esta exclusión, Pages lo publicaría como /AGENTS.html.
+exclude:
+  - AGENTS.md
