@@ -129,7 +129,7 @@ async function apiCruda(accion, datos) {
 }
 /* ── Tickets v0 (10-nov-2026, Sergio): tickets del portal con triage. Permisos, datos y conteos los entrega el servidor
    (acciones tk_*); esta página solo presenta y manda. Toda acción que guarda pasa por un modal de confirmación. ── */
-const T = { ini: null, filtro: 'todos', det: null, pend: null };
+const T = { ini: null, filtro: 'todos', det: null, pend: null, guardando: false };
 const ESTADOS = { nuevo: 'Nuevo', aceptado: 'Aceptado', rechazado: 'Rechazado', en_proceso: 'En proceso', publicado: 'Publicado', cerrado: 'Cerrado' };
 const TIPOS = { error: 'Error', observacion: 'Observación', mejora: 'Mejora' };
 const MODS = { portal: 'Portal (inicio)', compras: 'Compras', inventarios: 'Inventarios', nominas: 'Nóminas', ventas: 'Ventas', contabilidad: 'Contabilidad', asistente: 'Asistente', otro: 'Otro' };
@@ -156,7 +156,7 @@ function vLogin(msj) {
   } else { setTimeout(() => vLogin(msj), 400); }
 }
 function aviso(t) { const d = document.createElement('div'); d.className = 'aviso'; d.textContent = t; $('app').prepend(d); }
-function salir() { cerrarModal(); store.del(); S.token = null; S.perfil = null; T.ini = null; if (window.LEMDC) LEMDC.salir(); vLogin('Sesión cerrada.'); }
+function salir() { T.guardando = false; cerrarModal(); store.del(); S.token = null; S.perfil = null; T.ini = null; if (window.LEMDC) LEMDC.salir(); vLogin('Sesión cerrada.'); }
 function vSinAcceso(t) {
   $('hUser').innerHTML = esc(emailDeToken(S.token)) + '<button onclick="salir()">Salir</button>';
   $('app').innerHTML = '<div class="msg">' + esc(t) + '<br><br><a href="/">← Volver a los módulos</a></div>';
@@ -198,29 +198,36 @@ async function recargar() {
 
 /* ── Modales ── */
 function abrirModal(html, chica) { $('modal').innerHTML = '<div class="caja' + (chica ? ' chica' : '') + '">' + html + '</div>'; $('modal').hidden = false; }
-function cerrarModal() { $('modal').hidden = true; $('modal').innerHTML = ''; cerrarConf(); T.det = null; }
-function cerrarConf() { $('conf').hidden = true; $('conf').innerHTML = ''; T.pend = null; }
+function cerrarModal() { if (T.guardando) return; $('modal').hidden = true; $('modal').innerHTML = ''; cerrarConf(); T.det = null; }
+function cerrarConf() { if (T.guardando) return; $('conf').hidden = true; $('conf').innerHTML = ''; T.pend = null; }
 function errorEn(id, t) { const el = $(id); if (el) { el.textContent = t; el.hidden = !t; } }
 /* Doble check: nada se manda sin pasar por aquí. `resumen` es texto plano; `hacer` es la llamada que guarda. */
 function confirmar(titulo, resumen, boton, hacer) {
+  if (T.guardando) return;
   T.pend = hacer;
   $('conf').innerHTML = '<div class="caja chica"><h3>' + esc(titulo) + '</h3><p class="sub">Revisa antes de guardar.</p><div class="resumen">' + esc(resumen) + '</div>' +
-    '<div class="error" id="eConf" hidden></div><div class="pie"><button class="btn btn-claro" onclick="cerrarConf()">Regresar</button>' +
+    '<div class="error" id="eConf" hidden></div><div class="pie"><button class="btn btn-claro" id="bReg" onclick="cerrarConf()">Regresar</button>' +
     '<button class="btn btn-rojo" id="bConf" onclick="ejecutar()">' + esc(boton) + '</button></div></div>';
   $('conf').hidden = false;
 }
+/* Mientras una petición de guardado está en camino (T.guardando) no se puede cerrar ni volver a mandar: ni con Regresar,
+   ni con Escape, ni abriendo otra confirmación (10-nov-2026, revisión de Codex en el PR #10). */
 async function ejecutar() {
-  const hacer = T.pend; if (!hacer) return;
-  const b = $('bConf'); b.disabled = true; errorEn('eConf', '');
+  const hacer = T.pend; if (!hacer || T.guardando) return;
+  T.guardando = true;
+  const b = $('bConf'), reg = $('bReg'); b.disabled = true; if (reg) reg.disabled = true; errorEn('eConf', '');
+  const soltar = () => { T.guardando = false; b.disabled = false; if (reg) reg.disabled = false; };
   let r;
   try { r = await hacer(); }
   catch (e) {
+    soltar();
     if (e && e.expirada) { cerrarModal(); store.del(); S.token = null; vLogin('Tu sesión expiró — vuelve a entrar.'); return; }
-    errorEn('eConf', 'No se pudo conectar (' + ((e && e.message) || 'error') + '). Puede que sí se haya guardado: cierra y revisa la lista antes de reintentar.'); b.disabled = false; return;
+    errorEn('eConf', 'No se pudo conectar (' + ((e && e.message) || 'error') + '). Puede que sí se haya guardado: cierra y revisa la lista antes de reintentar.'); return;
   }
-  if (r && r.error) { errorEn('eConf', r.detalle || r.error); b.disabled = false; return; }
+  soltar();
+  if (r && r.error) { errorEn('eConf', r.detalle || r.error); return; }
   /* Ya se guardó. Lo que sigue solo refresca la pantalla: si falla, se cierra el formulario y se avisa, para que nadie
-     vuelva a guardar lo mismo (10-nov-2026, revisión de Codex en el PR #10). */
+     vuelva a guardar lo mismo. */
   const id = T.det ? T.det.ticket.ticket_id : null;
   cerrarModal();
   try { await recargar(); if (id) await abrirDetalle(id); }
