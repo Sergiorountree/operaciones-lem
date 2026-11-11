@@ -137,7 +137,7 @@ async function apiCruda(accion, datos) {
 }
 /* ── Tickets v0 (10-nov-2026, Sergio): tickets del portal con triage. Permisos, datos y conteos los entrega el servidor
    (acciones tk_*); esta página solo presenta y manda. Toda acción que guarda pasa por un modal de confirmación. ── */
-const T = { ini: null, filtro: 'todos', det: null, pend: null, guardando: false, caps: [], urls: [] };
+const T = { ini: null, filtro: 'todos', det: null, pend: null, guardando: false, caps: [], urls: [], capGen: 0, capPend: 0 };
 const ESTADOS = { nuevo: 'Nuevo', aceptado: 'Aceptado', rechazado: 'Rechazado', en_proceso: 'En proceso', publicado: 'Publicado', cerrado: 'Cerrado' };
 const TIPOS = { error: 'Error', observacion: 'Observación', mejora: 'Mejora' };
 const MODS = { portal: 'Portal (inicio)', compras: 'Compras', inventarios: 'Inventarios', nominas: 'Nóminas', ventas: 'Ventas', contabilidad: 'Contabilidad', asistente: 'Asistente', otro: 'Otro' };
@@ -264,6 +264,8 @@ function abrirNuevo() {
     '<div class="pie"><button class="btn btn-claro" onclick="cerrarModal()">Cancelar</button><button class="btn btn-rojo" onclick="guardarNuevo()">Guardar</button></div>');
 }
 function guardarNuevo() {
+  /* Si una captura todavía se está reduciendo, no se arma la confirmación: se guardaría el ticket sin ella (11-nov-2026, revisión de Codex en el PR #14) */
+  if (T.capPend) return errorEn('eNuevo', 'Espera un momento: se está preparando la captura.');
   const d = { modulo: val('nMod'), tipo: val('nTipo'), pantalla: val('nPant'), titulo: val('nTit'), descripcion: val('nDes'), pasos: val('nPasos') };
   if (!d.modulo) return errorEn('eNuevo', 'Elige el módulo donde pasa.');
   if (!d.tipo) return errorEn('eNuevo', 'Elige el tipo: error, observación o mejora.');
@@ -387,7 +389,9 @@ async function copiarParaGitHub() {
    límites (tk_inicio → capturas); si no lo dice, la pantalla queda como antes. La imagen se queda en el servidor y solo la
    ven quien levantó el ticket y administración. Aquí solo se reduce para que quepa en el peso que pide el servidor. ── */
 function capLim() { const c = T.ini && T.ini.capturas; return (c && Number(c.max_por_ticket) > 0 && Number(c.max_kb) > 0) ? c : null; }
-function capSoltar() { for (const u of T.urls) { try { URL.revokeObjectURL(u); } catch (e) {} } T.urls = []; T.caps = []; }
+/* capGen cambia cada vez que se abre o se cierra un formulario: una imagen que todavía se estaba reduciendo para el formulario
+   anterior se descarta y nunca pasa a otro ticket (11-nov-2026, revisión de Codex en el PR #14). capPend: cuántas se están preparando. */
+function capSoltar() { for (const u of T.urls) { try { URL.revokeObjectURL(u); } catch (e) {} } T.urls = []; T.caps = []; T.capGen++; T.capPend = 0; }
 function capUrl(blob) { const u = URL.createObjectURL(blob); T.urls.push(u); return u; }
 function capB64(blob) { return new Promise((ok, mal) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).replace(/^data:[^,]*,/, '')); fr.onerror = () => mal(new Error('No se pudo leer la imagen.')); fr.readAsDataURL(blob); }); }
 function capImagen(blob) { return new Promise((ok, mal) => { const u = URL.createObjectURL(blob), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => { URL.revokeObjectURL(u); mal(new Error('Ese archivo no es una imagen que se pueda abrir.')); }; im.src = u; }); }
@@ -413,19 +417,24 @@ async function capPreparar(file) {
 /* Formulario de ticket nuevo: las capturas esperan aquí hasta que se confirma el ticket */
 function capPintar() {
   const el = $('nCaps'); if (!el) return;
-  el.innerHTML = T.caps.map((c, i) => '<div class="cap"><img src="' + esc(c.url) + '" alt=""><span>' + esc(c.nombre) + '</span><button type="button" onclick="capQuitarLocal(' + i + ')">Quitar</button></div>').join('');
+  el.innerHTML = T.caps.map((c, i) => '<div class="cap"><img src="' + esc(c.url) + '" alt=""><span>' + esc(c.nombre) + '</span><button type="button" onclick="capQuitarLocal(' + i + ')">Quitar</button></div>').join('') +
+    (T.capPend ? '<div class="cap"><span>Preparando captura…</span></div>' : '');
 }
 function capQuitarLocal(i) { T.caps.splice(i, 1); capPintar(); }
 async function capAgregar(archivos) {
   const lim = capLim(); if (!lim || !$('nCaps')) return;
-  errorEn('eNuevo', '');
-  for (const f of archivos) {
-    if (T.caps.length >= Number(lim.max_por_ticket)) { errorEn('eNuevo', 'Van ' + lim.max_por_ticket + ' capturas, que es el máximo por ticket.'); break; }
-    let c; try { c = await capPreparar(f); } catch (e) { errorEn('eNuevo', (e && e.message) || 'No se pudo usar esa imagen.'); continue; }
-    if (!$('nCaps')) return;                                          // el formulario se cerró mientras se reducía
-    if (T.caps.length < Number(lim.max_por_ticket)) T.caps.push(c);
-    capPintar();
-  }
+  const gen = T.capGen;                                               // el formulario al que pertenecen estas imágenes
+  errorEn('eNuevo', ''); T.capPend++; capPintar();
+  try {
+    for (const f of archivos) {
+      if (gen !== T.capGen) return;                                   // ese formulario ya se cerró
+      if (T.caps.length >= Number(lim.max_por_ticket)) { errorEn('eNuevo', 'Van ' + lim.max_por_ticket + ' capturas, que es el máximo por ticket.'); break; }
+      let c; try { c = await capPreparar(f); } catch (e) { if (gen === T.capGen) errorEn('eNuevo', (e && e.message) || 'No se pudo usar esa imagen.'); continue; }
+      if (gen !== T.capGen) return;                                   // se cerró mientras se reducía: la imagen no pasa a otro ticket
+      if (T.caps.length < Number(lim.max_por_ticket)) T.caps.push(c);
+      capPintar();
+    }
+  } finally { if (gen === T.capGen) { T.capPend--; capPintar(); } }
 }
 /* Detalle del ticket: ver, agregar y quitar. Agregar y quitar guardan, así que pasan por la confirmación. */
 async function verCaptura(id) {
@@ -450,9 +459,10 @@ function quitarCaptura(id) {
 }
 async function agregarCaptura(archivos) {
   const t = T.det && T.det.ticket, f = archivos && archivos[0]; if (!t || !f || !capLim()) return;
+  const gen = T.capGen;
   errorEn('eCap', '');
-  let c; try { c = await capPreparar(f); } catch (e) { return errorEn('eCap', (e && e.message) || 'No se pudo usar esa imagen.'); }
-  if (!T.det || T.det.ticket.ticket_id !== t.ticket_id) return;       // el detalle cambió mientras se reducía
+  let c; try { c = await capPreparar(f); } catch (e) { if (gen === T.capGen) errorEn('eCap', (e && e.message) || 'No se pudo usar esa imagen.'); return; }
+  if (gen !== T.capGen || !T.det || T.det.ticket.ticket_id !== t.ticket_id) return;   // el detalle se cerró o cambió mientras se reducía
   confirmar('¿Agregar esta captura?', '#' + t.ticket_id + ' · ' + t.titulo + '\n\n' + c.nombre, 'Sí, agregar',
     () => api('tk_captura_subir', { ticket_id: t.ticket_id, nombre: c.nombre, datos: c.datos }));
 }
