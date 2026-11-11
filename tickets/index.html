@@ -57,6 +57,14 @@
   .bit { list-style:none; } .bit li { font-size:13.5px; padding:6px 0; border-top:1px solid var(--borde); } .bit li:first-child { border-top:none; }
   .bit .q { color:var(--txt2); font-size:12.5px; } .bit .nt { white-space:pre-wrap; word-wrap:break-word; margin-top:2px; }
   .resumen { background:var(--gris); border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.45; white-space:pre-wrap; word-wrap:break-word; max-height:40vh; overflow-y:auto; }
+  /* Capturas (11-nov-2026): miniaturas en el formulario y lista en el detalle; mismos bordes y botones del módulo */
+  .caps { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; } .caps:empty { display:none; }
+  .cap { display:flex; align-items:center; gap:8px; max-width:100%; border:1px solid var(--borde); border-radius:10px; padding:6px 8px; font-size:13px; }
+  .cap img { width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid var(--borde); } .cap span { font-weight:700; word-break:break-all; }
+  .cap button { background:#fff; border:1px solid #d4d4d8; border-radius:8px; padding:4px 9px; font:inherit; font-size:12.5px; font-weight:700; cursor:pointer; }
+  .capfila { border-top:1px solid var(--borde); padding:8px 0; font-size:13.5px; word-wrap:break-word; } .capfila:first-of-type { border-top:none; }
+  .capfila .q { color:var(--txt2); font-size:12.5px; } .capfila .ac { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+  .capfila img { display:block; max-width:100%; border:1px solid var(--borde); border-radius:8px; margin-top:8px; }
   footer { text-align:center; color:var(--txt2); font-size:12px; padding:18px; }
 </style>
 </head>
@@ -129,11 +137,12 @@ async function apiCruda(accion, datos) {
 }
 /* ── Tickets v0 (10-nov-2026, Sergio): tickets del portal con triage. Permisos, datos y conteos los entrega el servidor
    (acciones tk_*); esta página solo presenta y manda. Toda acción que guarda pasa por un modal de confirmación. ── */
-const T = { ini: null, filtro: 'todos', det: null, pend: null, guardando: false };
+const T = { ini: null, filtro: 'todos', det: null, pend: null, guardando: false, caps: [], urls: [], capGen: 0, capPend: 0 };
 const ESTADOS = { nuevo: 'Nuevo', aceptado: 'Aceptado', rechazado: 'Rechazado', en_proceso: 'En proceso', publicado: 'Publicado', cerrado: 'Cerrado' };
 const TIPOS = { error: 'Error', observacion: 'Observación', mejora: 'Mejora' };
 const MODS = { portal: 'Portal (inicio)', compras: 'Compras', inventarios: 'Inventarios', nominas: 'Nóminas', ventas: 'Ventas', contabilidad: 'Contabilidad', asistente: 'Asistente', otro: 'Otro' };
 const PRIOS = { alta: 'Alta', media: 'Media', baja: 'Baja' };
+const EVENTOS = { nota: 'Nota', creado: 'Creado', reabierto: 'Reabierto', captura: 'Captura agregada', captura_quitada: 'Captura quitada' };
 /* A qué estado puede pasar un ticket desde donde está. Es solo para pintar las opciones: el servidor vuelve a revisarlo. */
 const SIGUE = { aceptado: ['en_proceso', 'publicado', 'cerrado'], en_proceso: ['publicado', 'cerrado'], publicado: ['cerrado'], rechazado: ['cerrado', 'nuevo'], cerrado: ['nuevo'] };
 const ISSUE_NUEVO = 'https://github.com/Sergiorountree/operaciones-lem/issues/new?template=ticket.md';
@@ -198,7 +207,7 @@ async function recargar() {
 
 /* ── Modales ── */
 function abrirModal(html, chica) { $('modal').innerHTML = '<div class="caja' + (chica ? ' chica' : '') + '">' + html + '</div>'; $('modal').hidden = false; }
-function cerrarModal() { if (T.guardando) return; $('modal').hidden = true; $('modal').innerHTML = ''; cerrarConf(); T.det = null; }
+function cerrarModal() { if (T.guardando) return; capSoltar(); $('modal').hidden = true; $('modal').innerHTML = ''; cerrarConf(); T.det = null; }
 function cerrarConf() { if (T.guardando) return; $('conf').hidden = true; $('conf').innerHTML = ''; T.pend = null; }
 function errorEn(id, t) { const el = $(id); if (el) { el.textContent = t; el.hidden = !t; } }
 /* Doble check: nada se manda sin pasar por aquí. `resumen` es texto plano; `hacer` es la llamada que guarda. */
@@ -232,31 +241,56 @@ async function ejecutar() {
   cerrarModal();
   try { await recargar(); if (id) await abrirDetalle(id); }
   catch (e) { aviso('Se guardó, pero no se pudo actualizar la lista. Recarga la página para verla al día.'); }
+  if (r && r.aviso) aviso(r.aviso);   // se guardó, pero algo quedó a medias (p. ej. una captura que no subió)
 }
 
 /* ── Levantar un ticket ── */
 function abrirNuevo() {
-  T.det = null;
+  T.det = null; capSoltar();
+  const cap = capLim();
   const ops = (o, lista) => lista.map(k => '<option value="' + esc(k) + '">' + esc(o[k] || k) + '</option>').join('');
-  abrirModal('<h3>Levantar ticket</h3><p class="sub">No escribas contraseñas, sueldos ni datos personales de colaboradores. Esta versión no guarda capturas.</p>' +
+  abrirModal('<h3>Levantar ticket</h3><p class="sub">No escribas contraseñas, sueldos ni datos personales de colaboradores.' + (cap ? '' : ' Esta versión no guarda capturas.') + '</p>' +
     '<div class="dos"><div class="campo"><label for="nMod">Módulo</label><select id="nMod"><option value="">Elige…</option>' + ops(MODS, T.ini.modulos || Object.keys(MODS)) + '</select></div>' +
     '<div class="campo"><label for="nTipo">Tipo</label><select id="nTipo"><option value="">Elige…</option>' + ops(TIPOS, T.ini.tipos || Object.keys(TIPOS)) + '</select></div></div>' +
     '<div class="campo"><label for="nPant">Pantalla (opcional)</label><input id="nPant" maxlength="120" placeholder="Por ejemplo: Semáforo, Cierre semanal"></div>' +
     '<div class="campo"><label for="nTit">Título</label><input id="nTit" maxlength="120" placeholder="Qué pasa, en una línea"></div>' +
     '<div class="campo"><label for="nDes">Qué pasa hoy y qué debería pasar</label><textarea id="nDes" maxlength="4000"></textarea></div>' +
     '<div class="campo"><label for="nPasos">Pasos para verlo (opcional)</label><textarea id="nPasos" maxlength="4000" placeholder="1. Entro a…&#10;2. Doy clic en…"></textarea></div>' +
+    (cap ? '<div class="campo"><label>Capturas de pantalla (opcional)</label><div class="caps" id="nCaps"></div>' +
+           '<input type="file" id="nArch" accept="image/png,image/jpeg,image/webp" multiple hidden onchange="capAgregar([...this.files]); this.value=\'\'">' +
+           '<button type="button" class="btn btn-claro" onclick="$(\'nArch\').click()">Elegir imagen</button>' +
+           '<div class="ayuda">Hasta ' + esc(cap.max_por_ticket) + '. También puedes pegarla con Cmd+V. Se quedan en el portal: las ve quien levanta el ticket y administración; no van a GitHub. Recórtala a lo que importa.</div></div>' : '') +
     '<div class="error" id="eNuevo" hidden></div>' +
     '<div class="pie"><button class="btn btn-claro" onclick="cerrarModal()">Cancelar</button><button class="btn btn-rojo" onclick="guardarNuevo()">Guardar</button></div>');
 }
 function guardarNuevo() {
+  /* Si una captura todavía se está reduciendo, no se arma la confirmación: se guardaría el ticket sin ella (11-nov-2026, revisión de Codex en el PR #14) */
+  if (T.capPend) return errorEn('eNuevo', 'Espera un momento: se está preparando la captura.');
   const d = { modulo: val('nMod'), tipo: val('nTipo'), pantalla: val('nPant'), titulo: val('nTit'), descripcion: val('nDes'), pasos: val('nPasos') };
   if (!d.modulo) return errorEn('eNuevo', 'Elige el módulo donde pasa.');
   if (!d.tipo) return errorEn('eNuevo', 'Elige el tipo: error, observación o mejora.');
   if (d.titulo.length < 5) return errorEn('eNuevo', 'Escribe un título de al menos 5 letras.');
   if (d.descripcion.length < 10) return errorEn('eNuevo', 'Describe qué pasa hoy y qué debería pasar.');
   errorEn('eNuevo', '');
-  confirmar('¿Levantar este ticket?', (MODS[d.modulo] || d.modulo) + ' · ' + (TIPOS[d.tipo] || d.tipo) + (d.pantalla ? ' · ' + d.pantalla : '') + '\n\n' + d.titulo + '\n\n' + d.descripcion + (d.pasos ? '\n\nPasos:\n' + d.pasos : ''),
-    'Sí, levantar', () => api('tk_crear', d));
+  const caps = T.caps.slice();
+  confirmar('¿Levantar este ticket?', (MODS[d.modulo] || d.modulo) + ' · ' + (TIPOS[d.tipo] || d.tipo) + (d.pantalla ? ' · ' + d.pantalla : '') + '\n\n' + d.titulo + '\n\n' + d.descripcion + (d.pasos ? '\n\nPasos:\n' + d.pasos : '') +
+    (caps.length ? '\n\nCapturas: ' + caps.length : ''),
+    'Sí, levantar', () => crearConCapturas(d, caps));
+}
+/* Primero se levanta el ticket y después sube cada captura (11-nov-2026). Si una no sube, el ticket ya quedó: se avisa cuál
+   faltó para agregarla desde el detalle. Mandar dos veces la misma imagen no la duplica: el servidor la reconoce. */
+async function crearConCapturas(d, caps) {
+  const r = await api('tk_crear', d);
+  if (!r || r.error || !caps.length) return r;
+  const id = r.ticket && r.ticket.ticket_id, faltan = [];
+  for (const c of caps) {
+    let x;
+    try { x = await subirCaptura({ ticket_id: id, nombre: c.nombre, datos: c.datos }); }
+    catch (e) { if (e && e.expirada) throw e; x = { error: 'conexion', detalle: 'no se pudo conectar' }; }
+    if (!x || x.error) faltan.push(c.nombre + ' (' + ((x && (x.detalle || x.error)) || 'sin respuesta') + ')');
+  }
+  if (faltan.length) r.aviso = 'El ticket #' + id + ' se levantó, pero no subió: ' + faltan.join('; ') + '. Ábrelo y agrégala desde ahí.';
+  return r;
 }
 
 /* ── Detalle, bitácora, triage y estado ── */
@@ -275,6 +309,16 @@ async function abrirDetalle(id) {
   if (t.pasos) h += '<div class="dato"><div class="et">Pasos para verlo</div><div class="va">' + esc(t.pasos) + '</div></div>';
   if (t.triage_por) h += '<div class="dato"><div class="et">Triage</div><div class="va">' + esc(t.triage_por) + ' · ' + esc(fechaHora(t.triage_en)) + (t.triage_nota ? '\n' + esc(t.triage_nota) : '') + '</div></div>';
   if (t.issue_numero || t.pr_numero) h += '<div class="dato"><div class="et">GitHub</div><div class="va">' + (t.issue_numero ? 'Issue #' + esc(t.issue_numero) : '') + (t.issue_numero && t.pr_numero ? ' · ' : '') + (t.pr_numero ? 'PR #' + esc(t.pr_numero) : '') + '</div></div>';
+  /* Capturas (11-nov-2026): el servidor manda la lista sin la imagen; cada imagen se pide hasta que alguien la quiere ver */
+  const caps = r.capturas || [], lim = capLim();
+  if (caps.length || lim) {
+    h += '<div class="bloque"><h4>Capturas</h4>' + (caps.length ? '' : '<p class="sub" style="margin:0">Este ticket no tiene capturas.</p>') +
+         caps.map(c => { const id = Number(c.captura_id); return '<div class="capfila"><b>' + esc(c.nombre) + '</b> <span class="q">· ' + esc(c.kb) + ' KB · ' + esc(c.subido_por) + ' · ' + esc(fechaHora(c.creado_en)) + '</span>' +
+           '<div class="ac"><button class="btn btn-claro" onclick="verCaptura(' + id + ')">Ver</button>' + (c.puede_quitar ? '<button class="btn btn-peligro" onclick="quitarCaptura(' + id + ')">Quitar</button>' : '') + '</div><div id="capv' + id + '"></div></div>'; }).join('') +
+         '<div class="error" id="eCap" hidden></div>' +
+         (lim && caps.length < Number(lim.max_por_ticket) ? '<div class="pie"><input type="file" id="dArch" accept="image/png,image/jpeg,image/webp" hidden onchange="agregarCaptura([...this.files]); this.value=\'\'">' +
+           '<button class="btn btn-claro" id="bCap" onclick="$(\'dArch\').click()">Agregar captura</button></div><p class="sub" style="margin:8px 0 0">También puedes pegarla con Cmd+V. Se queda en el portal: no va a GitHub.</p>' : '') + '</div>';
+  }
 
   if (admin && t.estado === 'nuevo') {
     h += '<div class="bloque"><h4>Triage</h4><div class="dos"><div class="campo"><label for="tPrio">Prioridad (para aceptar)</label><select id="tPrio"><option value="">Elige…</option><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select></div>' +
@@ -293,7 +337,7 @@ async function abrirDetalle(id) {
          (t.estado === 'aceptado' ? '<p class="sub" style="margin:10px 0 0">El repositorio es público: antes de pegar el texto en GitHub quita nombres, correos y montos.</p>' : '') + '</div>';
   }
   h += '<div class="bloque"><h4>Bitácora</h4><ul class="bit">' + (r.eventos || []).map(e =>
-         '<li><b>' + esc(e.evento === 'nota' ? 'Nota' : e.evento === 'creado' ? 'Creado' : e.evento === 'reabierto' ? 'Reabierto' : (ESTADOS[e.evento] || e.evento)) + '</b> <span class="q">· ' + esc(e.usuario) + ' · ' + esc(fechaHora(e.creado_en)) + '</span>' +
+         '<li><b>' + esc(EVENTOS[e.evento] || ESTADOS[e.evento] || e.evento) + '</b> <span class="q">· ' + esc(e.usuario) + ' · ' + esc(fechaHora(e.creado_en)) + '</span>' +
          (e.nota ? '<div class="nt">' + esc(e.nota) + '</div>' : '') + '</li>').join('') + '</ul>' +
        '<div class="campo" style="margin-top:10px"><label for="dNota">Agregar una nota</label><textarea id="dNota" maxlength="1000" style="min-height:64px"></textarea></div>' +
        '<div class="error" id="eNota" hidden></div><div class="pie"><button class="btn btn-claro" onclick="cerrarModal()">Cerrar</button><button class="btn btn-rojo" onclick="guardarNota()">Guardar nota</button></div></div>';
@@ -326,17 +370,134 @@ function guardarNota() {
   confirmar('¿Agregar esta nota?', '#' + t.ticket_id + ' · ' + t.titulo + '\n\n' + nota, 'Sí, agregar', () => api('tk_nota', { ticket_id: t.ticket_id, nota }));
 }
 /* Texto listo para la plantilla "Ticket del portal" de GitHub. No se manda solo: la persona lo revisa y lo pega. */
-function textoGitHub(t) {
+function textoGitHub(t, nCap) {
   return '**Ticket del portal:** ' + t.ticket_id + '\n\n**Módulo y pantalla:** ' + (MODS[t.modulo] || t.modulo) + (t.pantalla ? ' · ' + t.pantalla : '') +
     '\n\n**Tipo:** ' + (TIPOS[t.tipo] || t.tipo) + '\n\n## Qué pasa hoy y qué debería pasar\n\n' + t.descripcion +
-    '\n\n## Pasos para reproducirlo\n\n' + (t.pasos || '(sin pasos)') + '\n\n## Alcance\n\n- Riesgo: bajo / alto\n- ¿Necesita un dato o una acción nueva del servidor?: no / sí (cuál)\n\n' +
+    '\n\n## Pasos para reproducirlo\n\n' + (t.pasos || '(sin pasos)') +
+    /* Las capturas nunca se copian (11-nov-2026): el repositorio es público. Solo se dice cuántas hay, para describirlas con palabras. */
+    (nCap ? '\n\n**Capturas:** ' + nCap + ' en el portal. No se copian a GitHub: describe aquí lo que muestran, sin datos reales.' : '') +
+    '\n\n## Alcance\n\n- Riesgo: bajo / alto\n- ¿Necesita un dato o una acción nueva del servidor?: no / sí (cuál)\n\n' +
     '@claude implementa este ticket siguiendo `.claude/CLAUDE.md`.';
 }
 async function copiarParaGitHub() {
-  const txt = textoGitHub(T.det.ticket);
+  const txt = textoGitHub(T.det.ticket, (T.det.capturas || []).length);
   try { await navigator.clipboard.writeText(txt); errorEn('eEstado', ''); aviso('Texto copiado. Revísalo y quita nombres, correos y montos antes de pegarlo en GitHub.'); }
   catch (e) { errorEn('eEstado', 'El navegador no dejó copiar. Selecciona el texto del ticket y cópialo a mano.'); }
 }
+
+/* ── Capturas de pantalla (11-nov-2026, Sergio): opcionales, para enseñar el error. El servidor dice si se ofrecen y con qué
+   límites (tk_inicio → capturas); si no lo dice, la pantalla queda como antes. La imagen se queda en el servidor y solo la
+   ven quien levantó el ticket y administración. Aquí solo se reduce para que quepa en el peso que pide el servidor. ── */
+function capLim() { const c = T.ini && T.ini.capturas; return (c && Number(c.max_por_ticket) > 0 && Number(c.max_kb) > 0) ? c : null; }
+/* La imagen solo viaja por SQL Connect (issue #13). api() pasa al respaldo de n8n cuando SQL Connect falla, y n8n guarda en su
+   historial lo que recibe; por eso subir una captura no usa api(): si SQL Connect no está o no responde, la imagen no se manda por
+   otro camino y se avisa. Usa la sesión que api() ya dejó abierta: no inicia sesión. Solo si el servidor apaga la regla
+   (capturas.solo_sql_connect = false) sube con api(), como cualquier otra acción. (11-nov-2026) */
+async function subirCaptura(d) {
+  const lim = capLim(), no = t => ({ error: 'solo_sql_connect', detalle: 'Las capturas solo viajan por la conexión segura del portal, y en este momento ' + t + '. Vuelve a cargar la página e inténtalo de nuevo.' });
+  let r;
+  if (lim && lim.solo_sql_connect === false) r = await api('tk_captura_subir', d);
+  else {
+    try {
+      await esperarLEMDC();
+      const u = window.LEMDC && LEMDC.usuario(), em = emailDeToken(S.token);
+      if (!u || (em && (u.email || '').toLowerCase() !== em)) return no('no está disponible');
+      r = await LEMDC.llamar('tk_captura_subir', d);
+    } catch (e) { return no('no respondió (' + String((e && (e.message || e.code)) || 'sin respuesta').slice(0, 120) + ')'); }
+  }
+  return (r && (r.ok || r.error)) ? r : { error: 'sin_respuesta', detalle: 'El servidor respondió vacío. Cierra, revisa si la captura quedó en el ticket y, si no, vuelve a agregarla.' };
+}
+/* capGen cambia cada vez que se abre o se cierra un formulario: una imagen que todavía se estaba reduciendo para el formulario
+   anterior se descarta y nunca pasa a otro ticket (11-nov-2026, revisión de Codex en el PR #14). capPend: cuántas se están preparando. */
+function capSoltar() { for (const u of T.urls) { try { URL.revokeObjectURL(u); } catch (e) {} } T.urls = []; T.caps = []; T.capGen++; T.capPend = 0; }
+function capUrl(blob) { const u = URL.createObjectURL(blob); T.urls.push(u); return u; }
+function capB64(blob) { return new Promise((ok, mal) => { const fr = new FileReader(); fr.onload = () => ok(String(fr.result).replace(/^data:[^,]*,/, '')); fr.onerror = () => mal(new Error('No se pudo leer la imagen.')); fr.readAsDataURL(blob); }); }
+function capImagen(blob) { return new Promise((ok, mal) => { const u = URL.createObjectURL(blob), im = new Image(); im.onload = () => { URL.revokeObjectURL(u); ok(im); }; im.onerror = () => { URL.revokeObjectURL(u); mal(new Error('Ese archivo no es una imagen que se pueda abrir.')); }; im.src = u; }); }
+/* Deja la imagen lista para mandar. Si ya cabe, va tal cual; si no, se pasa a JPG y se va achicando hasta que quepa. */
+async function capPreparar(file) {
+  const lim = capLim(), tope = Number(lim.max_kb) * 1024, tipos = lim.tipos || [];
+  if (!/^image\/(png|jpeg|webp)$/.test(file.type)) throw new Error('Solo se aceptan imágenes JPG, PNG o WebP.');
+  let blob = file, nombre = String(file.name || 'captura');
+  if (file.size > tope || !tipos.includes(file.type)) {
+    const im = await capImagen(file); blob = null;
+    for (const [lado, calidad] of [[1600, .85], [1600, .7], [1280, .7], [1024, .6], [800, .5]]) {
+      const f = Math.min(1, lado / Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(im.naturalWidth * f)); c.height = Math.max(1, Math.round(im.naturalHeight * f));
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+      const b = await new Promise(r => c.toBlob(r, 'image/jpeg', calidad));
+      if (b && b.size <= tope) { blob = b; break; }
+    }
+    if (!blob) throw new Error('No se pudo reducir la imagen a ' + lim.max_kb + ' KB. Recorta la captura a la parte que importa.');
+    nombre = nombre.replace(/\.[A-Za-z0-9]+$/, '') + '.jpg';
+  }
+  return { nombre: nombre.slice(0, 120), datos: await capB64(blob), url: capUrl(blob) };
+}
+/* Formulario de ticket nuevo: las capturas esperan aquí hasta que se confirma el ticket */
+function capPintar() {
+  const el = $('nCaps'); if (!el) return;
+  el.innerHTML = T.caps.map((c, i) => '<div class="cap"><img src="' + esc(c.url) + '" alt=""><span>' + esc(c.nombre) + '</span><button type="button" onclick="capQuitarLocal(' + i + ')">Quitar</button></div>').join('') +
+    (T.capPend ? '<div class="cap"><span>Preparando captura…</span></div>' : '');
+}
+function capQuitarLocal(i) { T.caps.splice(i, 1); capPintar(); }
+async function capAgregar(archivos) {
+  const lim = capLim(); if (!lim || !$('nCaps')) return;
+  const gen = T.capGen;                                               // el formulario al que pertenecen estas imágenes
+  errorEn('eNuevo', ''); T.capPend++; capPintar();
+  try {
+    for (const f of archivos) {
+      if (gen !== T.capGen) return;                                   // ese formulario ya se cerró
+      if (T.caps.length >= Number(lim.max_por_ticket)) { errorEn('eNuevo', 'Van ' + lim.max_por_ticket + ' capturas, que es el máximo por ticket.'); break; }
+      let c; try { c = await capPreparar(f); } catch (e) { if (gen === T.capGen) errorEn('eNuevo', (e && e.message) || 'No se pudo usar esa imagen.'); continue; }
+      if (gen !== T.capGen) return;                                   // se cerró mientras se reducía: la imagen no pasa a otro ticket
+      if (T.caps.length < Number(lim.max_por_ticket)) T.caps.push(c);
+      capPintar();
+    }
+  } finally { if (gen === T.capGen) { T.capPend--; capPintar(); } }
+}
+/* Detalle del ticket: ver, agregar y quitar. Agregar y quitar guardan, así que pasan por la confirmación. */
+async function verCaptura(id) {
+  const caja = $('capv' + id); if (!caja) return;
+  if (caja.firstChild) { caja.textContent = ''; return; }             // segundo clic: la esconde
+  errorEn('eCap', ''); caja.textContent = 'Cargando…';
+  let r; try { r = await api('tk_captura', { captura_id: id }); } catch (e) { r = { error: 'conexion', detalle: 'No se pudo conectar. Reintenta.' }; }
+  if ($('capv' + id) !== caja) return;                                // el detalle se cerró o se volvió a pintar
+  caja.textContent = '';
+  if (!r || r.error) return errorEn('eCap', (r && (r.detalle || r.error)) || 'Sin respuesta');
+  if (!/^image\/(png|jpeg|webp)$/.test(r.tipo || '')) return errorEn('eCap', 'El servidor mandó un archivo que no es imagen.');
+  try {
+    const bin = atob(r.datos), a = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) a[i] = bin.charCodeAt(i);
+    const im = document.createElement('img'); im.alt = r.nombre || 'Captura'; im.src = capUrl(new Blob([a], { type: r.tipo })); caja.appendChild(im);
+  } catch (e) { errorEn('eCap', 'No se pudo mostrar la imagen.'); }
+}
+function quitarCaptura(id) {
+  const t = T.det.ticket, c = (T.det.capturas || []).find(x => Number(x.captura_id) === Number(id)); if (!c) return;
+  errorEn('eCap', '');
+  confirmar('¿Quitar esta captura?', '#' + t.ticket_id + ' · ' + t.titulo + '\n\n' + c.nombre + '\nSe borra del portal y no se puede recuperar.', 'Sí, quitar',
+    () => api('tk_captura_quitar', { captura_id: c.captura_id }));
+}
+async function agregarCaptura(archivos) {
+  const t = T.det && T.det.ticket, f = archivos && archivos[0]; if (!t || !f || !capLim()) return;
+  const gen = T.capGen, b = $('bCap');
+  errorEn('eCap', ''); if (b) { b.disabled = true; b.textContent = 'Preparando captura…'; }
+  let c, falla = '';
+  try { c = await capPreparar(f); } catch (e) { falla = (e && e.message) || 'No se pudo usar esa imagen.'; }
+  if (gen !== T.capGen || !T.det || T.det.ticket.ticket_id !== t.ticket_id) return;   // el detalle se cerró o cambió mientras se reducía
+  if (b && $('bCap') === b) { b.disabled = false; b.textContent = 'Agregar captura'; }
+  if (falla) return errorEn('eCap', falla);
+  /* Si mientras se reducía se abrió otra confirmación (una nota, el triage…), no se reemplaza: esa acción sigue su curso y la
+     captura se vuelve a elegir después (11-nov-2026, revisión de Codex en el PR #14) */
+  if (T.guardando || !$('conf').hidden) return errorEn('eCap', 'La captura no se agregó porque había otra confirmación abierta. Termina esa acción y vuelve a elegirla.');
+  confirmar('¿Agregar esta captura?', '#' + t.ticket_id + ' · ' + t.titulo + '\n\n' + c.nombre, 'Sí, agregar',
+    () => subirCaptura({ ticket_id: t.ticket_id, nombre: c.nombre, datos: c.datos }));
+}
+/* Pegar con Cmd+V: en el ticket nuevo se suma a la lista; en el detalle abre la confirmación. El texto pegado no se toca. */
+document.addEventListener('paste', e => {
+  if (!capLim() || T.guardando || !$('conf').hidden || $('modal').hidden) return;
+  const fs = [...((e.clipboardData && e.clipboardData.files) || [])].filter(f => /^image\//.test(f.type));
+  if (!fs.length) return;
+  if ($('nCaps')) { e.preventDefault(); capAgregar(fs); }
+  else if ($('dArch')) { e.preventDefault(); if (!($('bCap') || {}).disabled) agregarCaptura(fs); }   // una a la vez
+});
 
 async function arrancar() {
   $('app').innerHTML = '<div class="msg">Cargando tickets…</div>';
