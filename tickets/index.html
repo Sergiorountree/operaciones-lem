@@ -317,7 +317,7 @@ async function abrirDetalle(id) {
            '<div class="ac"><button class="btn btn-claro" onclick="verCaptura(' + id + ')">Ver</button>' + (c.puede_quitar ? '<button class="btn btn-peligro" onclick="quitarCaptura(' + id + ')">Quitar</button>' : '') + '</div><div id="capv' + id + '"></div></div>'; }).join('') +
          '<div class="error" id="eCap" hidden></div>' +
          (lim && caps.length < Number(lim.max_por_ticket) ? '<div class="pie"><input type="file" id="dArch" accept="image/png,image/jpeg,image/webp" hidden onchange="agregarCaptura([...this.files]); this.value=\'\'">' +
-           '<button class="btn btn-claro" onclick="$(\'dArch\').click()">Agregar captura</button></div><p class="sub" style="margin:8px 0 0">También puedes pegarla con Cmd+V. Se queda en el portal: no va a GitHub.</p>' : '') + '</div>';
+           '<button class="btn btn-claro" id="bCap" onclick="$(\'dArch\').click()">Agregar captura</button></div><p class="sub" style="margin:8px 0 0">También puedes pegarla con Cmd+V. Se queda en el portal: no va a GitHub.</p>' : '') + '</div>';
   }
 
   if (admin && t.estado === 'nuevo') {
@@ -459,10 +459,16 @@ function quitarCaptura(id) {
 }
 async function agregarCaptura(archivos) {
   const t = T.det && T.det.ticket, f = archivos && archivos[0]; if (!t || !f || !capLim()) return;
-  const gen = T.capGen;
-  errorEn('eCap', '');
-  let c; try { c = await capPreparar(f); } catch (e) { if (gen === T.capGen) errorEn('eCap', (e && e.message) || 'No se pudo usar esa imagen.'); return; }
+  const gen = T.capGen, b = $('bCap');
+  errorEn('eCap', ''); if (b) { b.disabled = true; b.textContent = 'Preparando captura…'; }
+  let c, falla = '';
+  try { c = await capPreparar(f); } catch (e) { falla = (e && e.message) || 'No se pudo usar esa imagen.'; }
   if (gen !== T.capGen || !T.det || T.det.ticket.ticket_id !== t.ticket_id) return;   // el detalle se cerró o cambió mientras se reducía
+  if (b && $('bCap') === b) { b.disabled = false; b.textContent = 'Agregar captura'; }
+  if (falla) return errorEn('eCap', falla);
+  /* Si mientras se reducía se abrió otra confirmación (una nota, el triage…), no se reemplaza: esa acción sigue su curso y la
+     captura se vuelve a elegir después (11-nov-2026, revisión de Codex en el PR #14) */
+  if (T.guardando || !$('conf').hidden) return errorEn('eCap', 'La captura no se agregó porque había otra confirmación abierta. Termina esa acción y vuelve a elegirla.');
   confirmar('¿Agregar esta captura?', '#' + t.ticket_id + ' · ' + t.titulo + '\n\n' + c.nombre, 'Sí, agregar',
     () => api('tk_captura_subir', { ticket_id: t.ticket_id, nombre: c.nombre, datos: c.datos }));
 }
@@ -472,7 +478,7 @@ document.addEventListener('paste', e => {
   const fs = [...((e.clipboardData && e.clipboardData.files) || [])].filter(f => /^image\//.test(f.type));
   if (!fs.length) return;
   if ($('nCaps')) { e.preventDefault(); capAgregar(fs); }
-  else if ($('dArch')) { e.preventDefault(); agregarCaptura(fs); }
+  else if ($('dArch')) { e.preventDefault(); if (!($('bCap') || {}).disabled) agregarCaptura(fs); }   // una a la vez
 });
 
 async function arrancar() {
