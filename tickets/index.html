@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tickets · Grupo LEM</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root { --rojo:#B3282D; --gris:#f4f4f5; --borde:#e4e4e7; --txt:#18181b; --txt2:#71717a; --azul:#1f4e79; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  [hidden] { display:none !important; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; background:var(--gris); color:var(--txt); min-height:100vh; display:flex; flex-direction:column; }
+  header { background:var(--rojo); color:#fff; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  header h1 { font-size:18px; font-weight:800; letter-spacing:.2px; } header h1 a { color:#fff; text-decoration:none; opacity:.85; font-weight:600; }
+  header .s { font-size:12px; opacity:.9; text-align:right; }
+  header button { background:rgba(255,255,255,.18); color:#fff; border:1px solid rgba(255,255,255,.4); border-radius:8px; padding:5px 10px; font-size:12px; cursor:pointer; margin-left:8px; }
+  main { max-width:1320px; margin:0 auto; padding:24px 18px 60px; width:100%; flex:1; }
+  .login { text-align:center; padding-top:70px; } .login .ico { font-size:46px; } .login h2 { font-size:22px; margin:10px 0 4px; } .login p { color:var(--txt2); margin-bottom:20px; }
+  .msg { text-align:center; color:var(--txt2); padding:60px 0; } .msg a { color:var(--rojo); font-weight:700; text-decoration:none; }
+  .aviso { background:#fff3cd; border:1px solid #ffe08a; color:#664d03; border-radius:10px; padding:12px 14px; margin:0 0 14px; font-size:14px; }
+  .barra { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:16px; }
+  .barra h2 { font-size:24px; font-weight:800; } .barra p { color:var(--txt2); margin-top:4px; font-size:14.5px; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; border:1px solid transparent; border-radius:10px; padding:9px 16px; font:inherit; font-size:14.5px; font-weight:700; cursor:pointer; text-decoration:none; }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .btn-rojo { background:var(--rojo); color:#fff; } .btn-azul { background:var(--azul); color:#fff; }
+  .btn-claro { background:#fff; color:var(--txt); border-color:#d4d4d8; } .btn-peligro { background:#fff; color:#8C1F1B; border-color:#F2B8B3; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .filtro { background:#fff; border:1px solid var(--borde); border-radius:99px; padding:6px 12px; font:inherit; font-size:13.5px; font-weight:700; color:var(--txt2); cursor:pointer; }
+  .filtro.on { background:var(--txt); border-color:var(--txt); color:#fff; } .filtro .n { margin-left:6px; opacity:.8; font-variant-numeric:tabular-nums; }
+  .hoja { background:#fff; border:1px solid var(--borde); border-radius:12px; overflow-x:auto; }
+  .hoja table { border-collapse:collapse; width:100%; font-size:14px; }
+  .hoja th { text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--txt2); background:#fafafa; padding:9px 12px; border-bottom:1px solid var(--borde); white-space:nowrap; }
+  .hoja td { padding:10px 12px; border-top:1px solid var(--borde); vertical-align:top; }
+  .hoja tbody tr { cursor:pointer; } .hoja tbody tr:hover { background:#fafafa; }
+  .hoja td.num { font-variant-numeric:tabular-nums; color:var(--txt2); white-space:nowrap; } .hoja td.tit { font-weight:700; min-width:220px; }
+  .hoja td.chico { font-size:13px; color:#3f3f46; white-space:nowrap; }
+  .vacio { padding:36px 16px; text-align:center; color:var(--txt2); }
+  .chip { display:inline-block; font-size:11.5px; font-weight:700; border-radius:99px; padding:2px 8px; white-space:nowrap; }
+  .e-nuevo { background:#FEF9C3; color:#713F12; } .e-aceptado { background:#E0ECF8; color:#1f4e79; } .e-rechazado { background:#FCE7E5; color:#8C1F1B; }
+  .e-en_proceso { background:#FFF4ED; color:#9A3412; } .e-publicado { background:#E3F3E8; color:#1E5A36; } .e-cerrado { background:var(--gris); color:var(--txt2); }
+  .p-alta { background:#FCE7E5; color:#8C1F1B; } .p-media { background:#FFF4ED; color:#9A3412; } .p-baja { background:var(--gris); color:var(--txt2); }
+  .modal { position:fixed; inset:0; background:rgba(24,24,27,.55); display:flex; align-items:flex-start; justify-content:center; padding:5vh 14px; overflow-y:auto; z-index:20; }
+  #conf { z-index:30; }
+  .caja { background:#fff; border-radius:16px; width:100%; max-width:720px; padding:22px; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+  .caja.chica { max-width:480px; }
+  .caja h3 { font-size:19px; font-weight:800; margin-bottom:4px; } .caja .sub { color:var(--txt2); font-size:13.5px; margin-bottom:14px; }
+  .campo { margin-bottom:12px; } .campo label { display:block; font-size:13px; font-weight:700; margin-bottom:4px; }
+  .campo input, .campo select, .campo textarea { width:100%; border:1px solid #d4d4d8; border-radius:10px; padding:9px 11px; font:inherit; font-size:14.5px; background:#fff; }
+  .campo textarea { min-height:96px; resize:vertical; } .campo .ayuda { font-size:12px; color:var(--txt2); margin-top:3px; }
+  .dos { display:grid; grid-template-columns:1fr 1fr; gap:12px; } @media (max-width:560px) { .dos { grid-template-columns:1fr; } }
+  .pie { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:16px; }
+  .error { background:#FCE7E5; border:1px solid #F2B8B3; color:#8C1F1B; border-radius:10px; padding:9px 12px; font-size:13.5px; margin-top:10px; }
+  .dato { margin-bottom:12px; } .dato .et { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--txt2); margin-bottom:2px; }
+  .dato .va { font-size:14.5px; line-height:1.45; white-space:pre-wrap; word-wrap:break-word; }
+  .meta { display:flex; flex-wrap:wrap; gap:6px; margin:6px 0 14px; }
+  .bloque { border-top:1px solid var(--borde); margin-top:14px; padding-top:14px; } .bloque h4 { font-size:14.5px; font-weight:800; margin-bottom:8px; }
+  .bit { list-style:none; } .bit li { font-size:13.5px; padding:6px 0; border-top:1px solid var(--borde); } .bit li:first-child { border-top:none; }
+  .bit .q { color:var(--txt2); font-size:12.5px; } .bit .nt { white-space:pre-wrap; word-wrap:break-word; margin-top:2px; }
+  .resumen { background:var(--gris); border-radius:10px; padding:10px 12px; font-size:14px; line-height:1.45; white-space:pre-wrap; word-wrap:break-word; max-height:40vh; overflow-y:auto; }
+  footer { text-align:center; color:var(--txt2); font-size:12px; padding:18px; }
+</style>
+</head>
+<body>
+<header><h1><a href="/">Grupo LEM</a> · Tickets</h1><div class="s" id="hUser"></div></header>
+<main id="app"><div class="msg">Cargando…</div></main>
+<div class="modal" id="modal" hidden></div>
+<div class="modal" id="conf" hidden></div>
+<footer>Grupo LEM · uso interno</footer>
+
+<!-- Sesión y canal con el servidor: el mismo código del lanzador (index.html), sin cambios. -->
+<script type="module">
+/* SQL Connect: misma sesión de Firebase que los módulos (ver /compras/). */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithCredential, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
+import { getDataConnect, mutationRef, executeMutation } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-data-connect.js";
+const fbApp = initializeApp({"apiKey": "AIzaSyC1ycKtN1atpb1monWFIJqmR4X5vmpnNoo", "authDomain": "lem-erp.firebaseapp.com", "projectId": "lem-erp", "appId": "1:902179844288:web:e887a0886fa1188da2fd25"});
+const fbAuth = getAuth(fbApp);
+const dc = getDataConnect(fbApp, { connector: "api", location: "us-central1", service: "lem-api" });
+let resolverListo; const listo = new Promise(r => { resolverListo = r; });
+onAuthStateChanged(fbAuth, () => resolverListo());
+window.LEMDC = {
+  listo,
+  usuario: () => fbAuth.currentUser,
+  entrar: (idToken) => signInWithCredential(fbAuth, GoogleAuthProvider.credential(idToken)),
+  salir: () => signOut(fbAuth).catch(() => {}),
+  llamar: async (accion, datos) => {
+    const r = await executeMutation(mutationRef(dc, "Accion", { accion, datos: JSON.stringify(datos || {}) }));
+    return (r && r.data && r.data.r && r.data.r.r) || {};
+  }
+};
+</script>
+<script>
+/* Sesión, token y api(): copiados tal cual del lanzador (10-nov-2026). Esta página no carga punto-de-vista.js:
+   Tickets se usa siempre en la vista propia. */
+const CLIENT_ID = '902179844288-c4ppk03u5ss2vdqvl0chfoghhedi9ape.apps.googleusercontent.com';
+const API = 'https://rountree.app.n8n.cloud/webhook/compras-api';
+const store = { get(){ try { return sessionStorage.getItem('lem_tok'); } catch(e){ return null; } }, set(v){ try { sessionStorage.setItem('lem_tok', v); } catch(e){} }, del(){ try { sessionStorage.removeItem('lem_tok'); } catch(e){} } };
+const S = { token: store.get() || null, perfil: null };
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+function emailDeToken(t) { try { return (JSON.parse(atob(t.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).email || '').toLowerCase(); } catch (e) { return ''; } }
+async function esperarLEMDC() {
+  if (!window.LEMDC) await new Promise(r => { const t0 = Date.now(); const iv = setInterval(() => { if (window.LEMDC || Date.now() - t0 > 4000) { clearInterval(iv); r(); } }, 50); });
+  if (window.LEMDC) await Promise.race([LEMDC.listo, new Promise(r => setTimeout(r, 4000))]);
+}
+async function apiN8n(accion, datos) {
+  const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: S.token, accion, datos: datos || {} }) });
+  if (r.status === 401) { const e = new Error('401'); e.expirada = true; throw e; }
+  return await r.json();
+}
+/* Punto de vista (mig. 097): la vista elegida viaja en datos.ver_como; si el servidor la rechaza, la página vuelve a la vista
+   propia sin cerrar la sesión (punto-de-vista.js). Sin ese archivo, todo funciona igual en la vista propia. */
+async function api(accion, datos) {
+  const d = window.LEM_PV ? LEM_PV.datos(accion, datos) : datos;
+  const j = await apiCruda(accion, d);
+  if (window.LEM_PV && LEM_PV.rechazo(j)) return LEM_PV.pendiente();
+  return j;
+}
+async function apiCruda(accion, datos) {
+  try {
+    await esperarLEMDC();
+    if (window.LEMDC && S.token) {
+      const u = LEMDC.usuario(); const em = emailDeToken(S.token);
+      if (!u || (em && (u.email || '').toLowerCase() !== em)) await LEMDC.entrar(S.token);
+    }
+    if (window.LEMDC && LEMDC.usuario()) return await LEMDC.llamar(accion, datos);
+  } catch (e) { console.warn('SQL Connect no disponible, usando n8n:', e && e.message); }
+  return apiN8n(accion, datos);
+}
+/* ── Tickets v0 (10-nov-2026, Sergio): tickets del portal con triage. Permisos, datos y conteos los entrega el servidor
+   (acciones tk_*); esta página solo presenta y manda. Toda acción que guarda pasa por un modal de confirmación. ── */
+const T = { ini: null, filtro: 'todos', det: null, pend: null, guardando: false };
+const ESTADOS = { nuevo: 'Nuevo', aceptado: 'Aceptado', rechazado: 'Rechazado', en_proceso: 'En proceso', publicado: 'Publicado', cerrado: 'Cerrado' };
+const TIPOS = { error: 'Error', observacion: 'Observación', mejora: 'Mejora' };
+const MODS = { portal: 'Portal (inicio)', compras: 'Compras', inventarios: 'Inventarios', nominas: 'Nóminas', ventas: 'Ventas', contabilidad: 'Contabilidad', asistente: 'Asistente', otro: 'Otro' };
+const PRIOS = { alta: 'Alta', media: 'Media', baja: 'Baja' };
+/* A qué estado puede pasar un ticket desde donde está. Es solo para pintar las opciones: el servidor vuelve a revisarlo. */
+const SIGUE = { aceptado: ['en_proceso', 'publicado', 'cerrado'], en_proceso: ['publicado', 'cerrado'], publicado: ['cerrado'], rechazado: ['cerrado', 'nuevo'], cerrado: ['nuevo'] };
+const ISSUE_NUEVO = 'https://github.com/Sergiorountree/operaciones-lem/issues/new?template=ticket.md';
+function fechaHora(iso) {
+  try { return new Intl.DateTimeFormat('es-MX', { timeZone: 'America/Chihuahua', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)); }
+  catch (e) { return String(iso || '').slice(0, 16).replace('T', ' '); }
+}
+const chipEstado = e => '<span class="chip e-' + esc(e) + '">' + esc(ESTADOS[e] || e) + '</span>';
+const chipPrio = p => p ? '<span class="chip p-' + esc(p) + '">' + esc(PRIOS[p] || p) + '</span>' : '';
+const val = id => { const el = $(id); return el ? String(el.value || '').trim() : ''; };
+
+function vLogin(msj) {
+  $('hUser').innerHTML = '';
+  $('app').innerHTML = '<div class="login"><div class="ico">🎫</div><h2>Tickets</h2><p>' + esc(msj || 'Entra con tu cuenta @grupolem.com') + '</p><div id="gbtn" style="display:flex;justify-content:center"></div></div>';
+  if (window.google) {
+    google.accounts.id.initialize({ client_id: CLIENT_ID, itp_support: true,
+      error_callback: (e) => aviso('Google no pudo abrir la ventana de acceso (' + ((e && e.type) || 'desconocido') + '). Si tu navegador bloquea ventanas emergentes, permítelas para este sitio y reintenta.'),
+      callback: (resp) => { S.token = resp.credential; store.set(S.token); arrancar(); } });
+    google.accounts.id.renderButton($('gbtn'), { theme: 'filled_blue', size: 'large', text: 'signin_with', locale: 'es' });
+  } else { setTimeout(() => vLogin(msj), 400); }
+}
+function aviso(t) { const d = document.createElement('div'); d.className = 'aviso'; d.textContent = t; $('app').prepend(d); }
+function salir() { T.guardando = false; cerrarModal(); store.del(); S.token = null; S.perfil = null; T.ini = null; if (window.LEMDC) LEMDC.salir(); vLogin('Sesión cerrada.'); }
+function vSinAcceso(t) {
+  $('hUser').innerHTML = esc(emailDeToken(S.token)) + '<button onclick="salir()">Salir</button>';
+  $('app').innerHTML = '<div class="msg">' + esc(t) + '<br><br><a href="/">← Volver a los módulos</a></div>';
+}
+
+/* ── Lista ── */
+function pintar() {
+  const r = T.ini, cuenta = r.cuenta || {}, admin = !!r.puede_triage;
+  $('hUser').innerHTML = esc(r.usuario) + '<button onclick="salir()">Salir</button>';
+  const lista = (r.tickets || []).filter(t => T.filtro === 'todos' || t.estado === T.filtro);
+  let h = '<div class="barra"><div><h2>Tickets del portal</h2><p>' +
+          (admin ? 'Errores, observaciones y mejoras que levanta el equipo. Aquí se aceptan o se rechazan.'
+                 : 'Levanta aquí un error, una observación o una mejora de cualquier pantalla. Ves los tickets que tú levantaste.') +
+          '</p></div><button class="btn btn-rojo" onclick="abrirNuevo()">Levantar ticket</button></div>';
+  h += '<div class="filtros"><button class="filtro' + (T.filtro === 'todos' ? ' on' : '') + '" onclick="filtrar(\'todos\')">Todos</button>';
+  for (const e of Object.keys(ESTADOS)) {
+    h += '<button class="filtro' + (T.filtro === e ? ' on' : '') + '" onclick="filtrar(\'' + e + '\')">' + esc(ESTADOS[e]) + '<span class="n">' + esc(cuenta[e] || 0) + '</span></button>';
+  }
+  h += '</div><div class="hoja">';
+  if (!lista.length) {
+    h += '<div class="vacio">' + ((r.tickets || []).length ? 'No hay tickets en este estado.' : 'Todavía no hay tickets. Usa «Levantar ticket» para registrar el primero.') + '</div>';
+  } else {
+    h += '<table><thead><tr><th>#</th><th>Fecha</th><th>Módulo</th><th>Tipo</th><th>Título</th><th>Estado</th><th>Prioridad</th>' + (admin ? '<th>Levantó</th>' : '') + '</tr></thead><tbody>';
+    for (const t of lista) {
+      h += '<tr onclick="abrirDetalle(' + Number(t.ticket_id) + ')"><td class="num">' + esc(t.ticket_id) + '</td><td class="chico">' + esc(fechaHora(t.creado_en)) + '</td>' +
+           '<td class="chico">' + esc(MODS[t.modulo] || t.modulo) + '</td><td class="chico">' + esc(TIPOS[t.tipo] || t.tipo) + '</td><td class="tit">' + esc(t.titulo) + '</td>' +
+           '<td>' + chipEstado(t.estado) + '</td><td>' + chipPrio(t.prioridad) + '</td>' + (admin ? '<td class="chico">' + esc(t.creado_por) + '</td>' : '') + '</tr>';
+    }
+    h += '</tbody></table>';
+  }
+  $('app').innerHTML = h + '</div>';
+}
+function filtrar(e) { T.filtro = e; pintar(); }
+async function recargar() {
+  const r = await api('tk_inicio');
+  if (r && r.error) { aviso('No se pudo actualizar la lista: ' + (r.detalle || r.error)); return; }
+  T.ini = r; pintar();
+}
+
+/* ── Modales ── */
+function abrirModal(html, chica) { $('modal').innerHTML = '<div class="caja' + (chica ? ' chica' : '') + '">' + html + '</div>'; $('modal').hidden = false; }
+function cerrarModal() { if (T.guardando) return; $('modal').hidden = true; $('modal').innerHTML = ''; cerrarConf(); T.det = null; }
+function cerrarConf() { if (T.guardando) return; $('conf').hidden = true; $('conf').innerHTML = ''; T.pend = null; }
+function errorEn(id, t) { const el = $(id); if (el) { el.textContent = t; el.hidden = !t; } }
+/* Doble check: nada se manda sin pasar por aquí. `resumen` es texto plano; `hacer` es la llamada que guarda. */
+function confirmar(titulo, resumen, boton, hacer) {
+  if (T.guardando) return;
+  T.pend = hacer;
+  $('conf').innerHTML = '<div class="caja chica"><h3>' + esc(titulo) + '</h3><p class="sub">Revisa antes de guardar.</p><div class="resumen">' + esc(resumen) + '</div>' +
+    '<div class="error" id="eConf" hidden></div><div class="pie"><button class="btn btn-claro" id="bReg" onclick="cerrarConf()">Regresar</button>' +
+    '<button class="btn btn-rojo" id="bConf" onclick="ejecutar()">' + esc(boton) + '</button></div></div>';
+  $('conf').hidden = false;
+}
+/* Mientras una petición de guardado está en camino (T.guardando) no se puede cerrar ni volver a mandar: ni con Regresar,
+   ni con Escape, ni abriendo otra confirmación (10-nov-2026, revisión de Codex en el PR #10). */
+async function ejecutar() {
+  const hacer = T.pend; if (!hacer || T.guardando) return;
+  T.guardando = true;
+  const b = $('bConf'), reg = $('bReg'); b.disabled = true; if (reg) reg.disabled = true; errorEn('eConf', '');
+  const soltar = () => { T.guardando = false; b.disabled = false; if (reg) reg.disabled = false; };
+  let r;
+  try { r = await hacer(); }
+  catch (e) {
+    soltar();
+    if (e && e.expirada) { cerrarModal(); store.del(); S.token = null; vLogin('Tu sesión expiró — vuelve a entrar.'); return; }
+    errorEn('eConf', 'No se pudo conectar (' + ((e && e.message) || 'error') + '). Puede que sí se haya guardado: cierra y revisa la lista antes de reintentar.'); return;
+  }
+  soltar();
+  if (r && r.error) { errorEn('eConf', r.detalle || r.error); return; }
+  /* Ya se guardó. Lo que sigue solo refresca la pantalla: si falla, se cierra el formulario y se avisa, para que nadie
+     vuelva a guardar lo mismo. */
+  const id = T.det ? T.det.ticket.ticket_id : null;
+  cerrarModal();
+  try { await recargar(); if (id) await abrirDetalle(id); }
+  catch (e) { aviso('Se guardó, pero no se pudo actualizar la lista. Recarga la página para verla al día.'); }
+}
+
+/* ── Levantar un ticket ── */
+function abrirNuevo() {
+  T.det = null;
+  const ops = (o, lista) => lista.map(k => '<option value="' + esc(k) + '">' + esc(o[k] || k) + '</option>').join('');
+  abrirModal('<h3>Levantar ticket</h3><p class="sub">No escribas contraseñas, sueldos ni datos personales de colaboradores. Esta versión no guarda capturas.</p>' +
+    '<div class="dos"><div class="campo"><label for="nMod">Módulo</label><select id="nMod"><option value="">Elige…</option>' + ops(MODS, T.ini.modulos || Object.keys(MODS)) + '</select></div>' +
+    '<div class="campo"><label for="nTipo">Tipo</label><select id="nTipo"><option value="">Elige…</option>' + ops(TIPOS, T.ini.tipos || Object.keys(TIPOS)) + '</select></div></div>' +
+    '<div class="campo"><label for="nPant">Pantalla (opcional)</label><input id="nPant" maxlength="120" placeholder="Por ejemplo: Semáforo, Cierre semanal"></div>' +
+    '<div class="campo"><label for="nTit">Título</label><input id="nTit" maxlength="120" placeholder="Qué pasa, en una línea"></div>' +
+    '<div class="campo"><label for="nDes">Qué pasa hoy y qué debería pasar</label><textarea id="nDes" maxlength="4000"></textarea></div>' +
+    '<div class="campo"><label for="nPasos">Pasos para verlo (opcional)</label><textarea id="nPasos" maxlength="4000" placeholder="1. Entro a…&#10;2. Doy clic en…"></textarea></div>' +
+    '<div class="error" id="eNuevo" hidden></div>' +
+    '<div class="pie"><button class="btn btn-claro" onclick="cerrarModal()">Cancelar</button><button class="btn btn-rojo" onclick="guardarNuevo()">Guardar</button></div>');
+}
+function guardarNuevo() {
+  const d = { modulo: val('nMod'), tipo: val('nTipo'), pantalla: val('nPant'), titulo: val('nTit'), descripcion: val('nDes'), pasos: val('nPasos') };
+  if (!d.modulo) return errorEn('eNuevo', 'Elige el módulo donde pasa.');
+  if (!d.tipo) return errorEn('eNuevo', 'Elige el tipo: error, observación o mejora.');
+  if (d.titulo.length < 5) return errorEn('eNuevo', 'Escribe un título de al menos 5 letras.');
+  if (d.descripcion.length < 10) return errorEn('eNuevo', 'Describe qué pasa hoy y qué debería pasar.');
+  errorEn('eNuevo', '');
+  confirmar('¿Levantar este ticket?', (MODS[d.modulo] || d.modulo) + ' · ' + (TIPOS[d.tipo] || d.tipo) + (d.pantalla ? ' · ' + d.pantalla : '') + '\n\n' + d.titulo + '\n\n' + d.descripcion + (d.pasos ? '\n\nPasos:\n' + d.pasos : ''),
+    'Sí, levantar', () => api('tk_crear', d));
+}
+
+/* ── Detalle, bitácora, triage y estado ── */
+async function abrirDetalle(id) {
+  abrirModal('<div class="msg">Cargando…</div>');
+  let r;
+  try { r = await api('tk_detalle', { ticket_id: id }); }
+  catch (e) { abrirModal('<div class="error">No se pudo conectar. Reintenta.</div><div class="pie"><button class="btn btn-claro" onclick="cerrarModal()">Cerrar</button></div>', true); return; }
+  if (!r || r.error) { abrirModal('<div class="error">' + esc((r && (r.detalle || r.error)) || 'Sin respuesta') + '</div><div class="pie"><button class="btn btn-claro" onclick="cerrarModal()">Cerrar</button></div>', true); return; }
+  T.det = r;
+  const t = r.ticket, admin = !!r.puede_triage;
+  let h = '<h3>#' + esc(t.ticket_id) + ' · ' + esc(t.titulo) + '</h3><div class="meta">' + chipEstado(t.estado) + chipPrio(t.prioridad) +
+          '<span class="chip e-cerrado">' + esc(MODS[t.modulo] || t.modulo) + '</span><span class="chip e-cerrado">' + esc(TIPOS[t.tipo] || t.tipo) + '</span></div>';
+  h += '<div class="dato"><div class="et">Levantó</div><div class="va">' + esc(t.creado_por) + ' · ' + esc(fechaHora(t.creado_en)) + (t.pantalla ? ' · pantalla: ' + esc(t.pantalla) : '') + '</div></div>';
+  h += '<div class="dato"><div class="et">Qué pasa hoy y qué debería pasar</div><div class="va">' + esc(t.descripcion) + '</div></div>';
+  if (t.pasos) h += '<div class="dato"><div class="et">Pasos para verlo</div><div class="va">' + esc(t.pasos) + '</div></div>';
+  if (t.triage_por) h += '<div class="dato"><div class="et">Triage</div><div class="va">' + esc(t.triage_por) + ' · ' + esc(fechaHora(t.triage_en)) + (t.triage_nota ? '\n' + esc(t.triage_nota) : '') + '</div></div>';
+  if (t.issue_numero || t.pr_numero) h += '<div class="dato"><div class="et">GitHub</div><div class="va">' + (t.issue_numero ? 'Issue #' + esc(t.issue_numero) : '') + (t.issue_numero && t.pr_numero ? ' · ' : '') + (t.pr_numero ? 'PR #' + esc(t.pr_numero) : '') + '</div></div>';
+
+  if (admin && t.estado === 'nuevo') {
+    h += '<div class="bloque"><h4>Triage</h4><div class="dos"><div class="campo"><label for="tPrio">Prioridad (para aceptar)</label><select id="tPrio"><option value="">Elige…</option><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select></div>' +
+         '<div class="campo"><label for="tNota">Nota o motivo</label><input id="tNota" maxlength="1000" placeholder="Obligatoria para rechazar"></div></div>' +
+         '<div class="error" id="eTriage" hidden></div><div class="pie"><button class="btn btn-peligro" onclick="triage(\'rechazar\')">Rechazar</button><button class="btn btn-azul" onclick="triage(\'aceptar\')">Aceptar</button></div></div>';
+  }
+  if (admin && SIGUE[t.estado]) {
+    h += '<div class="bloque"><h4>Avance</h4><div class="dos"><div class="campo"><label for="sEstado">Pasar a</label><select id="sEstado"><option value="">Elige…</option>' +
+         SIGUE[t.estado].map(e => '<option value="' + e + '">' + (e === 'nuevo' ? 'Reabrir (vuelve a triage)' : esc(ESTADOS[e])) + '</option>').join('') + '</select></div>' +
+         '<div class="campo"><label for="sNota">Nota (opcional)</label><input id="sNota" maxlength="1000"></div></div>' +
+         '<div class="dos"><div class="campo"><label for="sIssue">Issue de GitHub (número)</label><input id="sIssue" inputmode="numeric" maxlength="7" value="' + esc(t.issue_numero || '') + '"></div>' +
+         '<div class="campo"><label for="sPr">PR de GitHub (número)</label><input id="sPr" inputmode="numeric" maxlength="7" value="' + esc(t.pr_numero || '') + '"></div></div>' +
+         '<div class="error" id="eEstado" hidden></div><div class="pie">' +
+         (t.estado === 'aceptado' ? '<button class="btn btn-claro" onclick="copiarParaGitHub()">Copiar texto para GitHub</button><a class="btn btn-claro" href="' + ISSUE_NUEVO + '" target="_blank" rel="noopener">Abrir issue nuevo</a>' : '') +
+         '<button class="btn btn-azul" onclick="cambiarEstado()">Guardar avance</button></div>' +
+         (t.estado === 'aceptado' ? '<p class="sub" style="margin:10px 0 0">El repositorio es público: antes de pegar el texto en GitHub quita nombres, correos y montos.</p>' : '') + '</div>';
+  }
+  h += '<div class="bloque"><h4>Bitácora</h4><ul class="bit">' + (r.eventos || []).map(e =>
+         '<li><b>' + esc(e.evento === 'nota' ? 'Nota' : e.evento === 'creado' ? 'Creado' : e.evento === 'reabierto' ? 'Reabierto' : (ESTADOS[e.evento] || e.evento)) + '</b> <span class="q">· ' + esc(e.usuario) + ' · ' + esc(fechaHora(e.creado_en)) + '</span>' +
+         (e.nota ? '<div class="nt">' + esc(e.nota) + '</div>' : '') + '</li>').join('') + '</ul>' +
+       '<div class="campo" style="margin-top:10px"><label for="dNota">Agregar una nota</label><textarea id="dNota" maxlength="1000" style="min-height:64px"></textarea></div>' +
+       '<div class="error" id="eNota" hidden></div><div class="pie"><button class="btn btn-claro" onclick="cerrarModal()">Cerrar</button><button class="btn btn-rojo" onclick="guardarNota()">Guardar nota</button></div></div>';
+  abrirModal(h);
+  T.det = r;
+}
+function triage(decision) {
+  const t = T.det.ticket, prio = val('tPrio'), nota = val('tNota');
+  if (decision === 'aceptar' && !prio) return errorEn('eTriage', 'Para aceptar elige la prioridad.');
+  if (decision === 'rechazar' && nota.length < 5) return errorEn('eTriage', 'Para rechazar escribe el motivo.');
+  errorEn('eTriage', '');
+  confirmar(decision === 'aceptar' ? '¿Aceptar este ticket?' : '¿Rechazar este ticket?',
+    '#' + t.ticket_id + ' · ' + t.titulo + (decision === 'aceptar' ? '\nPrioridad: ' + PRIOS[prio] : '') + (nota ? '\nNota: ' + nota : ''),
+    decision === 'aceptar' ? 'Sí, aceptar' : 'Sí, rechazar',
+    () => api('tk_triage', { ticket_id: t.ticket_id, decision, prioridad: prio, nota }));
+}
+function cambiarEstado() {
+  const t = T.det.ticket, estado = val('sEstado'), nota = val('sNota'), issue = val('sIssue'), pr = val('sPr');
+  if (!estado) return errorEn('eEstado', 'Elige a qué estado pasa.');
+  if ((issue && !/^[0-9]{1,7}$/.test(issue)) || (pr && !/^[0-9]{1,7}$/.test(pr))) return errorEn('eEstado', 'El issue y el PR van como número, sin el signo #.');
+  errorEn('eEstado', '');
+  confirmar('¿Guardar el avance?', '#' + t.ticket_id + ' · ' + t.titulo + '\nPasa a: ' + (estado === 'nuevo' ? 'Nuevo (reabierto)' : ESTADOS[estado]) +
+    (issue ? '\nIssue #' + issue : '') + (pr ? '\nPR #' + pr : '') + (nota ? '\nNota: ' + nota : ''), 'Sí, guardar',
+    () => api('tk_estado', { ticket_id: t.ticket_id, estado, nota, issue_numero: issue, pr_numero: pr }));
+}
+function guardarNota() {
+  const t = T.det.ticket, nota = val('dNota');
+  if (nota.length < 2) return errorEn('eNota', 'Escribe la nota.');
+  errorEn('eNota', '');
+  confirmar('¿Agregar esta nota?', '#' + t.ticket_id + ' · ' + t.titulo + '\n\n' + nota, 'Sí, agregar', () => api('tk_nota', { ticket_id: t.ticket_id, nota }));
+}
+/* Texto listo para la plantilla "Ticket del portal" de GitHub. No se manda solo: la persona lo revisa y lo pega. */
+function textoGitHub(t) {
+  return '**Ticket del portal:** ' + t.ticket_id + '\n\n**Módulo y pantalla:** ' + (MODS[t.modulo] || t.modulo) + (t.pantalla ? ' · ' + t.pantalla : '') +
+    '\n\n**Tipo:** ' + (TIPOS[t.tipo] || t.tipo) + '\n\n## Qué pasa hoy y qué debería pasar\n\n' + t.descripcion +
+    '\n\n## Pasos para reproducirlo\n\n' + (t.pasos || '(sin pasos)') + '\n\n## Alcance\n\n- Riesgo: bajo / alto\n- ¿Necesita un dato o una acción nueva del servidor?: no / sí (cuál)\n\n' +
+    '@claude implementa este ticket siguiendo `.claude/CLAUDE.md`.';
+}
+async function copiarParaGitHub() {
+  const txt = textoGitHub(T.det.ticket);
+  try { await navigator.clipboard.writeText(txt); errorEn('eEstado', ''); aviso('Texto copiado. Revísalo y quita nombres, correos y montos antes de pegarlo en GitHub.'); }
+  catch (e) { errorEn('eEstado', 'El navegador no dejó copiar. Selecciona el texto del ticket y cópialo a mano.'); }
+}
+
+async function arrancar() {
+  $('app').innerHTML = '<div class="msg">Cargando tickets…</div>';
+  try {
+    const r = await api('tk_inicio');
+    if (r && r.error) {
+      if (r.error === 'sin_acceso') return vSinAcceso(r.detalle || 'No tienes acceso al módulo de Tickets.');
+      if (r.error === 'accion_desconocida') return vSinAcceso('El módulo de Tickets todavía no está activado en el servidor.');
+      return vSinAcceso('No se pudieron cargar los tickets: ' + (r.detalle || r.error));
+    }
+    T.ini = r; pintar();
+  } catch (e) {
+    store.del(); S.token = null; if (window.LEMDC) LEMDC.salir();
+    vLogin(e && e.expirada ? 'Tu sesión expiró — vuelve a entrar.' : 'No se pudo conectar (' + ((e && e.message) || 'error') + '). Reintenta.');
+  }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (!$('conf').hidden) cerrarConf(); else if (!$('modal').hidden) cerrarModal(); } });
+if (S.token) arrancar(); else vLogin();
+</script>
+</body>
+</html>
