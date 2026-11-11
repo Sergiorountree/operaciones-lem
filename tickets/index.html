@@ -285,7 +285,7 @@ async function crearConCapturas(d, caps) {
   const id = r.ticket && r.ticket.ticket_id, faltan = [];
   for (const c of caps) {
     let x;
-    try { x = await api('tk_captura_subir', { ticket_id: id, nombre: c.nombre, datos: c.datos }); }
+    try { x = await subirCaptura({ ticket_id: id, nombre: c.nombre, datos: c.datos }); }
     catch (e) { if (e && e.expirada) throw e; x = { error: 'conexion', detalle: 'no se pudo conectar' }; }
     if (!x || x.error) faltan.push(c.nombre + ' (' + ((x && (x.detalle || x.error)) || 'sin respuesta') + ')');
   }
@@ -389,6 +389,24 @@ async function copiarParaGitHub() {
    límites (tk_inicio → capturas); si no lo dice, la pantalla queda como antes. La imagen se queda en el servidor y solo la
    ven quien levantó el ticket y administración. Aquí solo se reduce para que quepa en el peso que pide el servidor. ── */
 function capLim() { const c = T.ini && T.ini.capturas; return (c && Number(c.max_por_ticket) > 0 && Number(c.max_kb) > 0) ? c : null; }
+/* La imagen solo viaja por SQL Connect (issue #13). api() pasa al respaldo de n8n cuando SQL Connect falla, y n8n guarda en su
+   historial lo que recibe; por eso subir una captura no usa api(): si SQL Connect no está o no responde, la imagen no se manda por
+   otro camino y se avisa. Usa la sesión que api() ya dejó abierta: no inicia sesión. Solo si el servidor apaga la regla
+   (capturas.solo_sql_connect = false) sube con api(), como cualquier otra acción. (11-nov-2026) */
+async function subirCaptura(d) {
+  const lim = capLim(), no = t => ({ error: 'solo_sql_connect', detalle: 'Las capturas solo viajan por la conexión segura del portal, y en este momento ' + t + '. Vuelve a cargar la página e inténtalo de nuevo.' });
+  let r;
+  if (lim && lim.solo_sql_connect === false) r = await api('tk_captura_subir', d);
+  else {
+    try {
+      await esperarLEMDC();
+      const u = window.LEMDC && LEMDC.usuario(), em = emailDeToken(S.token);
+      if (!u || (em && (u.email || '').toLowerCase() !== em)) return no('no está disponible');
+      r = await LEMDC.llamar('tk_captura_subir', d);
+    } catch (e) { return no('no respondió (' + String((e && (e.message || e.code)) || 'sin respuesta').slice(0, 120) + ')'); }
+  }
+  return (r && (r.ok || r.error)) ? r : { error: 'sin_respuesta', detalle: 'El servidor respondió vacío. Cierra, revisa si la captura quedó en el ticket y, si no, vuelve a agregarla.' };
+}
 /* capGen cambia cada vez que se abre o se cierra un formulario: una imagen que todavía se estaba reduciendo para el formulario
    anterior se descarta y nunca pasa a otro ticket (11-nov-2026, revisión de Codex en el PR #14). capPend: cuántas se están preparando. */
 function capSoltar() { for (const u of T.urls) { try { URL.revokeObjectURL(u); } catch (e) {} } T.urls = []; T.caps = []; T.capGen++; T.capPend = 0; }
@@ -470,7 +488,7 @@ async function agregarCaptura(archivos) {
      captura se vuelve a elegir después (11-nov-2026, revisión de Codex en el PR #14) */
   if (T.guardando || !$('conf').hidden) return errorEn('eCap', 'La captura no se agregó porque había otra confirmación abierta. Termina esa acción y vuelve a elegirla.');
   confirmar('¿Agregar esta captura?', '#' + t.ticket_id + ' · ' + t.titulo + '\n\n' + c.nombre, 'Sí, agregar',
-    () => api('tk_captura_subir', { ticket_id: t.ticket_id, nombre: c.nombre, datos: c.datos }));
+    () => subirCaptura({ ticket_id: t.ticket_id, nombre: c.nombre, datos: c.datos }));
 }
 /* Pegar con Cmd+V: en el ticket nuevo se suma a la lista; en el detalle abre la confirmación. El texto pegado no se toca. */
 document.addEventListener('paste', e => {
