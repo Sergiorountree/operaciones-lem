@@ -1487,6 +1487,15 @@ async function pintarDetalleRes(d, vez) {
           '<td class="text-xs" style="white-space:normal;max-width:420px">' + esc(y.nota || '') + '</td></tr>').join('')
         : '<tr><td colspan="4" class="text-center text-gray-500" style="padding:18px">Sin nómina en esta celda.</td></tr>') + '</tbody></table></div>' +
       '<p class="text-11 text-gray-500" style="padding:8px 16px 0">' + esc(det.nota || '') + '</p>';
+  } else if (det.tipo === 'nomina_mensual') {
+    // mig. 145 (11-nov-2026): bonos y despensa de cada tienda (archivo mensual de Alan), al mes en que se ganan; se pagan el mes siguiente
+    const fs = det.filas || [];
+    b = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Tienda') + th('Se pagó en') + th('Monto', true) + th('Nota') + '</tr></thead><tbody>' +
+      (fs.length ? fs.map(y => '<tr><td class="nowrap">' + esc(tienda(y.branch_id)) + '</td><td class="num nowrap">' + esc(fecha(y.fecha_pago).slice(3) || '—') + '</td>' +
+          '<td class="text-right num font-semibold">' + pesos(y.monto) + '</td>' +
+          '<td class="text-xs" style="white-space:normal;max-width:420px">' + esc(y.nota || '') + '</td></tr>').join('')
+        : '<tr><td colspan="4" class="text-center text-gray-500" style="padding:18px">Sin movimientos en esta celda.</td></tr>') + '</tbody></table></div>' +
+      '<p class="text-11 text-gray-500" style="padding:8px 16px 0">' + esc(det.nota || '') + '</p>';
   } else {
     // mig. 123: el almacén central (ubicacion 'almacen') y los traspasos entre almacén y tiendas
     const cv = det.costo_venta || [], tr = det.traspasos || []; const conTr = tr.length > 0 || cv.some(y => N(y.traspasos));
