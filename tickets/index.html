@@ -65,6 +65,17 @@
   .capfila { border-top:1px solid var(--borde); padding:8px 0; font-size:13.5px; word-wrap:break-word; } .capfila:first-of-type { border-top:none; }
   .capfila .q { color:var(--txt2); font-size:12.5px; } .capfila .ac { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
   .capfila img { display:block; max-width:100%; border:1px solid var(--borde); border-radius:8px; margin-top:8px; }
+  /* Tickets V1 (12-nov-2026): estados del flujo automático y la propuesta de arreglo con su código */
+  .e-revisando { background:#EDE9FE; color:#4C1D95; } .e-propuesta { background:#DBEAFE; color:#1E3A8A; } .e-detenido { background:#8C1F1B; color:#fff; }
+  .caja.ancha { max-width:980px; }
+  .prop { border:1px solid var(--borde); border-radius:12px; padding:14px; margin-bottom:12px; }
+  .codigo { background:#18181b; color:#e4e4e7; border-radius:10px; padding:12px; font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre; overflow:auto; max-height:46vh; tab-size:4; }
+  .codigo .mas { color:#86efac; } .codigo .menos { color:#fca5a5; } .codigo .ubi { color:#93c5fd; } .codigo .arch { color:#fde68a; font-weight:700; }
+  .codigo.corrido { white-space:pre-wrap; word-break:break-all; } .codigo .corte { color:#a1a1aa; font-style:italic; font-weight:400; }
+  .codigo .menos .cambio { background:#7f1d1d; color:#fff; border-radius:3px; padding:1px 2px; } .codigo .mas .cambio { background:#14532d; color:#fff; border-radius:3px; padding:1px 2px; }
+  .plegado { margin-bottom:12px; } .plegado summary { cursor:pointer; font-size:13px; font-weight:700; margin-bottom:6px; }
+  .huella { font:12px ui-monospace,SFMono-Regular,Menlo,monospace; color:var(--txt2); word-break:break-all; }
+  .hecho { background:#E3F3E8; border:1px solid #B7DFC4; color:#1E5A36; border-radius:10px; padding:9px 12px; font-size:13.5px; margin-bottom:12px; white-space:pre-wrap; word-wrap:break-word; }
   footer { text-align:center; color:var(--txt2); font-size:12px; padding:18px; }
 </style>
 </head>
@@ -137,12 +148,17 @@ async function apiCruda(accion, datos) {
 }
 /* ── Tickets v0 (10-nov-2026, Sergio): tickets del portal con triage. Permisos, datos y conteos los entrega el servidor
    (acciones tk_*); esta página solo presenta y manda. Toda acción que guarda pasa por un modal de confirmación. ── */
-const T = { ini: null, filtro: 'todos', det: null, pend: null, guardando: false, caps: [], urls: [], capGen: 0, capPend: 0 };
-const ESTADOS = { nuevo: 'Nuevo', aceptado: 'Aceptado', rechazado: 'Rechazado', en_proceso: 'En proceso', publicado: 'Publicado', cerrado: 'Cerrado' };
+const T = { ini: null, filtro: 'todos', det: null, prop: null, pend: null, guardando: false, caps: [], urls: [], capGen: 0, capPend: 0 };
+/* Tickets V1 (12-nov-2026, necesita la 148): revisando = Claude lo tomó; propuesta = espera la aprobación de uno de los aprobadores de Tickets;
+   detenido = lo paró la revisión de seguridad o falló al preparar o al publicar. El orden es el del flujo. */
+const ESTADOS = { nuevo: 'Nuevo', aceptado: 'Aceptado', revisando: 'Revisando', propuesta: 'Propuesta', en_proceso: 'En proceso', publicado: 'Publicado', cerrado: 'Cerrado', detenido: 'Detenido', rechazado: 'Rechazado' };
+const ALCANCES = { pantalla: 'Solo pantalla', base: 'Solo base de datos', pantalla_y_base: 'Pantalla y base de datos', sin_cambio: 'Sin cambio de código' };
+const PROP_ESTADOS = { pendiente: 'Espera aprobación', aprobada: 'Aprobada: publicando', rechazada: 'Rechazada', publicada: 'Publicada', fallida: 'Falló al publicar' };
 const TIPOS = { error: 'Error', observacion: 'Observación', mejora: 'Mejora' };
 const MODS = { portal: 'Portal (inicio)', compras: 'Compras', inventarios: 'Inventarios', nominas: 'Nóminas', ventas: 'Ventas', contabilidad: 'Contabilidad', asistente: 'Asistente', otro: 'Otro' };
 const PRIOS = { alta: 'Alta', media: 'Media', baja: 'Baja' };
-const EVENTOS = { nota: 'Nota', creado: 'Creado', reabierto: 'Reabierto', captura: 'Captura agregada', captura_quitada: 'Captura quitada' };
+const EVENTOS = { nota: 'Nota', creado: 'Creado', reabierto: 'Reabierto', captura: 'Captura agregada', captura_quitada: 'Captura quitada',
+                  revisando: 'Claude lo tomó', propuesta: 'Propuesta lista', propuesta_aprobada: 'Propuesta aprobada', propuesta_rechazada: 'Se pidió otra propuesta', reintento: 'Reintento' };
 /* A qué estado puede pasar un ticket desde donde está. Es solo para pintar las opciones: el servidor vuelve a revisarlo. */
 const SIGUE = { aceptado: ['en_proceso', 'publicado', 'cerrado'], en_proceso: ['publicado', 'cerrado'], publicado: ['cerrado'], rechazado: ['cerrado', 'nuevo'], cerrado: ['nuevo'] };
 const ISSUE_NUEVO = 'https://github.com/Sergiorountree/operaciones-lem/issues/new?template=ticket.md';
@@ -206,8 +222,8 @@ async function recargar() {
 }
 
 /* ── Modales ── */
-function abrirModal(html, chica) { $('modal').innerHTML = '<div class="caja' + (chica ? ' chica' : '') + '">' + html + '</div>'; $('modal').hidden = false; }
-function cerrarModal() { if (T.guardando) return; capSoltar(); $('modal').hidden = true; $('modal').innerHTML = ''; cerrarConf(); T.det = null; }
+function abrirModal(html, chica, ancha) { $('modal').innerHTML = '<div class="caja' + (chica ? ' chica' : ancha ? ' ancha' : '') + '">' + html + '</div>'; $('modal').hidden = false; }
+function cerrarModal() { if (T.guardando) return; capSoltar(); $('modal').hidden = true; $('modal').innerHTML = ''; cerrarConf(); T.det = null; T.prop = null; }
 function cerrarConf() { if (T.guardando) return; $('conf').hidden = true; $('conf').innerHTML = ''; T.pend = null; }
 function errorEn(id, t) { const el = $(id); if (el) { el.textContent = t; el.hidden = !t; } }
 /* Doble check: nada se manda sin pasar por aquí. `resumen` es texto plano; `hacer` es la llamada que guarda. */
@@ -302,6 +318,14 @@ async function abrirDetalle(id) {
   if (!r || r.error) { abrirModal('<div class="error">' + esc((r && (r.detalle || r.error)) || 'Sin respuesta') + '</div><div class="pie"><button class="btn btn-claro" onclick="cerrarModal()">Cerrar</button></div>', true); return; }
   T.det = r;
   const t = r.ticket, admin = !!r.puede_triage;
+  /* Tickets V1: la propuesta de arreglo la ve solo administración. Si el servidor no trae la acción o falla, el detalle queda como antes. */
+  let pr = null;
+  if (admin && t.estado !== 'nuevo') {
+    try { const x = await api('tk_propuesta', { ticket_id: id }); if (x && x.ok) pr = x; } catch (e) {}
+    if (T.det !== r) return;                                            // el detalle se cerró mientras llegaba la propuesta
+  }
+  T.prop = pr;
+  const publicando = t.estado === 'en_proceso' && !!pr && (pr.propuestas || []).some(p => p.estado === 'aprobada');
   let h = '<h3>#' + esc(t.ticket_id) + ' · ' + esc(t.titulo) + '</h3><div class="meta">' + chipEstado(t.estado) + chipPrio(t.prioridad) +
           '<span class="chip e-cerrado">' + esc(MODS[t.modulo] || t.modulo) + '</span><span class="chip e-cerrado">' + esc(TIPOS[t.tipo] || t.tipo) + '</span></div>';
   h += '<div class="dato"><div class="et">Levantó</div><div class="va">' + esc(t.creado_por) + ' · ' + esc(fechaHora(t.creado_en)) + (t.pantalla ? ' · pantalla: ' + esc(t.pantalla) : '') + '</div></div>';
@@ -325,7 +349,9 @@ async function abrirDetalle(id) {
          '<div class="campo"><label for="tNota">Nota o motivo</label><input id="tNota" maxlength="1000" placeholder="Obligatoria para rechazar"></div></div>' +
          '<div class="error" id="eTriage" hidden></div><div class="pie"><button class="btn btn-peligro" onclick="triage(\'rechazar\')">Rechazar</button><button class="btn btn-azul" onclick="triage(\'aceptar\')">Aceptar</button></div></div>';
   }
-  if (admin && SIGUE[t.estado]) {
+  h += propuestaHtml(t, pr, r.eventos);
+  /* Con una propuesta aprobada el avance lo mueve el taller: moverlo a mano a media publicación lo dejaría a medias. */
+  if (admin && SIGUE[t.estado] && !publicando) {
     h += '<div class="bloque"><h4>Avance</h4><div class="dos"><div class="campo"><label for="sEstado">Pasar a</label><select id="sEstado"><option value="">Elige…</option>' +
          SIGUE[t.estado].map(e => '<option value="' + e + '">' + (e === 'nuevo' ? 'Reabrir (vuelve a triage)' : esc(ESTADOS[e])) + '</option>').join('') + '</select></div>' +
          '<div class="campo"><label for="sNota">Nota (opcional)</label><input id="sNota" maxlength="1000"></div></div>' +
@@ -341,8 +367,123 @@ async function abrirDetalle(id) {
          (e.nota ? '<div class="nt">' + esc(e.nota) + '</div>' : '') + '</li>').join('') + '</ul>' +
        '<div class="campo" style="margin-top:10px"><label for="dNota">Agregar una nota</label><textarea id="dNota" maxlength="1000" style="min-height:64px"></textarea></div>' +
        '<div class="error" id="eNota" hidden></div><div class="pie"><button class="btn btn-claro" onclick="cerrarModal()">Cerrar</button><button class="btn btn-rojo" onclick="guardarNota()">Guardar nota</button></div></div>';
-  abrirModal(h);
-  T.det = r;
+  abrirModal(h, false, !!(pr && (pr.propuestas || []).length));
+  T.det = r; T.prop = pr;
+}
+
+/* ── Tickets V1 (12-nov-2026, Sergio; necesita la 148): la propuesta de arreglo que deja Opus 5.5 ya con el código. Lo que se
+   aprueba es lo que se ve aquí: la huella de la propuesta viaja con la aprobación y el servidor la compara; si la propuesta
+   cambió, no se aprueba. Deciden los aprobadores de Tickets (basta uno); eso lo revisa el servidor, no esta pantalla. ── */
+function codigoHtml(txt, esDiff) {
+  return '<div class="codigo">' + String(txt == null ? '' : txt).split('\n').map(l => {
+    const c = !esDiff ? '' : /^(\+\+\+|---|diff )/.test(l) ? 'arch' : l[0] === '+' ? 'mas' : l[0] === '-' ? 'menos' : l.slice(0, 2) === '@@' ? 'ubi' : '';
+    return c ? '<span class="' + c + '">' + esc(l) + '</span>' : esc(l);
+  }).join('\n') + '</div>';
+}
+/* Los archivos del portal traen renglones de miles de letras: el cambio de una palabra se vería como dos renglones enormes.
+   Esta vista empareja cada renglón quitado con el que lo reemplaza, recorta lo que quedó igual y resalta solo lo que cambió.
+   Es una ayuda para leer: el cambio completo, sin recortar, se enseña aparte y es lo que se aprueba. */
+function diffResumidoHtml(txt) {
+  const L = String(txt == null ? '' : txt).split('\n'), out = [], CTX = 70, MAX = 200;
+  const corte = n => '<span class="corte"> … ' + n + ' letras iguales … </span>';
+  const rec = s => s.length > MAX ? esc(s.slice(0, MAX)) + corte(s.length - MAX) : esc(s);
+  const par = (signo, clase, x, pre, suf) => {
+    const ini = Math.max(0, pre - CTX), fin = Math.min(x.length, x.length - suf + CTX), medio = x.slice(pre, x.length - suf);
+    return '<span class="' + clase + '">' + signo + ' ' + (ini ? corte(ini) : '') + esc(x.slice(ini, pre)) + '<span class="cambio">' + (medio ? rec(medio) : '') + '</span>' +
+           esc(x.slice(x.length - suf, fin)) + (fin < x.length ? corte(x.length - fin) : '') + '</span>';
+  };
+  let enBloque = false;
+  for (let i = 0; i < L.length; i++) {
+    const l = L[i];
+    if (l.slice(0, 5) === 'diff ') { enBloque = false; out.push('<span class="arch">' + esc(l.replace(/^diff --git a\/(\S+) b\/.*$/, 'Archivo: $1')) + '</span>'); continue; }
+    if (l.slice(0, 2) === '@@') { enBloque = true; out.push('<span class="ubi">' + esc(l.slice(0, 120)) + '</span>'); continue; }
+    if (!enBloque) continue;                                            // encabezado del archivo (index, ---, +++): ya se dijo cuál es
+    if (l[0] !== '-' && l[0] !== '+') { if (l[0] !== '\\') out.push(rec(l)); continue; }
+    const quita = [], pone = [];
+    while (i < L.length && L[i][0] === '-') quita.push(L[i++].slice(1));
+    while (i < L.length && L[i][0] === '+') pone.push(L[i++].slice(1));
+    i--;
+    for (let k = 0; k < Math.max(quita.length, pone.length); k++) {
+      const a = quita[k], b = pone[k];
+      if (a == null) { out.push('<span class="mas">+ ' + rec(b) + '</span>'); continue; }
+      if (b == null) { out.push('<span class="menos">- ' + rec(a) + '</span>'); continue; }
+      let pre = 0; const tope = Math.min(a.length, b.length);
+      while (pre < tope && a[pre] === b[pre]) pre++;
+      let suf = 0; while (suf < tope - pre && a[a.length - 1 - suf] === b[b.length - 1 - suf]) suf++;
+      out.push(par('-', 'menos', a, pre, suf)); out.push(par('+', 'mas', b, pre, suf));
+    }
+  }
+  return '<div class="codigo corrido">' + out.join('\n') + '</div>';
+}
+function seguridadTxt(s) {
+  if (!s || typeof s !== 'object' || !Object.keys(s).length) return '';
+  const av = Array.isArray(s.avisos) ? s.avisos.filter(a => typeof a === 'string' && a) : [];
+  return String(s.resultado || 'Sin resultado') + (s.resumen ? ' · ' + s.resumen : '') + (av.length ? '\n· ' + av.join('\n· ') : '');
+}
+function propuestaHtml(t, pr, eventos) {
+  const ps = (pr && pr.propuestas) || [], p = ps[0], puede = !!(pr && pr.puede_aprobar);
+  if (!p && t.estado !== 'revisando' && t.estado !== 'detenido') return '';
+  const dato = (et, va) => va ? '<div class="dato"><div class="et">' + esc(et) + '</div><div class="va">' + esc(va) + '</div></div>' : '';
+  const decision = x => x.decidido_por ? esc(x.decidido_por) + ' · ' + esc(fechaHora(x.decidido_en)) : '';
+  let h = '<div class="bloque"><h4>Propuesta de arreglo</h4>';
+  if (t.estado === 'revisando') h += '<p class="sub" style="margin:0 0 12px">Claude está revisando el ticket y preparando el arreglo. La propuesta aparece aquí cuando esté lista.</p>';
+  if (t.estado === 'detenido') {
+    const ev = (eventos || []).filter(e => e.evento === 'detenido').pop();
+    h += '<div class="error" style="margin:0 0 12px"><b>Detenido.</b> ' + esc((ev && ev.nota) || 'Sin motivo registrado.') + '</div>';
+  }
+  if (p) {
+    h += '<div class="prop"><div class="meta" style="margin-top:0"><span class="chip e-propuesta">Versión ' + esc(p.version) + '</span>' +
+         '<span class="chip e-cerrado">' + esc(ALCANCES[p.alcance] || p.alcance) + '</span><span class="chip e-cerrado">' + esc(PROP_ESTADOS[p.estado] || p.estado) + '</span>' +
+         '<span class="chip e-cerrado">' + esc(fechaHora(p.creado_en)) + '</span></div>';
+    if (p.estado === 'publicada') h += '<div class="hecho"><b>Publicada</b> · ' + esc(fechaHora(p.publicado_en)) + ((p.publicado_detalle && p.publicado_detalle.resumen) ? '\n' + esc(p.publicado_detalle.resumen) : '') + '</div>';
+    if (p.estado === 'aprobada') h += '<div class="hecho">Aprobada por ' + decision(p) + '. Opus la está publicando: aplica el código, corre la prueba y pasa el ticket a Publicado.</div>';
+    h += dato('Causa', p.causa) + dato('Qué cambia', p.cambios) + dato('Revisión de seguridad del ticket', seguridadTxt(p.seguridad)) + dato('Revisión de Codex', p.revision_codex);
+    if (p.sql_migracion) h += '<div class="dato"><div class="et">Base de datos · ' + esc(p.archivo_migracion) + '</div>' + codigoHtml(p.sql_migracion, false) + '</div>';
+    if (p.diff_pantalla) h += '<div class="dato"><div class="et">Pantalla · qué cambia (lo resaltado)</div>' + diffResumidoHtml(p.diff_pantalla) +
+         '<details class="plegado" style="margin:8px 0 0"><summary>Ver el cambio completo, sin recortar (es lo que se aprueba)</summary>' + codigoHtml(p.diff_pantalla, true) + '</details></div>';
+    if (p.prueba) h += '<details class="plegado"><summary>Prueba que se corre al publicar</summary>' + codigoHtml(p.prueba, false) + '</details>';
+    if (p.estado === 'rechazada' || p.estado === 'fallida') h += dato(PROP_ESTADOS[p.estado], (p.decidido_por ? p.decidido_por + ' · ' + fechaHora(p.decidido_en) + '\n' : '') + (p.nota || ''));
+    h += '<div class="huella">Huella ' + esc(p.huella) + '</div></div>';
+  }
+  if (t.estado === 'propuesta' && p && p.estado === 'pendiente') {
+    h += puede
+      ? '<div class="campo"><label for="pNota">Nota (obligatoria para pedir otra propuesta o descartar)</label><input id="pNota" maxlength="1000" placeholder="Qué está mal o qué falta"></div>' +
+        '<div class="error" id="eProp" hidden></div><div class="pie"><button class="btn btn-peligro" onclick="decidir(\'descartar\')">Descartar ticket</button>' +
+        '<button class="btn btn-claro" onclick="decidir(\'rechazar\')">Pedir otra propuesta</button><button class="btn btn-azul" onclick="decidir(\'aprobar\')">' + (p.alcance === 'sin_cambio' ? 'Aprobar' : 'Aprobar y publicar') + '</button></div>'
+      : '<p class="sub" style="margin:0">La aprueban los aprobadores de Tickets.</p>';
+  }
+  if (t.estado === 'detenido') {
+    h += puede
+      ? '<div class="campo"><label for="pNota">Nota (obligatoria para descartar)</label><input id="pNota" maxlength="1000"></div>' +
+        '<div class="error" id="eProp" hidden></div><div class="pie"><button class="btn btn-peligro" onclick="decidir(\'descartar\')">Descartar ticket</button>' +
+        '<button class="btn btn-azul" onclick="decidir(\'reintentar\')">Reintentar</button></div>'
+      : '<p class="sub" style="margin:0">Lo reintentan o lo descartan los aprobadores de Tickets.</p>';
+  }
+  if (ps.length > 1) {
+    h += '<details class="plegado" style="margin-top:12px"><summary>Propuestas anteriores (' + (ps.length - 1) + ')</summary><ul class="bit">' + ps.slice(1).map(x =>
+           '<li><b>Versión ' + esc(x.version) + ' · ' + esc(PROP_ESTADOS[x.estado] || x.estado) + '</b> <span class="q">' + (x.decidido_por ? '· ' + decision(x) : '') + '</span>' +
+           (x.nota ? '<div class="nt">' + esc(x.nota) + '</div>' : '') + '<div class="nt">' + esc(x.causa) + '</div></li>').join('') + '</ul></details>';
+  }
+  return h + '</div>';
+}
+function decidir(decision) {
+  const t = T.det.ticket, p = ((T.prop && T.prop.propuestas) || [])[0], nota = val('pNota');
+  if (decision === 'rechazar' && nota.length < 5) return errorEn('eProp', 'Escribe qué está mal o qué falta, para que la siguiente propuesta lo corrija.');
+  if (decision === 'descartar' && nota.length < 5) return errorEn('eProp', 'Escribe por qué se descarta el ticket.');
+  if (decision === 'aprobar' && !(p && p.huella)) return errorEn('eProp', 'No se pudo leer la propuesta. Cierra y vuelve a abrir el ticket.');
+  errorEn('eProp', '');
+  const base = '#' + t.ticket_id + ' · ' + t.titulo, ver = p ? '\nVersión ' + p.version + ' · ' + (ALCANCES[p.alcance] || p.alcance) : '';
+  const que = {
+    aprobar: ['¿Aprobar esta propuesta?', base + ver + (p && p.archivo_migracion ? '\nMigración: ' + p.archivo_migracion : '') + '\n\n' +
+              (p && p.alcance === 'sin_cambio' ? 'Esta propuesta no cambia código: al aprobar, el ticket pasa a Publicado con esta explicación.'
+                : 'Al aprobar, Opus publica en producción exactamente el código que acabas de ver, corre la prueba y pasa el ticket a Publicado. Si algo falla, se detiene y avisa.') +
+              (nota ? '\n\nNota: ' + nota : ''), p && p.alcance === 'sin_cambio' ? 'Sí, aprobar' : 'Sí, aprobar y publicar'],
+    rechazar: ['¿Pedir otra propuesta?', base + ver + '\n\nEsta propuesta no se publica. Claude prepara otra con tu nota:\n' + nota, 'Sí, pedir otra'],
+    reintentar: ['¿Reintentar este ticket?', base + '\n\nVuelve a Aceptado y Claude lo toma otra vez.' + (nota ? '\n\nNota: ' + nota : ''), 'Sí, reintentar'],
+    descartar: ['¿Descartar este ticket?', base + '\n\nEl ticket queda Rechazado y no se publica nada.\nMotivo: ' + nota, 'Sí, descartar']
+  }[decision];
+  if (!que) return;
+  confirmar(que[0], que[1], que[2], () => api('tk_decidir', { ticket_id: t.ticket_id, decision, nota, huella: decision === 'aprobar' ? p.huella : '' }));
 }
 function triage(decision) {
   const t = T.det.ticket, prio = val('tPrio'), nota = val('tNota');
