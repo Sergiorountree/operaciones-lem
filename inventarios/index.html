@@ -583,13 +583,16 @@ async function vCapturarAdmin() {
   S.cap.r = r; S.cap.fecha = r.fecha;
   if (!r.habilitada) { M().innerHTML = h + '<div class="vacio">' + esc(r.motivo || 'Este día no se captura en el portal.') + '</div>'; return; }
   const robot = r.productos.some(p => p.adm_dritzline_fuente === 'robot');
+  // 12-nov-2026 (ticket #5): lo recibido en Compras se da de alta solo como Entrada; el servidor manda cuánto llegó por producto y los avisos
+  const recOn = !!r.entradas_recepcion_desde && r.fecha >= r.entradas_recepcion_desde, avRec = r.avisos_recepcion || [];
+  if (avRec.length) h += '<div class="nota warn"><b>Recibido en Compras sin entrada en el diario.</b> Revísalo y, si aplica, captura la Entrada a mano:<br>' + avRec.map(a => '• ' + (a.producto ? '<b>' + esc(a.producto) + '</b>' + (a.recibido != null ? ' (' + fmt(a.recibido) + ' × ' + esc(a.presentacion || 'presentación') + ')' : '') + ': ' : '') + esc(a.motivo || '')).join('<br>') + '</div>';
   h += '<section class="card"><div class="row"><h3 style="margin:0">Administración · ' + esc(fmtDia(r.fecha)) + '</h3><button class="btn btn-ok" onclick="capAdmGuardar(this)">Guardar saldo inicial, entradas y Dritzline</button></div>' +
-    '<p class="hint" style="margin:6px 0 10px">Saldo inicial: déjalo vacío para que salga del día anterior' + (r.dia_anterior ? ' (' + esc(fmtDia(r.dia_anterior)) + ')' : '') + '. Si pones alguno, se usan los tuyos para todo el día (los vacíos cuentan 0), igual que en la app. La entrada puede ser negativa.' + (robot ? ' El Dritzline marcado <span class="tag-robot">robot</span> lo puso el robot de las 2 pm.' : '') + '</p>' +
+    '<p class="hint" style="margin:6px 0 10px">Saldo inicial: déjalo vacío para que salga del día anterior' + (r.dia_anterior ? ' (' + esc(fmtDia(r.dia_anterior)) + ')' : '') + '. Si pones alguno, se usan los tuyos para todo el día (los vacíos cuentan 0), igual que en la app. La entrada puede ser negativa.' + (recOn ? ' Lo que el gerente marca como recibido en Compras (CDC y Pepsi) entra solo; si corriges una Entrada, lo que escribas queda como el total del día.' : '') + (robot ? ' El Dritzline marcado <span class="tag-robot">robot</span> lo puso el robot de las 2 pm.' : '') + '</p>' +
     '<div class="tbl" style="margin:0"><table class="simple adm-cap"><thead><tr><th>Producto</th><th class="num">Saldo inicial</th><th class="num">Entrada</th><th class="num">Dritzline</th></tr></thead><tbody>' +
     CATS.map(k => { const ls = r.productos.filter(l => l.categoria === k); if (!ls.length) return ''; return '<tr><td colspan="4" style="background:var(--band);font-weight:700">' + CAT_LABEL[k] + '</td></tr>' + ls.map(l => { const id = l.inventario_producto_id; const ph = r.hay_si_admin ? '0' : fmt(l.saldo_inicial);
       return '<tr><td>' + esc(l.producto) + '<span class="unidad">' + esc(unidadTxt(l.unidad)) + '</span></td>' +
         '<td class="num"><input class="cap" type="number" inputmode="decimal" step="any" min="0" id="asi_' + id + '" value="' + (l.adm_saldo_inicial != null && num(l.adm_saldo_inicial) ? num(l.adm_saldo_inicial) : '') + '" placeholder="' + esc(ph) + '"></td>' +
-        '<td class="num"><input class="cap" type="number" inputmode="decimal" step="any" id="aen_' + id + '" value="' + (l.adm_entradas != null && num(l.adm_entradas) ? num(l.adm_entradas) : '') + '" placeholder="0"></td>' +
+        '<td class="num"><input class="cap" type="number" inputmode="decimal" step="any" id="aen_' + id + '" value="' + (l.adm_entradas != null && num(l.adm_entradas) ? num(l.adm_entradas) : '') + '" placeholder="0">' + (num(l.entradas_recepcion) ? '<span class="tag-robot" title="Lo que llegó por recepciones de Compras este día">📥 ' + fmt(l.entradas_recepcion) + '</span>' : '') + '</td>' +
         '<td class="num"><input class="cap" type="number" inputmode="decimal" step="any" min="0" id="adz_' + id + '" value="' + (l.adm_dritzline != null ? num(l.adm_dritzline) : '') + '" placeholder="—">' + (l.adm_dritzline_fuente === 'robot' ? '<span class="tag-robot">robot</span>' : '') + '</td></tr>'; }).join(''); }).join('') +
     '</tbody></table></div></section>';
   const ed = r.existe ? r.puede_corregir : r.puede_guardar;
@@ -601,7 +604,7 @@ async function vCapturarAdmin() {
 }
 async function capAdmGuardar(btn) {
   const r = S.cap.r; if (!r) return;
-  const lineas = r.productos.map(l => { const id = l.inventario_producto_id; return { inventario_producto_id: id, saldo_inicial: capNum($('asi_' + id).value), entradas: capNum($('aen_' + id).value) || 0, dritzline: capNum($('adz_' + id).value) }; });
+  const lineas = r.productos.map(l => { const id = l.inventario_producto_id; return { inventario_producto_id: id, saldo_inicial: capNum($('asi_' + id).value), entradas: capNum($('aen_' + id).value) || 0, entradas_antes: num(l.adm_entradas), dritzline: capNum($('adz_' + id).value) }; });
   if (lineas.some(l => (l.saldo_inicial != null && l.saldo_inicial < 0) || (l.dritzline != null && l.dritzline < 0))) { toast('⚠️ El saldo inicial y el Dritzline no pueden ser negativos'); return; }
   if (btn) btn.disabled = true;
   try { await api('inv_diario_adm_guardar', { branch_id: r.branch_id, fecha: r.fecha, lineas }); } catch (e) { if (btn) btn.disabled = false; return; }
