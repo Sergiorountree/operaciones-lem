@@ -207,7 +207,7 @@ const uiInicial = () => ({ excTodas: false, q: '', soloSaldo: true, orden: 'abie
                            concBranch: null, concEstado: null, concTec: false, concDias: 14, concTiendas: [], efeOrden: 'semana',
                            resMes: null, resDest: 'consolidado', resVista: 'una', resDet: null,
                            facMes: null, facFiltro: 'todas', facQ: '', facAbiertos: {}, facSel: {}, facDet: null, facForm: null, facCtx: null, facError: null, facGuardando: false,
-                           bonMes: null, bonForm: null, bonError: null, bonGuardando: false, bonCierre: null, bonPend: null });
+                           bonMes: null, bonForm: null, bonError: null, bonGuardando: false, bonCierre: null, bonPend: null, bonExportando: false });
 const subInicial = () => ({ items: [], leyendo: false, enviando: false, detener: false, lote: null, empresa: null, hechos: 0, total: 0, error: null, filtro: 'todos',
                             hist: null, histCargando: false, histErr: null, histEstado: 'todos', histQ: '', histT: null, sec: 0 });
 const S = { token: ss.get('lem_tok') || null, usuario: '', inicio: null, empresa: null, cache: new Map(), vez: 0, epoca: 0, ultima: Date.now(), motivo: '', tiendas: [], deb: null, ui: uiInicial(), sub: subInicial(), toastT: null };
@@ -253,7 +253,8 @@ const ICONS = { home: '<path d="M3 12L12 4l9 8M5 10v10h4v-6h6v6h4V10"/>', chart:
   chevronR: '<path d="M9 6l6 6-6 6"/>', chevronL: '<path d="M15 6l-6 6 6 6"/>', alert: '<path d="M12 2L2 22h20L12 2zM12 9v4M12 17h.01"/>', search: '<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
   upload: '<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/>',
   receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/>', chevronD: '<path d="M6 9l6 6 6-6"/>',
-  bono: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14.2L7 22l5-3 5 3-1.5-7.8"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/>' };
+  bono: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14.2L7 22l5-3 5 3-1.5-7.8"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/>',
+  download: '<path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/>' };
 const icon = (n, s) => '<svg width="' + (s || 16) + '" height="' + (s || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true">' + (ICONS[n] || '') + '</svg>';
 
 /* ── Sesión: solo mientras la pestaña está abierta y con cierre por inactividad ── */
@@ -1784,7 +1785,8 @@ function pestanasBon(d, u, branch) {
 function estadoBon(d) {
   const ganado = mesLargo(d.mes).toLowerCase(); let h;
   if (d.estado === 'aprobado') h = '<div class="banner banner-lem flex items-center justify-between gap-3 flex-wrap"><span><b>Aprobado.</b> ' + esc(d.aprobado_por || '') + ' lo aprobó el ' + instante(d.aprobado_en) + '. Los números ya no cambian aunque después se corrija una venta o una falta.</span>' +
-    (d.puede_reabrir ? '<button class="btn btn-secondary" data-act="bonCierre" data-arg="reabrir">Reabrir</button>' : '') + '</div>';
+    '<span class="flex gap-2 flex-wrap">' + (d.ver_personas ? '<button class="btn btn-primary" data-act="bonExcel">' + icon('download', 14) + 'Exportar a Excel</button>' : '') +
+    (d.puede_reabrir ? '<button class="btn btn-secondary" data-act="bonCierre" data-arg="reabrir">Reabrir</button>' : '') + '</span></div>';
   else h = '<div class="banner ' + (d.mes_terminado ? 'banner-gris' : 'banner-amber') + ' flex items-center justify-between gap-3 flex-wrap"><span>' +
     (d.mes_terminado ? '<b>Abierto.</b> Cálculo en vivo con la venta, el semáforo, las bajas y la asistencia de ' + ganado + '. Se recalcula si cambian; al aprobar se congela.'
                      : '<b>Avance.</b> ' + mesLargo(d.mes) + ' todavía no termina: estos números van a cambiar y aún no se puede aprobar.') + '</span>' +
@@ -1966,6 +1968,69 @@ async function cierreBonOk() {
   if (ep !== S.epoca) return;
   S.cache.clear(); S.ui.bonCierre = null; S.ui.bonForm = null; toast(aprobar ? 'Aprobado: los números quedaron congelados.' : 'Reabierto: vuelve a calcularse en vivo.'); router();
 }
+/* Exportar a Excel (13-nov-2026, Sergio: "una vez autorizado, que contabilidad y administradores puedan exportar a Excel los bonos, un
+   solo Excel con todas las sucursales"). Solo con el mes aprobado y solo para quien ve personas: sale de la foto que ya mandó el servidor,
+   sin otra llamada. Los totales son los del servidor (con su fórmula de suma para quien edite la hoja). El generador (SheetJS, el mismo
+   de Nóminas) se carga hasta que se pide, con su huella de integridad. */
+const XLSX_BON = { src: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', sri: 'sha512-r22gChDnGvBylk90+2e/ycr3RVrDi8DIOkIGNhJlKfuyQM4tIRAI062MaV8sfjQKYVGjOBaZBOA87z+IhZE9DA==' };
+let xlsxBonP = null;
+function cargarXlsxBon() {
+  if (window.XLSX) return Promise.resolve();
+  if (!xlsxBonP) xlsxBonP = new Promise((ok, mal) => { const s = document.createElement('script'); s.src = XLSX_BON.src; s.integrity = XLSX_BON.sri; s.crossOrigin = 'anonymous'; s.referrerPolicy = 'no-referrer';
+    s.onload = () => ok(); s.onerror = () => { xlsxBonP = null; mal(new Error('No se pudo cargar el generador de Excel. Revisa tu conexión y vuelve a intentar.')); }; document.head.appendChild(s); });
+  return xlsxBonP;
+}
+function libroBon(d, X) {
+  const T = d.tiendas || [], P = d.personas || [], H = d.historial || [], TT = d.totales || {}, par = d.parametros || {};
+  const nomT = b => { const t = T.find(x => x.branch_id === b); return t ? tiendaCorta(t.sucursal) : 'Sucursal ' + b; };
+  const nomP = c => { const p = P.find(x => x.colaborador_id === c); return p ? p.nombre : ''; };
+  const num = v => (esNum(v) ? Number(v) : null);
+  const hoja = (filas, anchos, fmt) => {   // fmt: { columna (0…): formato de número }
+    const ws = X.utils.aoa_to_sheet(filas); ws['!cols'] = anchos.map(w => ({ wch: w }));
+    const r = X.utils.decode_range(ws['!ref']);
+    for (let R = 1; R <= r.e.r; R++) for (const C of Object.keys(fmt || {})) { const c = ws[X.utils.encode_cell({ r: R, c: Number(C) })]; if (c && c.t === 'n') c.z = fmt[C]; }
+    return ws;
+  };
+  const total = (ws, fila, col, valor, desde, hasta) => { const L = X.utils.encode_col(col); ws[L + fila] = { t: 'n', v: num(valor) || 0, f: 'SUM(' + L + desde + ':' + L + hasta + ')', z: '#,##0.00' }; };
+  const wb = X.utils.book_new(); const M = '#,##0.00', PC = '0.000%';
+  // 1. Por persona: la lista de pago, tienda por tienda en el orden de la pantalla
+  const orden = new Map(T.map((t, i) => [t.branch_id, i]));
+  const Ps = P.map((p, i) => [p, i]).sort((a, b) => (orden.get(a[0].branch_id) - orden.get(b[0].branch_id)) || (a[1] - b[1])).map(x => x[0]);
+  const f1 = [['Sucursal', 'Persona', 'Puesto', 'Tipo', 'Condiciones del mes', 'Bono', 'Bono a mano', 'Despensa', 'Despensa a mano']]
+    .concat(Ps.map(p => [nomT(p.branch_id), p.nombre, p.puesto || '', p.es_gerente ? 'Gerente' : 'Colaborador', motivosBon(p), num(p.bono), p.bono_ajustado ? 'Sí' : '', num(p.despensa), p.despensa_ajustada ? 'Sí' : '']));
+  f1.push(['Total', '', '', '', '', null, '', null, '']);
+  const w1 = hoja(f1, [18, 34, 22, 13, 70, 13, 12, 13, 15], { 5: M, 7: M });
+  if (Ps.length) { total(w1, f1.length, 5, TT.bono, 2, f1.length - 1); total(w1, f1.length, 7, TT.despensa, 2, f1.length - 1); w1['!ref'] = X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: f1.length - 1, c: 8 } }); }
+  X.utils.book_append_sheet(wb, w1, 'Por persona');
+  // 2. Por tienda
+  const f2 = [['Sucursal', 'Venta sin IVA', 'Semáforo', 'Bajas', '% gerente', '% gerente a mano', '% colaboradores', '% colab. a mano', 'Bono gerente', 'Bono colaboradores', 'Bono total', 'Despensa', 'Avisos']]
+    .concat(T.map(t => [tiendaCorta(t.sucursal), num(t.venta), (SEM_BON[t.semaforo] || SEM_BON.sin_datos)[0], num(t.bajas), num(t.pct_gerente), t.pct_gerente_ajustado ? 'Sí' : '', num(t.pct_colaboradores), t.pct_colaboradores_ajustado ? 'Sí' : '',
+                    num(t.bono_gerente), num(t.bono_colaboradores), num(t.bono), num(t.despensa), (t.avisos || []).map(a => AVISO_BON[a] || a).join('; ')]));
+  f2.push(['Total', null, '', '', '', '', '', '', null, null, null, null, '']);
+  const w2 = hoja(f2, [18, 15, 13, 7, 11, 16, 16, 15, 14, 18, 13, 13, 60], { 1: M, 4: PC, 6: PC, 8: M, 9: M, 10: M, 11: M });
+  if (T.length) { [[1, TT.venta], [8, TT.bono_gerente], [9, TT.bono_colaboradores], [10, TT.bono], [11, TT.despensa]].forEach(([c, v]) => total(w2, f2.length, c, v, 2, f2.length - 1)); w2['!ref'] = X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: f2.length - 1, c: 12 } }); }
+  X.utils.book_append_sheet(wb, w2, 'Por tienda');
+  // 3. Ajustes a mano (el historial completo del mes)
+  const f3 = [['Cuándo', 'Quién', 'Sucursal', 'Persona', 'Qué', 'Valor', 'Motivo', 'Estado']]
+    .concat(H.map(x => [instante(x.cuando), String(x.por || '').split('@')[0], nomT(x.branch_id), x.colaborador_id != null ? nomP(x.colaborador_id) : '', CONCEPTO_BON[x.concepto] || x.concepto,
+                        x.valor == null ? 'quitó el ajuste' : /^pct_/.test(x.concepto) ? pctBon(x.valor) : num(x.valor), x.motivo || '', x.vigente ? 'Vigente' : 'Reemplazado']));
+  X.utils.book_append_sheet(wb, hoja(f3, [17, 18, 18, 34, 20, 13, 60, 13], { 5: M }), 'Ajustes a mano');
+  // 4. Datos del mes
+  const f4 = [['Empresa', (S.inicio || {}).empresa || ''], ['Se paga en', mesLargo(d.mes_pago)], ['Venta, semáforo y asistencia de', mesLargo(d.mes)], ['Estado', d.estado === 'aprobado' ? 'Aprobado' : 'Abierto'],
+              ['Aprobado por', d.aprobado_por || ''], ['Aprobado el', d.aprobado_en ? instante(d.aprobado_en) : ''], ['Bono total', num(TT.bono)], ['Despensa total', num(TT.despensa)],
+              ['Gerente en verde', pctBon(par.pct_gerente)], ['Gerente con bajas', pctBon(par.pct_gerente_con_bajas)], ['Factor en amarillo', num(par.factor_amarillo)], ['Factor en rojo', num(par.factor_rojo)],
+              ['Colaboradores (solo en verde)', pctBon(par.pct_colaboradores)], ['Despensa por persona', num(par.despensa)]];
+  const w4 = X.utils.aoa_to_sheet(f4); w4['!cols'] = [{ wch: 32 }, { wch: 34 }]; ['B7', 'B8', 'B14'].forEach(k => { if (w4[k] && w4[k].t === 'n') w4[k].z = M; });
+  X.utils.book_append_sheet(wb, w4, 'Datos del mes');
+  return wb;
+}
+async function exportarBon() {
+  const d = S.bon; if (!d || d.estado !== 'aprobado' || !d.ver_personas || S.ui.bonExportando) return;
+  S.ui.bonExportando = true; const ep = S.epoca;
+  try { await cargarXlsxBon(); if (ep !== S.epoca || S.bon !== d) return; window.XLSX.writeFile(libroBon(d, window.XLSX), 'bonos-y-despensa_pago-' + String(d.mes_pago).replace(/[^0-9-]/g, '') + '.xlsx'); toast('Excel descargado.'); }
+  catch (e) { console.error(e); toast(e && e.message ? e.message : 'No se pudo generar el Excel.'); }
+  finally { S.ui.bonExportando = false; }
+}
 function historialBon(d, branch) {
   const H = (d.historial || []).filter(x => branch == null || x.branch_id === branch); if (!H.length) return '';
   const tienda = b => { const t = (d.tiendas || []).find(x => x.branch_id === b); return t ? tiendaCorta(t.sucursal) : 'Sucursal ' + b; };
@@ -2069,6 +2134,7 @@ function accion(k, arg) {
   else if (k === 'bonQuitar') guardarBon(true);
   else if (k === 'bonCierre') { const d = S.bon; if (d && ((arg === 'aprobar' && d.puede_aprobar) || (arg === 'reabrir' && d.puede_reabrir))) { S.ui.bonCierre = { mes: d.mes_pago, tipo: arg, motivo: '', error: null, guardando: false }; pintarCierreBon(); } }
   else if (k === 'bonCierreOk') cierreBonOk();
+  else if (k === 'bonExcel') exportarBon();
   else if (k === 'bonCierreNo') { S.ui.bonCierre = null; pintarCierreBon(); }
 }
 async function actualizar() {
