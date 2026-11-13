@@ -2061,7 +2061,7 @@ function accion(k, arg) {
   else if (k === 'facDestino') { if (S.ui.facForm && ['sucursal', 'prorrateo', 'sistema'].includes(arg)) { S.ui.facForm.destino = arg; if (arg !== 'sucursal') S.ui.facForm.branch_id = ''; if (arg === 'sistema') S.ui.facForm.concepto = ''; S.ui.facError = null; pintarFormFac(); } }
   else if (k === 'facGuardar') guardarFac();
   else if (k === 'bonEditar') abrirFormBon(arg);
-  else if (k === 'bonCerrar') { S.ui.bonForm = null; S.ui.bonError = null; S.ui.bonPend = null; pintarFormBon(); }
+  else if (k === 'bonCerrar') { S.ui.bonForm = null; S.ui.bonError = null; if (S.ui.bonPend) { S.ui.bonPend = null; modalBon(''); } pintarFormBon(); }
   else if (k === 'bonSi') enviarBon();
   else if (k === 'bonNo') { S.ui.bonPend = null; modalBon(''); }
   else if (k === 'bonRapido') { if (S.ui.bonForm && /^\d{1,6}(\.\d{1,3})?$/.test(arg || '')) { S.ui.bonForm.valor = arg; S.ui.bonError = null; pintarFormBon(); } }
