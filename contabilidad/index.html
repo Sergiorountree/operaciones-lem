@@ -241,6 +241,16 @@ function horaChih(s) {   // robot_ultima_corrida ya viene en hora de Chihuahua y
 function hhmm(s) { const m = /^(\d{2}):(\d{2})/.exec(String(s || '')); return m ? m[1] + ':' + m[2] : '—'; }
 function mesLargo(ym) { const m = /^(\d{4})-(\d{2})$/.exec(String(ym || '')); return m ? MESES[Number(m[2]) - 1] + ' ' + m[1] : '—'; }
 function mesMas(ym, n) { const a = Number(ym.slice(0, 4)), m = Number(ym.slice(5, 7)) - 1 + n; const d = new Date(Date.UTC(a, m, 1)); return d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0'); }
+// Selector de mes: lista desplegable con todos los meses + flechas para moverse de uno en uno.
+function rangoMeses(desde, hasta) { const re = /^\d{4}-\d{2}$/, xs = []; if (!re.test(desde || '') || !re.test(hasta || '')) return xs; for (let m = hasta; m >= desde && xs.length < 120; m = mesMas(m, -1)) xs.push(m); return xs; }
+function selMes(act, mes, lista, prev, sig, argDe, etiqueta) {
+  argDe = argDe || (m => m); etiqueta = etiqueta || mesLargo;
+  const ms = Array.from(new Set((lista || []).concat(mes ? [mes] : []))).sort().reverse();
+  const b = (m, ic, lab) => '<button class="btn btn-ghost p-15" data-act="' + act + '" data-arg="' + esc(m ? argDe(m) : '') + '"' + (m ? '' : ' disabled') + ' aria-label="' + lab + '">' + icon(ic, 14) + '</button>';
+  let ops = '', anio = null;
+  ms.forEach(m => { const a = m.slice(0, 4); if (a !== anio) { ops += (anio ? '</optgroup>' : '') + '<optgroup label="' + a + '">'; anio = a; } ops += '<option value="' + esc(argDe(m)) + '"' + (m === mes ? ' selected' : '') + '>' + esc(etiqueta(m)) + '</option>'; });
+  return '<span class="flex items-center gap-1">' + b(prev, 'chevronL', 'Mes anterior') + '<select class="sel font-semibold" data-chg="mesSel" data-k="' + act + '" aria-label="Elegir mes">' + ops + (anio ? '</optgroup>' : '') + '</select>' + b(sig, 'chevronR', 'Mes siguiente') + '</span>';
+}
 function dias(n) { if (!esNum(n)) return '—'; const v = Number(n); return v === 0 ? 'hoy' : v === 1 ? '1 día' : F0.format(v) + ' días'; }
 function sinAcentos(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
 
@@ -971,7 +981,7 @@ async function vIngresos(arg, vez) {
   if (!S.ui.mesIng && d.mes) { S.ui.mesIng = d.mes; guardarEnMemoria('conta_ingresos', { anio: Number(d.mes.slice(0, 4)), mes: Number(d.mes.slice(5, 7)) }, d); }
   const meses = (d.meses || []).map(m => m.mes); const i = meses.indexOf(d.mes);
   const prev = i > 0 ? meses[i - 1] : (i < 0 ? meses.filter(m => m < d.mes).pop() : null); const sig = i >= 0 && i < meses.length - 1 ? meses[i + 1] : (i < 0 ? meses.find(m => m > d.mes) : null);
-  const sel = '<span class="flex items-center gap-1"><button class="btn btn-ghost p-15" data-act="mesIng" data-arg="' + esc(prev || '') + '"' + (prev ? '' : ' disabled') + ' aria-label="Mes anterior">' + icon('chevronL', 14) + '</button><b class="text-sm text-center" style="min-width:128px">' + mesLargo(d.mes) + '</b><button class="btn btn-ghost p-15" data-act="mesIng" data-arg="' + esc(sig || '') + '"' + (sig ? '' : ' disabled') + ' aria-label="Mes siguiente">' + icon('chevronR', 14) + '</button></span>';
+  const sel = selMes('mesIng', d.mes, meses, prev, sig);
   const tm = d.total_mes || {}; const ant = (d.meses || []).find(m => m.mes === d.mes_anterior);
   let h = topbar('Ingresos por tienda y canal', esc(S.inicio.empresa || '') + ' · ' + mesLargo(d.mes) + ' · sin IVA', sel + btnActualizar()) + '<div class="p-8">';
   h += '<div class="banner banner-gris"><div class="flex items-center gap-2 flex-wrap mb-1">' + CONF_AUTO + '<span class="text-13">' + esc(d.fuente || '') + '</span></div><div class="text-13">' + esc(d.nota || '') + '</div></div>';
@@ -1016,7 +1026,7 @@ async function vCortes(arg, vez) {
   const res = d.resumen || []; const tienda = branch != null ? ((res[0] && res[0].tienda) || ((S.tiendas.find(x => x.branch_id === branch) || {}).tienda) || ('Sucursal ' + branch)) : null;
   if (branch != null && !S.tiendas.some(x => x.branch_id === branch) && tienda) S.tiendas.push({ branch_id: branch, tienda });
   const sig = mesMas(d.mes, 1); const puedeSig = sig <= hoyMes;
-  let acts = '<span class="flex items-center gap-1"><button class="btn btn-ghost p-15" data-act="mesCor" data-arg="' + esc(mesMas(d.mes, -1)) + '" aria-label="Mes anterior">' + icon('chevronL', 14) + '</button><b class="text-sm text-center" style="min-width:128px">' + mesLargo(d.mes) + '</b><button class="btn btn-ghost p-15" data-act="mesCor" data-arg="' + esc(sig) + '"' + (puedeSig ? '' : ' disabled') + ' aria-label="Mes siguiente">' + icon('chevronR', 14) + '</button></span>';
+  let acts = selMes('mesCor', d.mes, rangoMeses(mesMas(hoyMes || d.mes, -23), hoyMes || d.mes), mesMas(d.mes, -1), puedeSig ? sig : null);
   acts += '<select class="sel" data-chg="tienda" aria-label="Tienda"><option value="">Todas las tiendas</option>' + S.tiendas.map(x => '<option value="' + esc(x.branch_id) + '"' + (x.branch_id === branch ? ' selected' : '') + '>' + esc(x.tienda) + '</option>').join('') + '</select>' + btnActualizar();
   let h = topbar(branch != null ? 'Cortes · ' + esc(tienda) : 'Cortes de caja', esc(S.inicio.empresa || '') + ' · ' + mesLargo(d.mes) + ' · conciliación: espejo de ERP Cortes', acts) + '<div class="p-8">';
   h += segCortes('pos');
@@ -1205,8 +1215,7 @@ function conciliacionMotor(d) {
   if (S.ui.concBranch == null && !S.ui.concEstado) anotaTiendas(d.cortes);
   const mes = d.mes; const hoyMes = String(S.inicio.hoy || '').slice(0, 7); const sig = mesMas(mes, 1);
   const tec = S.ui.concTec; const tot = d.totales || {}; const est = tot.estados || {};
-  let h = '<div class="flex items-center gap-2 flex-wrap mb-3"><span class="flex items-center gap-1"><button class="btn btn-ghost p-15" data-act="ir" data-arg="conciliacion/motor/' + esc(mesMas(mes, -1)) + '" aria-label="Mes anterior">' + icon('chevronL', 14) + '</button><b class="text-sm text-center" style="min-width:128px">' + mesLargo(mes) + '</b>' +
-    '<button class="btn btn-ghost p-15" data-act="ir" data-arg="conciliacion/motor/' + esc(sig) + '"' + (sig <= hoyMes ? '' : ' disabled') + ' aria-label="Mes siguiente">' + icon('chevronR', 14) + '</button></span>' + selTiendaConc() +
+  let h = '<div class="flex items-center gap-2 flex-wrap mb-3">' + selMes('ir', mes, rangoMeses(mesMas(hoyMes || mes, -23), hoyMes || mes), mesMas(mes, -1), sig <= hoyMes ? sig : null, m => 'conciliacion/motor/' + m) + selTiendaConc() +
     '<label class="text-13 flex items-center gap-1"><input type="checkbox" data-chg="concTec"' + (tec ? ' checked' : '') + '> columnas técnicas</label></div>';
   h += '<div class="seg mb-4" role="group" aria-label="Estado">' + FILTROS_EST.map(([k, t]) => '<button class="' + ((S.ui.concEstado || '') === k ? 'on' : '') + '" data-act="concEstado" data-arg="' + k + '">' + t + '</button>').join('') + '</div>';
   h += '<div class="grid grid-4 mb-4">' + stat('Cortes', entero(tot.cortes), Object.keys(est).map(k => esc(k) + ' ' + entero(est[k])).join(' · ') || '—') + stat('Venta', pesos(tot.venta), 'suma de la columna Venta corte') +
@@ -1388,7 +1397,7 @@ async function vResultados(arg, vez) {
   const prev = d.mes > '2026-07' ? mesMas(d.mes, -1) : null; const sig = mesMas(d.mes, 1) <= hoyMes ? mesMas(d.mes, 1) : null;
   const dests = d.destinos || []; if (!dests.some(x => x.destino === S.ui.resDest)) S.ui.resDest = 'consolidado';
   const dest = S.ui.resDest; const ren = d.renglones || []; const R = k => ren.find(r => r.clave === k);
-  const sel = '<span class="flex items-center gap-1"><button class="btn btn-ghost p-15" data-act="mesRes" data-arg="' + esc(prev || '') + '"' + (prev ? '' : ' disabled') + ' aria-label="Mes anterior">' + icon('chevronL', 14) + '</button><b class="text-sm text-center" style="min-width:128px">' + mesLargo(d.mes) + '</b><button class="btn btn-ghost p-15" data-act="mesRes" data-arg="' + esc(sig || '') + '"' + (sig ? '' : ' disabled') + ' aria-label="Mes siguiente">' + icon('chevronR', 14) + '</button></span>';
+  const sel = selMes('mesRes', d.mes, rangoMeses('2026-07', hoyMes), prev, sig);
   const grupo = t => dests.filter(x => x.tipo === t);
   const selD = '<select class="sel" data-chg="resDest" aria-label="Tienda o Consolidado">' + [['consolidado', 'Consolidado'], ['tienda', 'Tiendas'], ['almacen', 'Almacén central'], ['centro', 'Centros'], ['sin_asignar', 'Sin asignar']].map(([t, lab]) => {
       const xs = t === 'consolidado' || t === 'sin_asignar' || t === 'almacen' ? dests.filter(x => x.destino === t) : grupo(t); if (!xs.length) return '';
@@ -1578,7 +1587,7 @@ async function vFacturas(arg, vez) {
   S.fac = L;
   const hoyMes = String(S.inicio.hoy || '').slice(0, 7);
   const prev = L.mes > '2026-07' ? mesMas(L.mes, -1) : null; const sig = mesMas(L.mes, 1) <= hoyMes ? mesMas(L.mes, 1) : null;
-  const sel = '<span class="flex items-center gap-1"><button class="btn btn-ghost p-15" data-act="mesFac" data-arg="' + esc(prev || '') + '"' + (prev ? '' : ' disabled') + ' aria-label="Mes anterior">' + icon('chevronL', 14) + '</button><b class="text-sm text-center" style="min-width:128px">' + mesLargo(L.mes) + '</b><button class="btn btn-ghost p-15" data-act="mesFac" data-arg="' + esc(sig || '') + '"' + (sig ? '' : ' disabled') + ' aria-label="Mes siguiente">' + icon('chevronR', 14) + '</button></span>';
+  const sel = selMes('mesFac', L.mes, rangoMeses('2026-07', hoyMes), prev, sig);
   const fs = L.facturas || []; const suma = xs => xs.reduce((s, f) => s + N(f.monto), 0);
   const sinT = fs.filter(f => N(f.sin_tienda)), porC = fs.filter(f => N(f.por_clasificar)), man = fs.filter(f => f.decision);
   let h = topbar('Facturas', esc(S.inicio.empresa || '') + ' · ' + mesLargo(L.mes) + ' (mes contable) · sin IVA · calculado ' + instante(L.calculado_al), sel + btnActualizar()) + '<div class="p-8">';
@@ -1775,8 +1784,7 @@ async function vBonos(arg, vez) {
 }
 function selMesBon(d, u) {
   const hoy = String((S.inicio || {}).hoy || '').slice(0, 7); const max = mesMasBon(hoy, 1) || d.mes_pago; const prev = mesMasBon(d.mes_pago, -1), sig = mesMasBon(d.mes_pago, 1);
-  const b = (m, ok, ic, lab) => '<button class="btn btn-ghost p-15" data-act="ir" data-arg="' + (ok ? hrefBon(m, u.tab) : '') + '"' + (ok ? '' : ' disabled') + ' aria-label="' + lab + '">' + icon(ic, 14) + '</button>';
-  return '<span class="flex items-center gap-1">' + b(prev, prev >= '2026-08', 'chevronL', 'Mes anterior') + '<b class="text-sm text-center" style="min-width:150px">Pago de ' + mesLargo(d.mes_pago).toLowerCase() + '</b>' + b(sig, sig <= max, 'chevronR', 'Mes siguiente') + '</span>';
+  return selMes('ir', d.mes_pago, rangoMeses('2026-08', max), prev >= '2026-08' ? prev : null, sig <= max ? sig : null, m => hrefBon(m, u.tab), m => 'Pago de ' + mesLargo(m).toLowerCase());
 }
 function pestanasBon(d, u, branch) {
   const b = (k, t) => '<button class="' + (u.tab === k ? 'on' : '') + '" data-act="ir" data-arg="' + hrefBon(d.mes_pago, k, branch) + '">' + t + '</button>';
@@ -2066,6 +2074,7 @@ document.addEventListener('change', ev => {
   else if (k === 'soloSaldo') { S.ui.soloSaldo = !!el.checked; if (S.deb && $('provs')) $('provs').innerHTML = tablaProveedores(S.deb); }
   else if (k === 'orden') { S.ui.orden = el.value; if (S.deb && $('provs')) $('provs').innerHTML = tablaProveedores(S.deb); }
   else if (k === 'factSolo') { S.ui.factSolo = !!el.checked; router(); }
+  else if (k === 'mesSel') { if (el.value) accion(el.getAttribute('data-k'), el.value); }
   else if (k === 'tienda') ir(el.value ? 'cortes/' + el.value : 'cortes');
   else if (k === 'concTienda') { S.ui.concBranch = /^\d{1,5}$/.test(el.value) ? Number(el.value) : null; const r = ruta(); const p = String(r.arg || '').split('/');
                                  if (p[0] === 'motor' && p[2]) ir('conciliacion/motor/' + p[1] + (S.ui.concBranch != null ? '/' + S.ui.concBranch : '')); else router(); }
