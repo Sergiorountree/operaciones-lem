@@ -202,14 +202,14 @@ const INACTIVIDAD_MIN = 15;
 const INACTIVIDAD_MS = INACTIVIDAD_MIN * 60 * 1000;
 const ACCIONES = new Set(['conta_inicio', 'conta_resultados', 'conta_facturas', 'conta_factura_decidir', 'conta_debemos', 'conta_ingresos', 'conta_cortes', 'conta_xml_subir', 'conta_xml_subidas', 'conta_espejo_cortes', 'conta_espejo_efectivo',
                           'conta_bonos', 'conta_bono_ajustar', 'conta_bonos_aprobar', 'conta_bonos_reabrir',
-                          'conta_imss', 'conta_imss_subir', 'conta_imss_asignar', 'conta_imss_anular', 'ver_como_opciones']);   // ver_como_opciones: barra "Punto de vista" (mig. 097)
+                          'conta_imss', 'conta_imss_subir', 'conta_imss_asignar', 'conta_imss_anular', 'conta_imss_recalcular', 'conta_isn_guardar', 'ver_como_opciones']);   // ver_como_opciones: barra "Punto de vista" (mig. 097)
 const ss = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }, del(k) { try { sessionStorage.removeItem(k); } catch (e) {} } };
 const uiInicial = () => ({ excTodas: false, q: '', soloSaldo: true, orden: 'abierto', base: null, factSolo: false, mesIng: null, mesCor: null, diasFiltro: 'revisar',
                            concBranch: null, concEstado: null, concTec: false, concDias: 14, concTiendas: [], efeOrden: 'semana',
                            resMes: null, resDest: 'consolidado', resVista: 'una', resDet: null,
                            facMes: null, facFiltro: 'todas', facQ: '', facAbiertos: {}, facSel: {}, facDet: null, facForm: null, facCtx: null, facError: null, facGuardando: false,
                            bonMes: null, bonForm: null, bonError: null, bonGuardando: false, bonCierre: null, bonPend: null, bonExportando: false,
-                           imssMes: null, imssTipo: 'mensual', imssSub: null, imssError: null, imssAvisos: null, imssModal: null });
+                           imssMes: null, imssTipo: 'mensual', imssIsn: null, imssIsnMes: null, imssSub: null, imssError: null, imssAvisos: null, imssModal: null });
 const subInicial = () => ({ items: [], leyendo: false, enviando: false, detener: false, lote: null, empresa: null, hechos: 0, total: 0, error: null, filtro: 'todos',
                             hist: null, histCargando: false, histErr: null, histEstado: 'todos', histQ: '', histT: null, sec: 0 });
 const S = { token: ss.get('lem_tok') || null, usuario: '', inicio: null, empresa: null, cache: new Map(), vez: 0, epoca: 0, ultima: Date.now(), motivo: '', tiendas: [], deb: null, ui: uiInicial(), sub: subInicial(), toastT: null };
@@ -1508,6 +1508,23 @@ async function pintarDetalleRes(d, vez) {
           '<td class="text-xs" style="white-space:normal;max-width:420px">' + esc(y.nota || '') + '</td></tr>').join('')
         : '<tr><td colspan="4" class="text-center text-gray-500" style="padding:18px">Sin nómina en esta celda.</td></tr>') + '</tbody></table></div>' +
       '<p class="text-11 text-gray-500" style="padding:8px 16px 0">' + esc(det.nota || '') + '</p>';
+  } else if (det.tipo === 'imss') {
+    // mig. 164: IMSS e ISN de cada tienda, en el mes en que se pagan; por tienda y sin personas
+    const fs = det.filas || [], o = det.origen || {}, docs = o.documentos || [], esIsn = det.renglon === 'isn', men = docs.find(y => y.tipo === 'mensual');
+    const perDoc = (y) => y.tipo === 'bimestral' ? 'Bimestre ' + periodoImss('bimestral', y.mes).toLowerCase() : 'Cuotas de ' + mesLargo(y.mes).toLowerCase();
+    const unDoc = (y) => esc(perDoc(y)) + ': ' + (y.cargada ? '<b class="num">' + pesos(y.total) + '</b> (' + (y.origen === 'imss' ? 'propuesta del IMSS' : 'cédula del SUA') + ')' +
+      (N(y.sin_sucursal_personas) ? ' <span class="badge b-ambar">' + entero(y.sin_sucursal_personas) + ' sin sucursal</span>' : '') : '<span class="badge b-ambar">falta subirla</span>');
+    b = '<div class="card-body" style="padding-bottom:6px"><p class="text-sm">' +
+      (esIsn ? (o.isn && o.isn.capturado ? 'ISN capturado: <b class="num">' + pesos(o.isn.monto) + '</b>.' : '<span class="badge b-ambar">Falta capturar el ISN</span>') + (men ? ' Se reparte como: ' + unDoc(men) + '.' : '')
+             : docs.map(unDoc).join(' · ') + '.') +
+      ' <a class="lnk" href="#' + esc(men ? hashImss('mensual', men.mes) : 'imss') + '">Ver en IMSS</a></p></div>' +
+      '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Tienda') + th('Monto', true) + (esIsn ? '' : th('Mensual', true) + th('Bimestral', true)) + th('Nota') + '</tr></thead><tbody>' +
+      (fs.length ? fs.map(y => { const f = y.fuentes || {};
+          return '<tr><td class="nowrap">' + esc(tienda(y.branch_id)) + '</td>' +
+            '<td class="text-right num font-semibold">' + (y.completo ? pesos(y.monto) : '<span class="text-gray-400">—</span>' + (N(y.monto) ? '<div class="text-11 text-gray-400">parcial ' + pesos(y.monto) + '</div>' : '')) + '</td>' +
+            (esIsn ? '' : tdP(f.imss_mensual) + tdP(f.imss_bimestral)) + '<td class="text-xs" style="white-space:normal;max-width:420px">' + esc(y.nota || '') + '</td></tr>'; }).join('')
+        : '<tr><td colspan="' + (esIsn ? 3 : 5) + '" class="text-center text-gray-500" style="padding:18px">Sin movimientos en esta celda.</td></tr>') + '</tbody></table></div>' +
+      '<p class="text-11 text-gray-500" style="padding:8px 16px 0">' + esc(det.nota || '') + '</p>';
   } else if (det.tipo === 'nomina_mensual') {
     // mig. 145 (11-nov-2026): bonos y despensa de cada tienda (archivo mensual de Alan), al mes en que se ganan; se pagan el mes siguiente
     const fs = det.filas || [];
@@ -2105,7 +2122,7 @@ async function renglonesPdfImss(buf) {
   } finally { try { pdf.destroy(); } catch (e) {} }
 }
 async function huellaImss(buf) { const h = await crypto.subtle.digest('SHA-256', buf); return Array.from(new Uint8Array(h)).map(b => b.toString(16).padStart(2, '0')).join(''); }
-function olvidarImss() { Array.from(S.cache.keys()).forEach(k => { if (k.indexOf('conta_imss|') === 0) S.cache.delete(k); }); }
+function olvidarImss() { Array.from(S.cache.keys()).forEach(k => { if (k.indexOf('conta_imss|') === 0 || k.indexOf('conta_resultados|') === 0) S.cache.delete(k); }); }   // mig. 164: el IMSS y el ISN entran al Estado de resultados
 function sucImss(d, b) { const o = (d.opciones || []).find(x => x.branch_id === b); return o ? tiendaCorta(o.sucursal) : (b == null ? '—' : 'Sucursal ' + b); }
 function hoyMesImss(d) { const h = String((S.inicio || {}).hoy || '').slice(0, 7); return /^\d{4}-\d{2}$/.test(h) && h > d.mes ? h : d.mes; }
 function rutaImss(arg) { const p = String(arg || '').split('/'), bim = p[0] === 'bim', m = bim ? p[1] : p[0]; return { tipo: bim ? 'bimestral' : 'mensual', mes: /^\d{4}-\d{2}$/.test(m || '') ? m : null }; }
@@ -2129,6 +2146,7 @@ async function vImss(arg, vez) {
   if (d.tipo !== tipo) throw new Error('El servidor todavía no entrega la cédula bimestral. Vuelve a intentar en un momento.');
   if (pedido !== d.mes) guardarEnMemoria('conta_imss', paramsImss(tipo, d.mes), d);
   S.ui.imssMes = d.mes; S.ui.imssTipo = tipo; S.imss = d;
+  if (S.ui.imssIsnMes !== d.mes) { S.ui.imssIsn = null; S.ui.imssIsnMes = d.mes; }   // lo que se estaba escribiendo en el ISN era de otro mes
   if (S.ui.imssModal && S.ui.imssModal.tipo !== 'subir' && (S.ui.imssModal.mes !== d.mes || S.ui.imssModal.doc !== d.tipo)) S.ui.imssModal = null;
   pon(pantallaImss(d)); pintarModalImss();
 }
@@ -2142,6 +2160,27 @@ function zonaImss() {
   return h;
 }
 function pintarZonaImss() { const el = $('imssZona'); if (el) el.innerHTML = zonaImss(); }
+// mig. 164: la cédula entra al Estado de resultados en el mes en que se paga, con su reparto GUARDADO. Aquí se dice si ese reparto sigue al día.
+function plImss(d, sin) {
+  const pl = d.pl; if (!pl || !d.cedula || pl.en_rango === false) return '';
+  const mes = mesLargo(pl.mes_pago).toLowerCase(), btn = (t) => d.puede_subir ? '<button class="btn btn-secondary" data-act="imssRecalcular">' + t + '</button>' : '';
+  if (pl.cerrado) return '<div class="banner banner-gris">El Estado de resultados de ' + mes + ' ya está cerrado: esta cédula y su reparto ya no cambian.</div>';
+  if (pl.falta_guardar) return '<div class="banner banner-amber flex items-center justify-between gap-3 flex-wrap"><span><b>El Estado de resultados de ' + mes + ' todavía no toma esta cédula.</b> Falta guardar su reparto por sucursal.</span>' + btn('Guardar reparto') + '</div>';
+  if (pl.guardado && pl.guardado.al_dia === false) return '<div class="banner banner-amber flex items-center justify-between gap-3 flex-wrap"><span><b>El reparto cambió desde que se guardó.</b> Cambiaron fichas, pre-nóminas o asignaciones. El Estado de resultados de ' + mes + ' sigue con el reparto anterior hasta que lo recalcules.</span>' + btn('Recalcular') + '</div>';
+  if (N(sin.personas)) return '<div class="banner banner-amber">Mientras haya personas sin sucursal, el IMSS de ' + mes + ' sale incompleto en el Estado de resultados.</div>';
+  return '';
+}
+// mig. 164: el ISN pagado en el mes en que se paga esta cédula. Solo el monto; el Estado de resultados lo reparte como la cédula.
+function isnImss(d) {
+  const i = d.isn, mes = mesLargo(i.mes_pago).toLowerCase(), hay = i.monto != null;
+  let b = '<div class="card-body">';
+  if (!i.se_puede) b += '<p class="text-sm">' + (hay ? 'ISN pagado: <b class="num">' + pesos(i.monto) + '</b>.' : 'Sin ISN capturado.') + ' Ese mes está cerrado o todavía no llega: no se puede cambiar.</p>';
+  else b += '<div class="flex items-center gap-2 flex-wrap"><label class="text-13" for="imssIsn">Monto pagado</label>' +
+    '<input id="imssIsn" class="inp num" style="width:160px" inputmode="decimal" autocomplete="off" placeholder="0.00" data-inp="imssIsn" value="' + esc(S.ui.imssIsn != null ? S.ui.imssIsn : (hay ? String(i.monto) : '')) + '">' +
+    (d.puede_subir ? '<button class="btn btn-primary" data-act="imssIsnGuardar">' + (hay ? 'Cambiar' : 'Guardar') + '</button>' + (hay ? '<button class="btn btn-ghost" data-act="imssIsnQuitar">Quitar</button>' : '') : '') + '</div>';
+  if (hay) b += '<p class="text-11 text-gray-500 mt-2">Capturado: ' + pesos(i.monto) + ' · ' + esc(String(i.capturado_por || '').split('@')[0]) + ' · ' + instante(i.capturado_en) + '</p>';
+  return '<div class="mt-6">' + card('ISN pagado en ' + mes, 'Solo el monto. El Estado de resultados de ' + mes + ' lo reparte entre sucursales como la cédula de ' + mesLargo(d.mes).toLowerCase() + ', que es la que se paga ese mes.', b + '</div>') + '</div>';
+}
 function pantallaImss(d) {
   const c = d.cedula, P = d.personas || [], T = d.sucursales || [], sin = d.sin_sucursal || { personas: 0, total: 0 }, rev = d.por_revisar || { personas: 0, total: 0 };
   const bim = d.tipo === 'bimestral', per = periodoImss(d.tipo, d.mes), perMin = per.toLowerCase(), lapso = bim ? 'el bimestre' : perMin;
@@ -2155,7 +2194,7 @@ function pantallaImss(d) {
   } else {
     h += '<div class="banner banner-lem flex items-center justify-between gap-3 flex-wrap"><span><b>' + (bim ? 'Bimestral de ' : 'Cédula de ') + perMin + ' cargada.</b> ' + esc(origenImss(c.origen)) + ' · ' +
       esc(String(c.cargada_por || '').split('@')[0]) + ' la subió el ' + instante(c.cargada_en) + ' · ' + esc(c.archivo || '') + ' · registro patronal ' + esc(c.registro_patronal || '—') +
-      (c.fecha_limite ? ' · límite de pago ' + fecha(c.fecha_limite) : '') + '</span>' +
+      (c.fecha_limite ? ' · límite de pago ' + fecha(c.fecha_limite) : '') + (d.pl && d.pl.en_rango !== false ? ' · entra al Estado de resultados de ' + mesLargo(d.pl.mes_pago).toLowerCase() : '') + '</span>' +
       (d.puede_anular ? '<button class="btn btn-secondary" data-act="imssAnular">Anular</button>' : '') + '</div>';
     h += '<div class="grid grid-4 mb-6">' + (bim ? stat('RCV e Infonavit del bimestre', pesos(c.total), 'RCV ' + pesos(c.rcv) + ' · Infonavit ' + pesos(c.infonavit) + ' · amortización ' + pesos(c.amortizacion))
                                                  : stat('Cuotas del mes', pesos(c.total), 'patronal ' + pesos(c.patronal) + ' · obrera ' + pesos(c.obrera))) +
@@ -2165,6 +2204,7 @@ function pantallaImss(d) {
     if (N(rev.personas)) h += '<div class="banner banner-amber"><b>' + entero(rev.personas) + (N(rev.personas) === 1 ? ' persona por revisar' : ' personas por revisar') + ' (' + pesos(rev.total) + ').</b> ' +
       (N(rev.personas) === 1 ? 'Su ficha está de baja y no tuvo' : 'Sus fichas están de baja y no tuvieron') + ' días en la pre-nómina de ' + lapso +
       ': ' + (N(rev.personas) === 1 ? 'va' : 'van') + ' a la sucursal de su ficha. Revisa si ' + (N(rev.personas) === 1 ? 'sigue dada' : 'siguen dadas') + ' de alta en el IMSS o si ' + (N(rev.personas) === 1 ? 'le' : 'les') + ' toca otra sucursal.</div>';
+    h += plImss(d, sin);
     // reparto por sucursal (la bimestral, con sus tres partes)
     const partes = (x) => bim ? tdP(x.rcv) + tdP(x.infonavit) + tdP(x.amortizacion) : '', sinPartes = bim ? '<td class="text-right num">—</td><td class="text-right num">—</td><td class="text-right num">—</td>' : '';
     let t = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Sucursal') + th('Personas', 1) + (bim ? th('RCV', 1) + th('Infonavit', 1) + th('Amortización', 1) + th('Total', 1) : th('Cuotas', 1)) + th('% del total', 1) + '</tr></thead><tbody>';
@@ -2173,7 +2213,7 @@ function pantallaImss(d) {
     if (N(sin.personas)) t += '<tr><td><span class="badge b-ambar">Sin sucursal</span></td>' + tdN(sin.personas) + sinPartes + tdP(sin.total) + '<td class="text-right num">' + (N(c.total) ? porc(100 * N(sin.total) / N(c.total)) : '—') + '</td></tr>';
     t += '<tr class="total"><td>Total de la cédula</td>' + tdN(c.personas) + partes(c) + tdP(c.total) + '<td class="text-right num">100.0%</td></tr></tbody></table></div>';
     h += card('Reparto por sucursal', 'Cada persona va a la sucursal donde ' + (bim ? 'tuvo más días en el bimestre (' + perMin + ')' : 'trabajó en ' + perMin) +
-      '. El Estado de resultados todavía no toma estas cifras: falta decidir en qué mes entra cada pago.', t);
+      '. Así entra al Estado de resultados' + (d.pl && d.pl.en_rango !== false ? ' de ' + mesLargo(d.pl.mes_pago).toLowerCase() : '') + ', que es el mes en que se paga; lo de Indirectos y Corporativo va dentro de su nómina.', t);
     // personas
     const ops = (sel) => '<option value="">' + (sel == null ? 'Elegir sucursal…' : '—') + '</option>' + (d.opciones || []).map(o => '<option value="' + esc(o.branch_id) + '"' + (o.branch_id === sel ? ' selected' : '') + '>' + esc(tiendaCorta(o.sucursal)) + (o.activa === false ? ' (cerrada)' : '') + '</option>').join('');
     let p = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Persona') + th('NSS') + th('Días', 1) + (bim ? th('RCV', 1) + th('Infonavit', 1) + th('Amortización', 1) + th('Total', 1) : th('Cuotas', 1)) + th('Sucursal') + th('De dónde sale') + '</tr></thead><tbody>';
@@ -2186,6 +2226,7 @@ function pantallaImss(d) {
     p += '</tbody></table></div>';
     h += '<div class="mt-6">' + card('Personas de la cédula', N(sin.personas) ? 'Las que no tienen sucursal van primero: elige la suya y el sistema la recuerda para las siguientes cédulas, mensuales y bimestrales.' : 'Si alguien está en la sucursal equivocada, cámbiala aquí: el sistema la recuerda.', p) + '</div>';
   }
+  if (!bim && d.isn) h += isnImss(d);
   const M = d.meses || [];
   if (M.length) h += '<div class="mt-6">' + card(bim ? 'Bimestrales cargadas' : 'Cédulas cargadas', 'La vigente de cada ' + (bim ? 'bimestre' : 'mes') + '.', '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th(bim ? 'Bimestre' : 'Mes') + th('Personas', 1) + th(bim ? 'Total' : 'Cuotas', 1) + th('Documento') + th('Quién') + th('Cuándo') + '</tr></thead><tbody>' +
     M.map(x => '<tr' + (x.mes === d.mes ? ' class="sel"' : '') + '><td><a class="lnk" href="#' + esc(hashImss(d.tipo, x.mes)) + '">' + esc(periodoImss(d.tipo, x.mes)) + '</a></td>' + tdN(x.personas) + tdP(x.total) + '<td class="text-13">' + esc(origenImss(x.origen)) + '</td><td class="text-13">' + esc(String(x.cargada_por || '').split('@')[0]) + '</td><td class="num text-13 nowrap">' + instante(x.cargada_en) + '</td></tr>').join('') +
@@ -2209,6 +2250,18 @@ function modalImss(d) {
       (v.reemplazo ? ' <b>Ya hay una ' + (bim ? 'bimestral' : 'cédula') + ' de ese periodo' + (v.anterior ? ' (' + (v.anterior.origen === 'imss' ? 'propuesta del IMSS' : 'cédula del SUA') + ', ' + entero(v.anterior.personas) + ' personas, ' + pesos(v.anterior.total) + ', cargada el ' + instante(v.anterior.cargada_en) + ')' : '') +
         ': esta la reemplaza</b> (la anterior queda en el historial).' : '') + '</p>';
     return h + pie('imssSubirOk', v.reemplazo ? 'Sí, reemplazar' : 'Sí, guardar');
+  }
+  if (m.tipo === 'recalcular') {
+    h += '<div class="text-13 font-medium mb-2">Guardar el reparto de hoy</div><p class="text-13 text-gray-500">Se guarda el reparto por sucursal de la ' + (m.doc === 'bimestral' ? 'bimestral' : 'cédula') + ' de ' + periodoImss(m.doc, m.mes).toLowerCase() +
+      ' como está hoy en esta pantalla. Es lo que toma el Estado de resultados de ' + mesLargo(m.pago).toLowerCase() + '.</p>';
+    return h + pie('imssRecalcularOk', 'Sí, guardar');
+  }
+  if (m.tipo === 'isn') {
+    h += m.monto == null
+      ? '<div class="text-13 font-medium mb-2">Quitar el ISN de ' + mesLargo(m.pago).toLowerCase() + '</div><p class="text-13 text-gray-500">El renglón ISN de ese mes vuelve a quedar sin fuente en el Estado de resultados. Lo capturado se conserva en el historial.</p>'
+      : '<div class="text-13 font-medium mb-2">Guardar el ISN pagado en ' + mesLargo(m.pago).toLowerCase() + '</div><div class="kv"><div class="k">Monto</div><div class="v num font-semibold">' + pesos(m.monto) + '</div></div>' +
+        '<p class="text-13 text-gray-500 mt-2">Entra completo al Estado de resultados de ' + mesLargo(m.pago).toLowerCase() + ', repartido entre sucursales como la cédula de ' + mesLargo(m.mes).toLowerCase() + '.</p>';
+    return h + pie('imssIsnOk', m.monto == null ? 'Sí, quitar' : 'Sí, guardar');
   }
   const x = d ? (d.personas || []).find(y => String(y.persona_id) === String(m.persona_id)) : null; if (m.tipo !== 'anular' && !x) return '';
   const per = periodoImss(m.doc, m.mes).toLowerCase();
@@ -2307,6 +2360,48 @@ async function anularImssOk() {
     m.guardando = false; m.error = errorImss(e); pintarModalImss();
   }
 }
+function abrirRecalcularImss() {
+  const d = S.imss; if (!d || !d.cedula || !d.pl || d.pl.cerrado || !d.puede_subir || S.ui.imssSub) return;
+  S.ui.imssModal = { tipo: 'recalcular', mes: d.mes, doc: d.tipo, pago: d.pl.mes_pago, guardando: false, error: null }; pintarModalImss();
+}
+async function recalcularImssOk() {
+  const m = S.ui.imssModal; if (!m || m.tipo !== 'recalcular' || m.guardando) return;
+  const ep = S.epoca; m.guardando = true; m.error = null; pintarModalImss();
+  try {
+    await api('conta_imss_recalcular', Object.assign({ mes: m.mes }, m.doc === 'bimestral' ? { tipo: 'bimestral' } : {})); if (ep !== S.epoca) return;
+    olvidarImss(); S.ui.imssModal = null; modalBon(''); toast('Reparto guardado.');
+    if (ruta().r === 'imss') router();
+  } catch (e) {
+    if (ep !== S.epoca || (e && e.obsoleto)) return;
+    if (e && e.sesion) { errorEnVista(e); return; }
+    m.guardando = false; m.error = errorImss(e); pintarModalImss();
+  }
+}
+function abrirIsnImss(quitar) {
+  const d = S.imss; if (!d || !d.isn || !d.isn.se_puede || !d.puede_subir || S.ui.imssSub) return;
+  let monto = null;
+  if (quitar) { if (d.isn.monto == null) return; }
+  else {
+    const t = String(S.ui.imssIsn != null ? S.ui.imssIsn : (d.isn.monto != null ? d.isn.monto : '')).replace(/[$,\s]/g, '');
+    if (!/^\d{1,7}(\.\d{1,2})?$/.test(t) || Number(t) <= 0) { toast('Escribe el monto del ISN pagado, mayor que cero (por ejemplo 12345.67).'); return; }
+    if (d.isn.monto != null && Number(t) === Number(d.isn.monto)) { toast('Ese monto ya está capturado.'); return; }
+    monto = Number(t);
+  }
+  S.ui.imssModal = { tipo: 'isn', mes: d.mes, doc: d.tipo, pago: d.isn.mes_pago, monto, guardando: false, error: null }; pintarModalImss();
+}
+async function isnImssOk() {
+  const m = S.ui.imssModal; if (!m || m.tipo !== 'isn' || m.guardando) return;
+  const ep = S.epoca; m.guardando = true; m.error = null; pintarModalImss();
+  try {
+    await api('conta_isn_guardar', { mes: m.pago, monto: m.monto }); if (ep !== S.epoca) return;
+    olvidarImss(); S.ui.imssModal = null; S.ui.imssIsn = null; modalBon(''); toast(m.monto == null ? 'ISN de ' + mesLargo(m.pago).toLowerCase() + ' quitado.' : 'ISN de ' + mesLargo(m.pago).toLowerCase() + ' guardado.');
+    if (ruta().r === 'imss') router();
+  } catch (e) {
+    if (ep !== S.epoca || (e && e.obsoleto)) return;
+    if (e && e.sesion) { errorEnVista(e); return; }
+    m.guardando = false; m.error = errorImss(e); pintarModalImss();
+  }
+}
 function imssAccion(k, arg) {
   if (k === 'imssNo') { const eraSel = S.ui.imssModal && S.ui.imssModal.tipo === 'asignar'; S.ui.imssModal = null; modalBon(''); if (eraSel && S.imss && ruta().r === 'imss') pon(pantallaImss(S.imss)); }
   else if (k === 'imssSubirOk') subirImssOk();
@@ -2314,6 +2409,11 @@ function imssAccion(k, arg) {
   else if (k === 'imssQuitar') abrirAsignarImss(arg, null);
   else if (k === 'imssAnular') { const d = S.imss; if (d && d.puede_anular && d.cedula && !S.ui.imssSub) { S.ui.imssModal = { tipo: 'anular', mes: d.mes, doc: d.tipo, motivo: '', guardando: false, error: null }; pintarModalImss(); } }
   else if (k === 'imssAnularOk') anularImssOk();
+  else if (k === 'imssRecalcular') abrirRecalcularImss();
+  else if (k === 'imssRecalcularOk') recalcularImssOk();
+  else if (k === 'imssIsnGuardar') abrirIsnImss(false);
+  else if (k === 'imssIsnQuitar') abrirIsnImss(true);
+  else if (k === 'imssIsnOk') isnImssOk();
 }
 
 document.addEventListener('dragover', ev => { if (!S.inicio || ruta().r !== 'imss') return; ev.preventDefault(); const z = $('zonaImss'); if (z && !z.classList.contains('apagada')) z.classList.add('sobre'); });
@@ -2362,6 +2462,7 @@ document.addEventListener('input', ev => {
   else if (el.getAttribute('data-inp') === 'bonMotivo') { if (S.ui.bonForm) S.ui.bonForm.motivo = el.value || ''; }
   else if (el.getAttribute('data-inp') === 'bonCMotivo') { if (S.ui.bonCierre) S.ui.bonCierre.motivo = el.value || ''; }
   else if (el.getAttribute('data-inp') === 'imssMotivo') { if (S.ui.imssModal) S.ui.imssModal.motivo = el.value || ''; }
+  else if (el.getAttribute('data-inp') === 'imssIsn') S.ui.imssIsn = el.value || '';
   else if (el.getAttribute('data-inp') === 'histQ') { S.sub.histQ = el.value || ''; clearTimeout(S.sub.histT); S.sub.histT = setTimeout(() => cargarHistorial(S.vez), 450); }
 });
 document.addEventListener('dragover', ev => { if (!S.inicio || ruta().r !== 'subir') return; ev.preventDefault(); const z = $('zona'); if (z && !z.classList.contains('apagada')) z.classList.add('sobre'); });
