@@ -2130,7 +2130,7 @@ function zonaImss() {
 }
 function pintarZonaImss() { const el = $('imssZona'); if (el) el.innerHTML = zonaImss(); }
 function pantallaImss(d) {
-  const c = d.cedula, P = d.personas || [], T = d.sucursales || [], sin = d.sin_sucursal || { personas: 0, total: 0 };
+  const c = d.cedula, P = d.personas || [], T = d.sucursales || [], sin = d.sin_sucursal || { personas: 0, total: 0 }, rev = d.por_revisar || { personas: 0, total: 0 };
   let h = topbar('IMSS', esc(S.inicio.empresa || '') + ' · cédula mensual del SUA · cuotas de ' + mesLargo(d.mes).toLowerCase(), selMesImss(d) + btnActualizar()) + '<div class="p-8">';
   if ((S.ui.imssAvisos || []).length) h += '<div class="banner banner-amber"><b>Aviso.</b> ' + S.ui.imssAvisos.map(esc).join(' · ') + '</div>';
   h += '<div class="mb-6" id="imssZona">' + zonaImss() + '</div>';
@@ -2144,6 +2144,9 @@ function pantallaImss(d) {
       stat('Personas', entero(c.personas), entero(c.dias) + ' días cotizados') +
       stat('Con sucursal', entero(N(c.personas) - N(sin.personas)), pesos(N(c.total) - N(sin.total)), 'var(--verde)') +
       stat('Sin sucursal', entero(sin.personas), N(sin.personas) ? pesos(sin.total) + ' por asignar' : 'todas tienen sucursal', N(sin.personas) ? 'var(--ambar)' : null) + '</div>';
+    if (N(rev.personas)) h += '<div class="banner banner-amber"><b>' + entero(rev.personas) + (N(rev.personas) === 1 ? ' persona por revisar' : ' personas por revisar') + ' (' + pesos(rev.total) + ').</b> ' +
+      (N(rev.personas) === 1 ? 'Su ficha está de baja y no tuvo' : 'Sus fichas están de baja y no tuvieron') + ' días en la pre-nómina de ' + mesLargo(c.mes).toLowerCase() +
+      ': ' + (N(rev.personas) === 1 ? 'va' : 'van') + ' a la sucursal de su ficha. Revisa si ' + (N(rev.personas) === 1 ? 'sigue dada' : 'siguen dadas') + ' de alta en el IMSS o si ' + (N(rev.personas) === 1 ? 'le' : 'les') + ' toca otra sucursal.</div>';
     // reparto por sucursal
     let t = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Sucursal') + th('Personas', 1) + th('Cuotas', 1) + th('% del total', 1) + '</tr></thead><tbody>';
     T.forEach(x => { t += '<tr><td>' + esc(tiendaCorta(x.sucursal)) + (x.tipo && x.tipo !== 'tienda' ? ' <span class="badge b-gris">' + esc(x.tipo) + '</span>' : '') + '</td>' + tdN(x.personas) + tdP(x.total) +
@@ -2152,13 +2155,14 @@ function pantallaImss(d) {
     t += '<tr class="total"><td>Total de la cédula</td>' + tdN(c.personas) + tdP(c.total) + '<td class="text-right num">100.0%</td></tr></tbody></table></div>';
     h += card('Reparto por sucursal', 'Cada persona va a la sucursal donde trabajó en ' + mesLargo(c.mes).toLowerCase() + '. El Estado de resultados todavía no toma estas cifras: falta la cédula bimestral (RCV e Infonavit).', t);
     // personas
-    const ops = (sel) => '<option value="">' + (sel == null ? 'Elegir sucursal…' : '—') + '</option>' + (d.opciones || []).map(o => '<option value="' + esc(o.branch_id) + '"' + (o.branch_id === sel ? ' selected' : '') + '>' + esc(tiendaCorta(o.sucursal)) + '</option>').join('');
+    const ops = (sel) => '<option value="">' + (sel == null ? 'Elegir sucursal…' : '—') + '</option>' + (d.opciones || []).map(o => '<option value="' + esc(o.branch_id) + '"' + (o.branch_id === sel ? ' selected' : '') + '>' + esc(tiendaCorta(o.sucursal)) + (o.activa === false ? ' (cerrada)' : '') + '</option>').join('');
     let p = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Persona') + th('NSS') + th('Días', 1) + th('Cuotas', 1) + th('Sucursal') + th('De dónde sale') + '</tr></thead><tbody>';
     P.forEach(x => { const cm = COMO_IMSS[x.como] || [x.como || '—', 'b-gris'];
       p += '<tr' + (x.branch_id == null ? ' class="sel"' : '') + '><td>' + esc(x.nombre) + '</td><td class="num text-13 nowrap">···' + esc(x.nss_fin || '') + '</td>' + tdN(x.dias) + tdP(x.total) +
         '<td class="nowrap">' + (d.puede_asignar ? '<select class="sel" data-chg="imssSuc" data-k="' + esc(x.persona_id) + '" aria-label="Sucursal de ' + esc(x.nombre) + '">' + ops(x.branch_id) + '</select>' : esc(sucImss(d, x.branch_id))) +
         (d.puede_asignar && x.como === 'a_mano' ? ' <button class="btn btn-ghost p-15 tip" data-act="imssQuitar" data-arg="' + esc(x.persona_id) + '" aria-label="Quitar la sucursal puesta a mano">' + icon('refresh', 13) + '<span class="tip-body">Volver a la de su ficha</span></button>' : '') + '</td>' +
-        '<td class="text-xs" style="white-space:normal;max-width:300px"><span class="badge ' + cm[1] + '">' + esc(cm[0]) + '</span><div class="text-11 text-gray-500 mt-1">' + esc(x.nota || '') + '</div></td></tr>'; });
+        '<td class="text-xs" style="white-space:normal;max-width:300px"><span class="badge ' + cm[1] + '">' + esc(cm[0]) + '</span>' + (x.revisar ? ' <span class="badge b-ambar">Revisar</span>' : '') +
+        '<div class="text-11 text-gray-500 mt-1">' + esc(x.nota || '') + '</div></td></tr>'; });
     p += '</tbody></table></div>';
     h += '<div class="mt-6">' + card('Personas de la cédula', N(sin.personas) ? 'Las que no tienen sucursal van primero: elige la suya y el sistema la recuerda para las siguientes cédulas.' : 'Si alguien está en la sucursal equivocada, cámbiala aquí: el sistema la recuerda.', p) + '</div>';
   }
@@ -2166,7 +2170,7 @@ function pantallaImss(d) {
   if (M.length) h += '<div class="mt-6">' + card('Cédulas cargadas', 'La vigente de cada mes.', '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Mes') + th('Personas', 1) + th('Cuotas', 1) + th('Quién') + th('Cuándo') + '</tr></thead><tbody>' +
     M.map(x => '<tr' + (x.mes === d.mes ? ' class="sel"' : '') + '><td><a class="lnk" href="#imss/' + esc(x.mes) + '">' + esc(mesLargo(x.mes)) + '</a></td>' + tdN(x.personas) + tdP(x.total) + '<td class="text-13">' + esc(String(x.cargada_por || '').split('@')[0]) + '</td><td class="num text-13 nowrap">' + instante(x.cargada_en) + '</td></tr>').join('') +
     '</tbody></table></div>') + '</div>';
-  return h + '<p class="text-11 text-gray-500 mt-5 leading-relaxed">Las cuotas son patronal más obrera, lo que se paga al IMSS. La sucursal de cada persona sale de la pre-nómina de ese mes (donde tuvo más días) o de su ficha; a quien no está en las fichas por NSS, CURP o RFC se le pone a mano una vez. El NSS se muestra solo con sus 4 últimos dígitos.</p></div>';
+  return h + '<p class="text-11 text-gray-500 mt-5 leading-relaxed">Las cuotas son patronal más obrera, lo que se paga al IMSS. La sucursal de cada persona sale de la pre-nómina de ese mes (donde tuvo más días) o de su ficha; a quien no está en las fichas por NSS, CURP o RFC se le pone a mano una vez. «Revisar» marca a quien va a la sucursal de una ficha que ya está de baja. El NSS se muestra solo con sus 4 últimos dígitos.</p></div>';
 }
 function modalImss(d) {
   const m = S.ui.imssModal; if (!m) return '';
@@ -2178,7 +2182,8 @@ function modalImss(d) {
       '<div class="kv"><div class="k">Archivo</div><div class="v">' + esc(m.archivo) + '</div></div><div class="kv"><div class="k">Mes de la cuota</div><div class="v">' + esc(mesLargo(v.mes)) + '</div></div>' +
       '<div class="kv"><div class="k">Personas</div><div class="v num">' + entero(v.personas) + '</div></div><div class="kv"><div class="k">Días cotizados</div><div class="v num">' + entero(v.dias) + '</div></div>' +
       '<div class="kv"><div class="k">Total a pagar</div><div class="v num font-semibold">' + pesos(v.total) + '</div></div><div class="kv"><div class="k">Registro patronal</div><div class="v num">' + esc(v.registro_patronal || '—') + '</div></div>' +
-      '<p class="text-13 text-gray-500 mt-2">La base ya comprobó que es la cédula de esta empresa y que las personas suman ese total.' + (v.reemplazo ? ' <b>Ya hay una cédula de ese mes: esta la reemplaza</b> (la anterior queda en el historial).' : '') + '</p>';
+      '<p class="text-13 text-gray-500 mt-2">La base ya comprobó que es la cédula de esta empresa y que las personas suman ese total.' + (v.reemplazo ? ' <b>Ya hay una cédula de ese mes' + (v.anterior ? ' (' + entero(v.anterior.personas) + ' personas, ' + pesos(v.anterior.total) + ', cargada el ' + instante(v.anterior.cargada_en) + ')' : '') +
+        ': esta la reemplaza</b> (la anterior queda en el historial).' : '') + '</p>';
     return h + pie('imssSubirOk', v.reemplazo ? 'Sí, reemplazar' : 'Sí, guardar');
   }
   const x = d ? (d.personas || []).find(y => String(y.persona_id) === String(m.persona_id)) : null; if (m.tipo !== 'anular' && !x) return '';
@@ -2252,7 +2257,7 @@ async function asignarImssOk() {
   try {
     const r = await api('conta_imss_asignar', { persona_id: m.persona_id, branch_id: m.tipo === 'quitar' ? null : m.branch_id }); if (ep !== S.epoca) return;
     olvidarImss(); S.ui.imssModal = null;
-    if (S.imss === d && r.mes === d.mes) { ['cedula', 'sucursales', 'sin_sucursal', 'personas'].forEach(k => { if (k in r) d[k] = r[k]; }); guardarEnMemoria('conta_imss', { mes: d.mes }, d); }
+    if (S.imss === d && r.mes === d.mes) { ['cedula', 'sucursales', 'sin_sucursal', 'por_revisar', 'personas'].forEach(k => { if (k in r) d[k] = r[k]; }); guardarEnMemoria('conta_imss', { mes: d.mes }, d); }
     toast(m.tipo === 'quitar' ? 'Se quitó la sucursal puesta a mano.' : 'Sucursal asignada.');
     if (ruta().r === 'imss') { if (S.imss === d) { pon(pantallaImss(d)); pintarModalImss(); } else router(); }
   } catch (e) {
