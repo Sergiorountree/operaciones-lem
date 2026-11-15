@@ -439,7 +439,8 @@ function pintarNav(r) {
   const items = [['inicio', 'home', 'Inicio'], ['resultados', 'file', 'Estado de resultados'], ['facturas', 'receipt', 'Facturas'], ['subir', 'upload', 'Subir XML'], ['debemos', 'money', 'Cuánto debemos'], ['ingresos', 'chart', 'Ingresos'], ['bonos', 'bono', 'Bonos'], ['imss', 'imss', 'IMSS'], ['cortes', 'cash', 'Cortes de caja'], ['efectivo', 'file', 'Efectivo (espejo)']];
   const n = $('nav'); if (!n) return;
   const act = r === 'conciliacion' ? 'cortes' : r;   // la conciliación es una pestaña de Cortes de caja
-  n.innerHTML = items.map(([k, ic, t]) => '<a class="nav-item' + (act === k ? ' active' : '') + '" href="#' + k + '"' + (act === k ? ' aria-current="page"' : '') + '>' + icon(ic) + '<span>' + t + '</span></a>').join('') +
+  // el IMSS trae datos por persona: la base se lo niega al rol consulta (mig. 162), así que tampoco se le ofrece en el menú
+  n.innerHTML = items.filter(([k]) => k !== 'imss' || !soloLectura()).map(([k, ic, t]) => '<a class="nav-item' + (act === k ? ' active' : '') + '" href="#' + k + '"' + (act === k ? ' aria-current="page"' : '') + '>' + icon(ic) + '<span>' + t + '</span></a>').join('') +
     '<div class="nav-item soon-item">' + icon('lock') + '<span>Cierre del mes</span><span class="soon">F2</span></div>';
 }
 function topbar(t, sub, acciones) { return '<header class="topbar"><div class="min-w-0"><h1>' + t + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (acciones ? '<div class="acciones flex items-center gap-2 flex-wrap">' + acciones + '</div>' : '') + '</header>'; }
