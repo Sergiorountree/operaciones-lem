@@ -2206,7 +2206,7 @@ function modalImss(d) {
       (bim ? kv('RCV', pesos(v.rcv), 'num') + kv('Infonavit (aportación)', pesos(v.infonavit), 'num') + kv('Amortización de créditos', pesos(v.amortizacion), 'num') : '') +
       kv(bim ? 'Importe total' : 'Total a pagar', pesos(v.total), 'num font-semibold') + kv('Registro patronal', esc(v.registro_patronal || '—'), 'num') +
       '<p class="text-13 text-gray-500 mt-2">La base ya comprobó que es de esta empresa y que las personas suman ese total.' +
-      (v.reemplazo ? ' <b>Ya hay una ' + (bim ? 'bimestral' : 'cédula') + ' de ese periodo' + (v.anterior ? ' (' + esc(origenImss(v.anterior.origen)).toLowerCase() + ', ' + entero(v.anterior.personas) + ' personas, ' + pesos(v.anterior.total) + ', cargada el ' + instante(v.anterior.cargada_en) + ')' : '') +
+      (v.reemplazo ? ' <b>Ya hay una ' + (bim ? 'bimestral' : 'cédula') + ' de ese periodo' + (v.anterior ? ' (' + (v.anterior.origen === 'imss' ? 'propuesta del IMSS' : 'cédula del SUA') + ', ' + entero(v.anterior.personas) + ' personas, ' + pesos(v.anterior.total) + ', cargada el ' + instante(v.anterior.cargada_en) + ')' : '') +
         ': esta la reemplaza</b> (la anterior queda en el historial).' : '') + '</p>';
     return h + pie('imssSubirOk', v.reemplazo ? 'Sí, reemplazar' : 'Sí, guardar');
   }
