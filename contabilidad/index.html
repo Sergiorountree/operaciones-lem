@@ -1512,7 +1512,9 @@ async function pintarDetalleRes(d, vez) {
     // mig. 164: IMSS e ISN de cada tienda, en el mes en que se pagan; por tienda y sin personas
     const fs = det.filas || [], o = det.origen || {}, docs = o.documentos || [], esIsn = det.renglon === 'isn', men = docs.find(y => y.tipo === 'mensual');
     const perDoc = (y) => y.tipo === 'bimestral' ? 'Bimestre ' + periodoImss('bimestral', y.mes).toLowerCase() : 'Cuotas de ' + mesLargo(y.mes).toLowerCase();
-    const unDoc = (y) => esc(perDoc(y)) + ': ' + (y.cargada ? '<b class="num">' + pesos(y.total) + '</b> (' + (y.origen === 'imss' ? 'propuesta del IMSS' : 'cédula del SUA') + ')' +
+    // "reparto guardado": el Estado de resultados toma el reparto por sucursal de ese momento; si después cambian fichas o asignaciones, se recalcula en IMSS
+    const unDoc = (y) => esc(perDoc(y)) + ': ' + (y.cargada ? '<b class="num">' + pesos(y.total) + '</b> (' + (y.origen === 'imss' ? 'propuesta del IMSS' : 'cédula del SUA') +
+      (y.guardado_en ? ', reparto guardado ' + instante(y.guardado_en) : '') + ')' +
       (N(y.sin_sucursal_personas) ? ' <span class="badge b-ambar">' + entero(y.sin_sucursal_personas) + ' sin sucursal</span>' : '') : '<span class="badge b-ambar">falta subirla</span>');
     b = '<div class="card-body" style="padding-bottom:6px"><p class="text-sm">' +
       (esIsn ? (o.isn && o.isn.capturado ? 'ISN capturado: <b class="num">' + pesos(o.isn.monto) + '</b>.' : '<span class="badge b-ambar">Falta capturar el ISN</span>') + (men ? ' Se reparte como: ' + unDoc(men) + '.' : '')
