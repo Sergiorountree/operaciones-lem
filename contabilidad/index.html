@@ -2157,7 +2157,7 @@ function zonaImss() {
   if (S.ui.imssError) h += '<div class="banner banner-red" role="alert"><b>No se guardó.</b> ' + esc(S.ui.imssError) + '</div>';
   const paso = st ? (st.paso === 'leyendo' ? 'Leyendo «' + st.archivo + '»…' : 'Revisando «' + st.archivo + '» en la base…') : '';
   h += '<div class="zona' + (st ? ' apagada' : '') + '" id="zonaImss"><div class="t">' + (st ? esc(paso) : 'Anexa la cédula del IMSS') + '</div>' +
-    '<div class="s">El PDF de la propuesta de cédula que emite el IMSS (la mensual o la bimestral) o de la cédula mensual del SUA. El sistema reconoce cuál es, lee el periodo, revisa que sea de esta empresa y que sume su total, y te enseña lo que leyó antes de guardar.</div>' +
+    '<div class="s">El PDF de la propuesta de cédula que emite el IMSS o de la cédula del SUA; de cualquiera de las dos, la mensual o la bimestral. El sistema reconoce cuál es, lee el periodo, revisa que sea de esta empresa y que sume su total, y te enseña lo que leyó antes de guardar.</div>' +
     '<div class="flex justify-center gap-2 flex-wrap mt-3"><label class="btn btn-primary">' + icon('upload', 14) + 'Elegir el PDF<input type="file" accept=".pdf,application/pdf" data-chg="imssArchivo" hidden></label></div></div>';
   return h;
 }
