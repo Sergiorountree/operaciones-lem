@@ -2423,7 +2423,7 @@ function imssAccion(k, arg) {
 
 /* ═══ Finiquitos (mig. 167): se registran por tienda o centro, tomados del control de efectivo copiado o a mano. Solo administración y contabilidad.
    El portal nunca enseña la descripción del renglón de caja (trae el nombre de la persona): se reconoce por fecha, monto y sucursal.
-   Ruta: #finiquitos[/AAAA-MM] (el mes en que se pagaron). */
+   Ruta: #finiquitos[/AAAA-MM] (el mes en que cuentan: el de su libro de caja; a mano, el de su fecha de pago). */
 const FIN_DESDE = '2026-07';
 function olvidarFin() { Array.from(S.cache.keys()).forEach(k => { if (k.indexOf('conta_finiquitos|') === 0) S.cache.delete(k); }); }
 function formFin() { if (!S.ui.finForm) S.ui.finForm = { fecha: '', monto: '', branch_id: '', forma: 'transferencia', nota: '' }; return S.ui.finForm; }
@@ -2434,7 +2434,7 @@ function opsFin(d, sel) {
 }
 async function vFiniquitos(arg, vez) {
   const pedido = /^\d{4}-\d{2}$/.test(arg || '') ? arg : S.ui.finMes;
-  cargando('Finiquitos', pedido ? 'pagados en ' + mesLargo(pedido).toLowerCase() : 'el mes pasado');
+  cargando('Finiquitos', pedido ? mesLargo(pedido).toLowerCase() : 'el mes pasado');
   const d = await traer('conta_finiquitos', pedido ? { mes: pedido } : {}); if (vez !== S.vez) return;
   if (!/^\d{4}-\d{2}$/.test(String(d.mes || ''))) throw new Error('El servidor respondió sin el mes de los finiquitos.');
   if (pedido !== d.mes) guardarEnMemoria('conta_finiquitos', { mes: d.mes }, d);
@@ -2447,7 +2447,9 @@ function pantallaFin(d) {
   const hoy = String(S.inicio.hoy || ''), hoyMes = hoy.slice(0, 7) || d.mes, mesTxt = mesLargo(d.mes).toLowerCase();
   const P = d.propuestas || [], R = d.registrados || [], X = d.descartadas || [], T = d.por_sucursal || [], comp = d.completo || {}, fijo = !!d.cerrado || !!comp.si;
   const prev = mesMas(d.mes, -1), sig = mesMas(d.mes, 1), quien = (u) => esc(String(u || '').split('@')[0]);
-  let h = topbar('Finiquitos', esc(S.inicio.empresa || '') + ' · pagados en ' + mesTxt,
+  // un renglón del libro de este mes puede traer fecha de los primeros días del siguiente (su quinta semana): se dice
+  const otraFecha = (f) => { const m = String(f || '').slice(0, 7); return /^\d{4}-\d{2}$/.test(m) && m !== d.mes ? ' <span class="badge b-gris">fecha de ' + esc(mesLargo(m).toLowerCase()) + '</span>' : ''; };
+  let h = topbar('Finiquitos', esc(S.inicio.empresa || '') + ' · ' + mesTxt,
     selMes('ir', d.mes, rangoMeses(FIN_DESDE, hoyMes), prev >= FIN_DESDE ? prev : null, sig <= hoyMes ? sig : null, m => 'finiquitos/' + m) + btnActualizar()) + '<div class="p-8">';
   if (d.cerrado) h += '<div class="banner banner-amber"><b>El Estado de resultados de ' + mesTxt + ' ya está cerrado.</b> Sus finiquitos no se pueden cambiar sin reabrirlo.</div>';
   else if (comp.si) h += '<div class="banner banner-lem flex items-center justify-between gap-3 flex-wrap"><span><b>Finiquitos de ' + mesTxt + ' dados por completos.</b> ' + quien(comp.por) + ' · ' + instante(comp.en) +
@@ -2467,24 +2469,24 @@ function pantallaFin(d) {
   if (P.length) {
     const t = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Fecha') + th('Monto', 1) + th('Tienda o centro') + th('') + '</tr></thead><tbody>' + P.map(p => {
       const sel = Object.prototype.hasOwnProperty.call(S.ui.finSel || {}, p.llave) ? S.ui.finSel[p.llave] : p.branch_id;
-      return '<tr><td class="nowrap">' + fecha(p.fecha) + (p.mes_libro && p.mes_libro !== d.mes ? ' <span class="badge b-ambar">en el libro de ' + esc(mesLargo(p.mes_libro).toLowerCase()) + '</span>' : '') + '</td>' +
+      return '<tr><td class="nowrap">' + fecha(p.fecha) + otraFecha(p.fecha) + '</td>' +
         '<td class="text-right num font-semibold">' + pesos(p.monto) + (p.posible_repetido ? '<div><span class="badge b-ambar tip">posible repetido<span class="tip-body">Hay otro renglón u otro finiquito registrado con la misma fecha y el mismo monto: revisa que no sea el mismo</span></span></div>' : '') + '</td>' +
         '<td class="nowrap">' + (fijo ? esc(sucFin(d, p.branch_id)) : '<select class="sel" data-chg="finSuc" data-k="' + esc(p.llave) + '" aria-label="Tienda o centro del finiquito del ' + fecha(p.fecha) + '">' + opsFin(d, sel) + '</select>') +
           (p.branch_id == null ? ' <span class="badge b-ambar">sin sucursal reconocida</span>' : '') + '</td>' +
         '<td class="nowrap text-right">' + (fijo ? '' : '<button class="btn btn-primary" data-act="finRegistrar" data-arg="' + esc(p.llave) + '">Registrar</button> <button class="btn btn-ghost" data-act="finDescartar" data-arg="' + esc(p.llave) + '">No es finiquito</button>') + '</td></tr>';
     }).join('') + '</tbody></table></div>';
-    h += card('Del control de efectivo · ' + entero(P.length) + ' por registrar', 'Renglones de finiquito del control de efectivo copiado con fecha de ' + mesTxt + '. El portal no enseña su descripción: reconócelos por fecha, monto y sucursal en tu Excel. Confirma la tienda y regístralo, o márcalo si no es un finiquito.', t);
-  } else h += '<div class="msg-card shadow-card mb-6">' + (N((d.caja || {}).renglones) ? 'Ya no queda ningún renglón de finiquito del control de efectivo por registrar en ' + mesTxt + '.'
-    : 'El control de efectivo copiado no trae renglones de finiquito con fecha de ' + mesTxt + '.') + '</div>';
+    h += card('Del control de efectivo · ' + entero(P.length) + ' por registrar', 'Renglones de finiquito del libro de caja de ' + mesTxt + ', en el control de efectivo copiado. El portal no enseña su descripción: reconócelos por fecha, monto y sucursal en tu Excel. Confirma la tienda y regístralo, o márcalo si no es un finiquito.', t);
+  } else h += '<div class="msg-card shadow-card mb-6">' + (N((d.caja || {}).renglones) ? 'Ya no queda ningún renglón de finiquito del libro de caja de ' + mesTxt + ' por registrar.'
+    : 'El libro de caja de ' + mesTxt + ' no trae renglones de finiquito en el control de efectivo copiado.') + '</div>';
   // registrados
   const tr = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Pagado el') + th('Tienda o centro') + th('Monto', 1) + th('Forma de pago') + th('De dónde salió') + th('Nota') + th('Registró') + th('') + '</tr></thead><tbody>' +
-    (R.length ? R.map(x => '<tr><td class="nowrap">' + fecha(x.fecha_pago) + '</td><td class="nowrap">' + esc(sucFin(d, x.branch_id)) + '</td><td class="text-right num font-semibold">' + pesos(x.monto) + '</td>' +
+    (R.length ? R.map(x => '<tr><td class="nowrap">' + fecha(x.fecha_pago) + otraFecha(x.fecha_pago) + '</td><td class="nowrap">' + esc(sucFin(d, x.branch_id)) + '</td><td class="text-right num font-semibold">' + pesos(x.monto) + '</td>' +
         '<td>' + (x.forma_pago === 'transferencia' ? 'Transferencia' : 'Efectivo') + '</td>' +
         '<td class="nowrap">' + (x.origen === 'caja' ? 'Control de efectivo' + (x.en_caja === false ? ' <span class="badge b-ambar">su renglón ya no está en la caja</span>' : '') : 'A mano') + '</td>' +
         '<td class="text-xs" style="white-space:normal;max-width:260px">' + esc(x.nota || '') + '</td><td class="text-xs nowrap">' + quien(x.capturado_por) + ' · ' + instante(x.creado_en) + '</td>' +
         '<td class="text-right">' + (fijo ? '' : '<button class="btn btn-ghost" data-act="finAnular" data-arg="' + esc(x.finiquito_id) + '">Anular</button>') + '</td></tr>').join('')
       : '<tr><td colspan="8" class="text-center text-gray-500" style="padding:18px">Todavía no hay finiquitos registrados en ' + mesTxt + '.</td></tr>') + '</tbody></table></div>';
-  h += card('Registrados · ' + pesos(d.total), 'Lo que cuenta como finiquitos pagados en ' + mesTxt + ', por tienda o centro.', tr);
+  h += card('Registrados · ' + pesos(d.total), 'Lo que cuenta como finiquitos de ' + mesTxt + ', por tienda o centro.', tr);
   if (T.length) h += card('Por tienda', null, '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Tienda o centro') + th('Finiquitos', 1) + th('Total', 1) + '</tr></thead><tbody>' +
     T.map(x => '<tr><td class="nowrap">' + esc(tiendaCorta(x.sucursal)) + (x.tipo === 'centro' ? ' <span class="badge b-gris">centro</span>' : '') + '</td><td class="text-right num">' + entero(x.finiquitos) + '</td><td class="text-right num font-semibold">' + pesos(x.total) + '</td></tr>').join('') +
     '</tbody></table></div>');
@@ -2508,7 +2510,7 @@ function pantallaFin(d) {
     X.map(x => '<tr><td class="nowrap">' + fecha(x.fecha) + '</td><td class="text-right num">' + pesos(x.monto) + '</td><td class="text-xs" style="white-space:normal;max-width:320px">' + esc(x.motivo || '') + '</td>' +
       '<td class="text-xs nowrap">' + quien(x.por) + ' · ' + instante(x.en) + '</td><td class="text-right">' + (fijo ? '' : '<button class="btn btn-ghost" data-act="finRestaurar" data-arg="' + esc(x.llave) + '">Restaurar</button>') + '</td></tr>').join('') +
     '</tbody></table></div>');
-  return h + '<p class="text-11 text-gray-500 mt-5 leading-relaxed">Cada finiquito cuenta en el mes en que se pagó. Por ahora solo se registran aquí: el renglón Finiquitos del Estado de resultados los tomará de esta pantalla en la siguiente entrega. ' +
+  return h + '<p class="text-11 text-gray-500 mt-5 leading-relaxed">Cada finiquito cuenta en el mes de su libro de caja (el Excel o la hoja donde está), aunque su fecha sea de los primeros días del mes siguiente; el capturado a mano, en el mes de su fecha de pago. Por ahora solo se registran aquí: el renglón Finiquitos del Estado de resultados los tomará de esta pantalla en la siguiente entrega. ' +
     'Los del control de efectivo se toman de la copia que el portal hace de tu Excel; si ahí cambias la fecha, el monto o la sucursal de uno ya registrado, aquí se avisa. Nada se borra: anular o descartar deja su rastro.</p></div>';
 }
 function modalFin(d) {
@@ -2523,13 +2525,13 @@ function modalFin(d) {
   if (m.tipo === 'registrar' || m.tipo === 'descartar') {
     const p = (d.propuestas || []).find(x => x.llave === m.llave); if (!p) return '';
     if (m.tipo === 'registrar') return h + tit('Registrar el finiquito') + kv('Pagado el', fecha(p.fecha)) + kv('Monto', pesos(p.monto), 'num font-semibold') + kv('Tienda o centro', esc(sucFin(d, m.branch_id))) +
-      kv('Forma de pago', 'Efectivo (control de efectivo)') + nota('Se carga a ' + esc(sucFin(d, m.branch_id)) + ' como finiquito pagado en ' + mesLargo(String(p.fecha).slice(0, 7)).toLowerCase() + '.') + pie('Sí, registrar');
+      kv('Forma de pago', 'Efectivo (control de efectivo)') + nota('Se carga a ' + esc(sucFin(d, m.branch_id)) + ' como finiquito de ' + mesTxt + (String(p.fecha).slice(0, 7) !== d.mes ? ', el mes de su libro de caja' : '') + '.') + pie('Sí, registrar');
     return h + tit('Este renglón no es un finiquito') + kv('Fecha', fecha(p.fecha)) + kv('Monto', pesos(p.monto), 'num font-semibold') + nota('Deja de salir como pendiente. Se puede restaurar después.') +
       motivo('Por qué no es un finiquito', 'Por ejemplo: es un préstamo, es nómina') + pie('Sí, no es finiquito');
   }
   if (m.tipo === 'manual') return h + tit('Registrar el finiquito') + kv('Pagado el', fecha(m.fecha)) + kv('Monto', pesos(m.monto), 'num font-semibold') + kv('Tienda o centro', esc(sucFin(d, m.branch_id))) +
     kv('Forma de pago', m.forma === 'efectivo' ? 'Efectivo' : 'Transferencia') + (m.nota ? kv('Nota', esc(m.nota)) : '') +
-    nota('Se carga a ' + esc(sucFin(d, m.branch_id)) + ' como finiquito pagado en ' + mesLargo(String(m.fecha).slice(0, 7)).toLowerCase() + '. Revisa que no sea uno de los del control de efectivo, para no contarlo dos veces.') + pie('Sí, registrar');
+    nota('Se carga a ' + esc(sucFin(d, m.branch_id)) + ' como finiquito de ' + mesLargo(String(m.fecha).slice(0, 7)).toLowerCase() + ', el mes de su fecha de pago. Revisa que no sea uno de los del control de efectivo, para no contarlo dos veces.') + pie('Sí, registrar');
   if (m.tipo === 'anular') {
     const x = (d.registrados || []).find(y => String(y.finiquito_id) === String(m.id)); if (!x) return '';
     return h + tit('Anular el finiquito') + kv('Pagado el', fecha(x.fecha_pago)) + kv('Monto', pesos(x.monto), 'num font-semibold') + kv('Tienda o centro', esc(sucFin(d, x.branch_id))) +
