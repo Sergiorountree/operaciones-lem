@@ -342,7 +342,7 @@ async function api(accion, datos) {
   if (ep !== S.epoca) throw errObsoleto();
   if (!j || typeof j !== 'object' || Array.isArray(j) || !Object.keys(j).length) { const x = new Error('SQL Connect respondió vacío. Reintenta en un momento.'); x.red = true; throw x; }
   if (window.LEM_PV && LEM_PV.rechazo(j)) return LEM_PV.pendiente();   // el servidor rechazó la vista: vuelve a la propia sin cerrar sesión
-  if (j.error) { const x = new Error(j.detalle || j.error); x.negocio = true; x.codigo = j.error; throw x; }
+  if (j.error) { const x = new Error(j.detalle || j.error); x.negocio = true; x.codigo = j.error; x.motivo = j.motivo || null; throw x; }
   return j;
 }
 async function traer(accion, datos) {   // memoria de la pestaña; se borra con Actualizar, al cambiar de empresa y al salir
@@ -2452,6 +2452,12 @@ function pantallaFin(d) {
   if (d.cerrado) h += '<div class="banner banner-amber"><b>El Estado de resultados de ' + mesTxt + ' ya está cerrado.</b> Sus finiquitos no se pueden cambiar sin reabrirlo.</div>';
   else if (comp.si) h += '<div class="banner banner-lem flex items-center justify-between gap-3 flex-wrap"><span><b>Finiquitos de ' + mesTxt + ' dados por completos.</b> ' + quien(comp.por) + ' · ' + instante(comp.en) +
     ' · ' + entero(comp.finiquitos) + (N(comp.finiquitos) === 1 ? ' finiquito' : ' finiquitos') + ' · ' + pesos(comp.total) + '</span><button class="btn btn-secondary" data-act="finReabrir">Reabrir el mes</button></div>';
+  const caja = d.caja || {}, enCurso = d.mes >= hoyMes;
+  if (comp.si && P.length) h += '<div class="banner banner-amber"><b>El control de efectivo trae ' + entero(P.length) + (P.length === 1 ? ' renglón nuevo' : ' renglones nuevos') + ' de finiquito.</b> Llegaron después de dar el mes por completo: reábrelo para registrarlos o descartarlos.</div>';
+  if (caja.copiado === false) h += '<div class="banner banner-amber"><b>El control de efectivo de ' + mesTxt + ' no está copiado en el portal.</b> No hay con qué comparar: captura a mano los finiquitos de este mes.</div>';
+  if (N(caja.sin_leer)) h += '<div class="banner banner-amber"><b>' + entero(caja.sin_leer) + (N(caja.sin_leer) === 1 ? ' renglón del control de efectivo menciona' : ' renglones del control de efectivo mencionan') + ' finiquito y el portal no pudo leerlo' + (N(caja.sin_leer) === 1 ? '' : 's') + '.</b> ' +
+    'Le falta la fecha, el importe, o su fecha no es de este libro. Revísalo en tu Excel y, si es un finiquito, captúralo a mano.</div>';
+  if (N(caja.archivos_del_mes) > 1) h += '<div class="banner banner-amber"><b>Hay ' + entero(caja.archivos_del_mes) + ' Excel de control de efectivo de ' + mesTxt + '.</b> Se toma el modificado más recientemente.</div>';
   const enEf = R.filter(x => x.forma_pago !== 'transferencia'), enTr = R.filter(x => x.forma_pago === 'transferencia'), suma = (a) => a.reduce((t, x) => t + N(x.monto), 0);
   h += '<div class="grid grid-4 mb-6">' + stat('Finiquitos de ' + mesTxt, pesos(d.total), entero(R.length) + (R.length === 1 ? ' registrado' : ' registrados')) +
     stat('Por registrar', entero(P.length), P.length ? 'renglones del control de efectivo' : 'nada pendiente del control de efectivo', P.length ? 'var(--ambar)' : null) +
@@ -2462,7 +2468,7 @@ function pantallaFin(d) {
     const t = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Fecha') + th('Monto', 1) + th('Tienda o centro') + th('') + '</tr></thead><tbody>' + P.map(p => {
       const sel = Object.prototype.hasOwnProperty.call(S.ui.finSel || {}, p.llave) ? S.ui.finSel[p.llave] : p.branch_id;
       return '<tr><td class="nowrap">' + fecha(p.fecha) + (p.mes_libro && p.mes_libro !== d.mes ? ' <span class="badge b-ambar">en el libro de ' + esc(mesLargo(p.mes_libro).toLowerCase()) + '</span>' : '') + '</td>' +
-        '<td class="text-right num font-semibold">' + pesos(p.monto) + '</td>' +
+        '<td class="text-right num font-semibold">' + pesos(p.monto) + (p.posible_repetido ? '<div><span class="badge b-ambar tip">posible repetido<span class="tip-body">Hay otro renglón u otro finiquito registrado con la misma fecha y el mismo monto: revisa que no sea el mismo</span></span></div>' : '') + '</td>' +
         '<td class="nowrap">' + (fijo ? esc(sucFin(d, p.branch_id)) : '<select class="sel" data-chg="finSuc" data-k="' + esc(p.llave) + '" aria-label="Tienda o centro del finiquito del ' + fecha(p.fecha) + '">' + opsFin(d, sel) + '</select>') +
           (p.branch_id == null ? ' <span class="badge b-ambar">sin sucursal reconocida</span>' : '') + '</td>' +
         '<td class="nowrap text-right">' + (fijo ? '' : '<button class="btn btn-primary" data-act="finRegistrar" data-arg="' + esc(p.llave) + '">Registrar</button> <button class="btn btn-ghost" data-act="finDescartar" data-arg="' + esc(p.llave) + '">No es finiquito</button>') + '</td></tr>';
@@ -2493,8 +2499,9 @@ function pantallaFin(d) {
       '<label class="text-13">Forma de pago<select class="sel" style="display:block;margin-top:4px" data-chg="finFForma"><option value="transferencia"' + (f.forma !== 'efectivo' ? ' selected' : '') + '>Transferencia</option><option value="efectivo"' + (f.forma === 'efectivo' ? ' selected' : '') + '>Efectivo</option></select></label>' +
       '<label class="text-13" style="flex:1;min-width:180px">Nota (opcional)<input class="inp w-full" style="display:block;margin-top:4px" maxlength="200" data-inp="finNota" value="' + esc(f.nota || '') + '"></label>' +
       '<button class="btn btn-primary" data-act="finManual">Registrar</button></div>');
-    h += '<div class="msg-card shadow-card mb-6 flex items-center justify-between gap-3 flex-wrap"><span>' + (P.length ? 'Cuando registres o descartes los ' + entero(P.length) + ' renglones pendientes, podrás dar ' + mesTxt + ' por completo.'
-      : 'Si ya están todos los finiquitos de ' + mesTxt + ' (aunque no haya ninguno), da el mes por completo.') + '</span><button class="btn btn-secondary" data-act="finCompletar"' + (P.length ? ' disabled' : '') + '>Dar el mes por completo</button></div>';
+    h += '<div class="msg-card shadow-card mb-6 flex items-center justify-between gap-3 flex-wrap"><span>' + (enCurso ? mesLargo(d.mes) + ' todavía no termina: sus finiquitos se dan por completos cuando acabe el mes.'
+      : P.length ? 'Cuando registres o descartes los ' + entero(P.length) + ' renglones pendientes, podrás dar ' + mesTxt + ' por completo.'
+      : 'Si ya están todos los finiquitos de ' + mesTxt + ' (aunque no haya ninguno), da el mes por completo.') + '</span><button class="btn btn-secondary" data-act="finCompletar"' + (P.length || enCurso ? ' disabled' : '') + '>Dar el mes por completo</button></div>';
   }
   if (X.length) h += card('Descartados · ' + entero(X.length), 'Renglones del control de efectivo que alguien marcó como "no es un finiquito".',
     '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Fecha') + th('Monto', 1) + th('Por qué') + th('Quién') + th('') + '</tr></thead><tbody>' +
@@ -2507,7 +2514,8 @@ function pantallaFin(d) {
 function modalFin(d) {
   const m = S.ui.finModal; if (!m || !d) return '';
   const pie = (txt) => (m.error ? '<div class="banner banner-red mt-3" role="alert" style="margin-bottom:0">' + esc(m.error) + '</div>' : '') +
-    '<div class="flex gap-2 mt-3 flex-wrap"><button class="btn btn-primary" data-act="finOk"' + (m.guardando ? ' disabled' : '') + '>' + (m.guardando ? 'Guardando…' : txt) + '</button><button class="btn btn-ghost" data-act="finNo">Cancelar</button></div></div>';
+    (m.aviso ? '<div class="banner banner-amber mt-3" role="alert" style="margin-bottom:0">' + esc(m.aviso) + '</div>' : '') +
+    '<div class="flex gap-2 mt-3 flex-wrap"><button class="btn btn-primary" data-act="finOk"' + (m.guardando ? ' disabled' : '') + '>' + (m.guardando ? 'Guardando…' : m.aviso ? 'Sí, lo confirmo' : txt) + '</button><button class="btn btn-ghost" data-act="finNo">Cancelar</button></div></div>';
   const kv = (k, v, cls) => '<div class="kv"><div class="k">' + k + '</div><div class="v' + (cls ? ' ' + cls : '') + '">' + v + '</div></div>';
   const mesTxt = mesLargo(d.mes).toLowerCase(), tit = (t) => '<div class="text-13 font-medium mb-2">' + t + '</div>', nota = (t) => '<p class="text-13 text-gray-500 mt-2">' + t + '</p>';
   const motivo = (lab, ph) => '<label class="text-13 mt-3" style="display:block">' + lab + '<textarea class="inp w-full mt-1" rows="2" maxlength="200" data-inp="finMotivo" placeholder="' + ph + '">' + esc(m.motivo || '') + '</textarea></label>';
@@ -2541,14 +2549,15 @@ async function finOk() {
   const m = S.ui.finModal, d = S.fin; if (!m || !d || m.guardando) return;
   let acc, datos, msg, corto = null;
   if (m.tipo === 'registrar') { acc = 'conta_finiquito_guardar'; datos = { llave: m.llave, mes: d.mes, branch_id: m.branch_id }; msg = 'Finiquito registrado en ' + sucFin(d, m.branch_id) + '.'; }
-  else if (m.tipo === 'manual') { acc = 'conta_finiquito_guardar'; datos = { fecha_pago: m.fecha, monto: m.monto, branch_id: m.branch_id, forma_pago: m.forma, nota: m.nota || '' }; msg = 'Finiquito registrado en ' + sucFin(d, m.branch_id) + '.'; }
+  else if (m.tipo === 'manual') { acc = 'conta_finiquito_guardar'; datos = { fecha_pago: m.fecha, monto: m.monto, branch_id: m.branch_id, forma_pago: m.forma, nota: m.nota || '' }; if ((m.confirma || {}).distinto) datos.confirmo_distinto = true;
+    msg = 'Finiquito registrado en ' + sucFin(d, m.branch_id) + '.'; }
   else if (m.tipo === 'anular') { if (String(m.motivo || '').trim().length < 3) corto = 'Escribe por qué se anula.'; acc = 'conta_finiquito_anular'; datos = { finiquito_id: m.id, motivo: m.motivo }; msg = 'Finiquito anulado.'; }
   else if (m.tipo === 'descartar') { if (String(m.motivo || '').trim().length < 3) corto = 'Escribe por qué no es un finiquito.'; acc = 'conta_finiquito_descartar'; datos = { llave: m.llave, mes: d.mes, motivo: m.motivo }; msg = 'Renglón descartado.'; }
   else if (m.tipo === 'restaurar') { acc = 'conta_finiquito_descartar'; datos = { llave: m.llave, mes: d.mes, restaurar: true }; msg = 'Renglón restaurado.'; }
-  else if (m.tipo === 'completar' || m.tipo === 'reabrir') { acc = 'conta_finiquitos_mes'; datos = { mes: d.mes, accion: m.tipo }; msg = m.tipo === 'completar' ? 'Finiquitos de ' + mesLargo(d.mes).toLowerCase() + ' dados por completos.' : 'Mes reabierto.'; }
+  else if (m.tipo === 'completar' || m.tipo === 'reabrir') { acc = 'conta_finiquitos_mes'; datos = { mes: d.mes, accion: m.tipo }; if ((m.confirma || {}).sin_caja) datos.sin_caja = true; if ((m.confirma || {}).sin_leer) datos.acepto_sin_leer = true; msg = m.tipo === 'completar' ? 'Finiquitos de ' + mesLargo(d.mes).toLowerCase() + ' dados por completos.' : 'Mes reabierto.'; }
   else return;
   if (corto) { m.error = corto; pintarModalFin(); return; }
-  const ep = S.epoca; m.guardando = true; m.error = null; pintarModalFin();
+  const ep = S.epoca; m.guardando = true; m.error = null; m.aviso = null; pintarModalFin();
   try {
     await api(acc, datos); if (ep !== S.epoca) return;
     olvidarFin(); S.ui.finModal = null; if (m.llave && S.ui.finSel) delete S.ui.finSel[m.llave]; modalBon(''); toast(msg);
@@ -2557,7 +2566,11 @@ async function finOk() {
   } catch (e) {
     if (ep !== S.epoca || (e && e.obsoleto)) return;
     if (e && e.sesion) { errorEnVista(e); return; }
-    m.guardando = false; m.error = errorImss(e); pintarModalFin();
+    m.guardando = false;
+    // el servidor pide confirmar algo (a mano parecido a otro; completar sin caja copiada o con renglones sin leer): se enseña y el siguiente "sí" lo confirma
+    if (e && e.negocio && e.codigo === 'confirmar') { m.error = null; m.aviso = e.message; m.confirma = Object.assign({}, m.confirma, { [m.tipo === 'manual' ? 'distinto' : (e.motivo === 'sin_caja' ? 'sin_caja' : 'sin_leer')]: true }); }
+    else m.error = errorImss(e);
+    pintarModalFin();
   }
 }
 function finAccion(k, arg) {
@@ -2576,7 +2589,7 @@ function finAccion(k, arg) {
   else if (k === 'finDescartar') { if ((d.propuestas || []).some(x => x.llave === arg)) abre({ tipo: 'descartar', llave: arg }); }
   else if (k === 'finRestaurar') { if ((d.descartadas || []).some(x => x.llave === arg)) abre({ tipo: 'restaurar', llave: arg }); }
   else if (k === 'finAnular') { if ((d.registrados || []).some(x => String(x.finiquito_id) === String(arg))) abre({ tipo: 'anular', id: arg }); }
-  else if (k === 'finCompletar') { if (!(d.propuestas || []).length) abre({ tipo: 'completar' }); }
+  else if (k === 'finCompletar') { if (!(d.propuestas || []).length && d.mes < String(S.inicio.hoy || '').slice(0, 7)) abre({ tipo: 'completar' }); }
   else if (k === 'finManual') {
     const f = formFin(), monto = String(f.monto || '').replace(/[$,\s]/g, '');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(f.fecha || '')) { toast('Escribe la fecha en que se pagó.'); return; }
