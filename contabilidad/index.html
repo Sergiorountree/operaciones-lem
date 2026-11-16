@@ -1535,7 +1535,8 @@ async function pintarDetalleRes(d, vez) {
   } else if (det.tipo === 'finiquitos') {
     // mig. 168: los finiquitos registrados de cada tienda; entran cuando el mes se da por completo. Por tienda, sin fechas ni personas
     const fs = det.filas || [], o = det.origen || {};
-    const est = o.caja_cambio ? '<span class="badge b-ambar">el control de efectivo cambió después de dar el mes por completo</span>'
+    const est = o.caja_cambio ? '<span class="badge b-ambar">' + (o.caja_cambio_por === 'vecino' ? 'cambió el control de efectivo del mes de al lado' : o.caja_cambio_por === 'palabras' ? 'cambiaron las palabras con que se reconocen los finiquitos'
+        : 'el control de efectivo cambió') + ' después de dar el mes por completo</span>'
       : o.entra ? '<span class="badge b-verde">mes dado por completo' + (o.completo_en ? ' · ' + instante(o.completo_en) : '') + '</span>'
       : '<span class="badge b-ambar">el mes todavía no se da por completo</span>';
     b = '<div class="card-body" style="padding-bottom:6px"><p class="text-sm">' + entero(o.registrados) + (N(o.registrados) === 1 ? ' finiquito registrado' : ' finiquitos registrados') + ' en ' + esc(mesLargo(d.mes).toLowerCase()) +
@@ -2586,7 +2587,10 @@ function pantallaFin(d) {
     ' · ' + entero(comp.finiquitos) + (N(comp.finiquitos) === 1 ? ' finiquito' : ' finiquitos') + ' · ' + pesos(comp.total) +
     (pl && pl.entra ? ' <span class="badge b-verde">ya entra al Estado de resultados</span>' : '') + '</span><button class="btn btn-secondary" data-act="finReabrir">Reabrir el mes</button></div>';
   const caja = d.caja || {}, enCurso = d.mes >= hoyMes;
-  if (comp.si && !d.cerrado && pl && pl.caja_cambio) h += '<div class="banner banner-amber"><b>El control de efectivo de ' + mesTxt + ' cambió en sus renglones de finiquito después de dar el mes por completo.</b> ' +
+  if (comp.si && !d.cerrado && pl && pl.caja_cambio) h += '<div class="banner banner-amber"><b>' +
+    (pl.caja_cambio_por === 'vecino' ? 'En el control de efectivo del mes de al lado cambió o se quitó un renglón de finiquito que puede ser de ' + mesTxt + ', después de dar el mes por completo.'
+      : pl.caja_cambio_por === 'palabras' ? 'Cambiaron las palabras con que el portal reconoce los finiquitos en el control de efectivo después de dar ' + mesTxt + ' por completo.'
+      : 'El control de efectivo de ' + mesTxt + ' cambió en sus renglones de finiquito después de dar el mes por completo.') + '</b> ' +
     (P.length ? 'Trae ' + entero(P.length) + (P.length === 1 ? ' renglón nuevo' : ' renglones nuevos') + ' por registrar o descartar. ' : '') +
     'Mientras tanto, el Estado de resultados marca Finiquitos como incompleto: reabre el mes, revísalo contra tu Excel y vuelve a darlo por completo.</div>';
   else if (comp.si && P.length) h += '<div class="banner banner-amber"><b>El control de efectivo trae ' + entero(P.length) + (P.length === 1 ? ' renglón nuevo' : ' renglones nuevos') + ' de finiquito.</b> Llegaron después de dar el mes por completo: reábrelo para registrarlos o descartarlos.</div>';
