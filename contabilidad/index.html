@@ -202,14 +202,16 @@ const INACTIVIDAD_MIN = 15;
 const INACTIVIDAD_MS = INACTIVIDAD_MIN * 60 * 1000;
 const ACCIONES = new Set(['conta_inicio', 'conta_resultados', 'conta_facturas', 'conta_factura_decidir', 'conta_debemos', 'conta_ingresos', 'conta_cortes', 'conta_xml_subir', 'conta_xml_subidas', 'conta_espejo_cortes', 'conta_espejo_efectivo',
                           'conta_bonos', 'conta_bono_ajustar', 'conta_bonos_aprobar', 'conta_bonos_reabrir',
-                          'conta_imss', 'conta_imss_subir', 'conta_imss_asignar', 'conta_imss_anular', 'conta_imss_recalcular', 'conta_isn_guardar', 'ver_como_opciones']);   // ver_como_opciones: barra "Punto de vista" (mig. 097)
+                          'conta_imss', 'conta_imss_subir', 'conta_imss_asignar', 'conta_imss_anular', 'conta_imss_recalcular', 'conta_isn_guardar',
+                          'conta_finiquitos', 'conta_finiquito_guardar', 'conta_finiquito_anular', 'conta_finiquito_descartar', 'conta_finiquitos_mes', 'ver_como_opciones']);   // ver_como_opciones: barra "Punto de vista" (mig. 097)
 const ss = { get(k) { try { return sessionStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { sessionStorage.setItem(k, v); } catch (e) {} }, del(k) { try { sessionStorage.removeItem(k); } catch (e) {} } };
 const uiInicial = () => ({ excTodas: false, q: '', soloSaldo: true, orden: 'abierto', base: null, factSolo: false, mesIng: null, mesCor: null, diasFiltro: 'revisar',
                            concBranch: null, concEstado: null, concTec: false, concDias: 14, concTiendas: [], efeOrden: 'semana',
                            resMes: null, resDest: 'consolidado', resVista: 'una', resDet: null,
                            facMes: null, facFiltro: 'todas', facQ: '', facAbiertos: {}, facSel: {}, facDet: null, facForm: null, facCtx: null, facError: null, facGuardando: false,
                            bonMes: null, bonForm: null, bonError: null, bonGuardando: false, bonCierre: null, bonPend: null, bonExportando: false,
-                           imssMes: null, imssTipo: 'mensual', imssIsn: null, imssIsnMes: null, imssSub: null, imssError: null, imssAvisos: null, imssModal: null });
+                           imssMes: null, imssTipo: 'mensual', imssIsn: null, imssIsnMes: null, imssSub: null, imssError: null, imssAvisos: null, imssModal: null,
+                           finMes: null, finSel: {}, finForm: null, finModal: null });
 const subInicial = () => ({ items: [], leyendo: false, enviando: false, detener: false, lote: null, empresa: null, hechos: 0, total: 0, error: null, filtro: 'todos',
                             hist: null, histCargando: false, histErr: null, histEstado: 'todos', histQ: '', histT: null, sec: 0 });
 const S = { token: ss.get('lem_tok') || null, usuario: '', inicio: null, empresa: null, cache: new Map(), vez: 0, epoca: 0, ultima: Date.now(), motivo: '', tiendas: [], deb: null, ui: uiInicial(), sub: subInicial(), toastT: null };
@@ -267,7 +269,8 @@ const ICONS = { home: '<path d="M3 12L12 4l9 8M5 10v10h4v-6h6v6h4V10"/>', chart:
   receipt: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h4"/>', chevronD: '<path d="M6 9l6 6 6-6"/>',
   bono: '<circle cx="12" cy="9" r="6"/><path d="M8.5 14.2L7 22l5-3 5 3-1.5-7.8"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16v4zM13.5 6.5l4 4"/>',
   download: '<path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/>',
-  imss: '<path d="M12 3l8 3v6c0 4.6-3.3 8-8 9-4.7-1-8-4.4-8-9V6z"/><path d="M12 8.5v7M8.5 12h7"/>' };
+  imss: '<path d="M12 3l8 3v6c0 4.6-3.3 8-8 9-4.7-1-8-4.4-8-9V6z"/><path d="M12 8.5v7M8.5 12h7"/>',
+  fin: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9.5 14.5h6"/>' };
 const icon = (n, s) => '<svg width="' + (s || 16) + '" height="' + (s || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0" aria-hidden="true">' + (ICONS[n] || '') + '</svg>';
 
 /* ── Sesión: solo mientras la pestaña está abierta y con cierre por inactividad ── */
@@ -436,11 +439,11 @@ function pintarShell() {
     '<main class="main"><div class="scroll" id="scroll"><div id="vista"></div></div></main></div>';
 }
 function pintarNav(r) {
-  const items = [['inicio', 'home', 'Inicio'], ['resultados', 'file', 'Estado de resultados'], ['facturas', 'receipt', 'Facturas'], ['subir', 'upload', 'Subir XML'], ['debemos', 'money', 'Cuánto debemos'], ['ingresos', 'chart', 'Ingresos'], ['bonos', 'bono', 'Bonos'], ['imss', 'imss', 'IMSS'], ['cortes', 'cash', 'Cortes de caja'], ['efectivo', 'file', 'Efectivo (espejo)']];
+  const items = [['inicio', 'home', 'Inicio'], ['resultados', 'file', 'Estado de resultados'], ['facturas', 'receipt', 'Facturas'], ['subir', 'upload', 'Subir XML'], ['debemos', 'money', 'Cuánto debemos'], ['ingresos', 'chart', 'Ingresos'], ['bonos', 'bono', 'Bonos'], ['imss', 'imss', 'IMSS'], ['finiquitos', 'fin', 'Finiquitos'], ['cortes', 'cash', 'Cortes de caja'], ['efectivo', 'file', 'Efectivo (espejo)']];
   const n = $('nav'); if (!n) return;
   const act = r === 'conciliacion' ? 'cortes' : r;   // la conciliación es una pestaña de Cortes de caja
-  // el IMSS trae datos por persona: la base se lo niega al rol consulta (mig. 162), así que tampoco se le ofrece en el menú
-  n.innerHTML = items.filter(([k]) => k !== 'imss' || !soloLectura()).map(([k, ic, t]) => '<a class="nav-item' + (act === k ? ' active' : '') + '" href="#' + k + '"' + (act === k ? ' aria-current="page"' : '') + '>' + icon(ic) + '<span>' + t + '</span></a>').join('') +
+  // el IMSS trae datos por persona y un finiquito casi siempre es de una sola: la base se los niega al rol consulta (mig. 162 y 167), así que tampoco se le ofrecen en el menú
+  n.innerHTML = items.filter(([k]) => (k !== 'imss' && k !== 'finiquitos') || !soloLectura()).map(([k, ic, t]) => '<a class="nav-item' + (act === k ? ' active' : '') + '" href="#' + k + '"' + (act === k ? ' aria-current="page"' : '') + '>' + icon(ic) + '<span>' + t + '</span></a>').join('') +
     '<div class="nav-item soon-item">' + icon('lock') + '<span>Cierre del mes</span><span class="soon">F2</span></div>';
 }
 function topbar(t, sub, acciones) { return '<header class="topbar"><div class="min-w-0"><h1>' + t + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (acciones ? '<div class="acciones flex items-center gap-2 flex-wrap">' + acciones + '</div>' : '') + '</header>'; }
@@ -460,7 +463,7 @@ function cargando(t, sub) { pon(topbar(t, sub) + '<div class="p-8"><div class="m
 /* ── Rutas: #inicio · #resultados[/AAAA-MM] · #facturas[/AAAA-MM] · #subir · #debemos · #debemos/<clave> · #ingresos · #cortes · #cortes/<branch_id> ·
    #conciliacion[/semana/AAAA-SS | /motor/AAAA-MM[/branch_id] | /resumen | /falta | /cambios] · #efectivo[/AAAA-MM | /historico/<pestaña>] ·
    #bonos[/AAAA-MM de pago[/bono | /despensa[/branch_id]]] · #imss[/AAAA-MM de la cédula] ── */
-const RUTAS = { inicio: vInicio, resultados: vResultados, facturas: vFacturas, subir: vSubir, debemos: vDebemos, ingresos: vIngresos, cortes: vCortes, conciliacion: vConciliacion, efectivo: vEfectivo, bonos: vBonos, imss: vImss };
+const RUTAS = { inicio: vInicio, resultados: vResultados, facturas: vFacturas, subir: vSubir, debemos: vDebemos, ingresos: vIngresos, cortes: vCortes, conciliacion: vConciliacion, efectivo: vEfectivo, bonos: vBonos, imss: vImss, finiquitos: vFiniquitos };
 function ruta() {
   let h = (location.hash || '').replace(/^#/, ''); try { h = decodeURIComponent(h); } catch (e) {}
   const i = h.indexOf('/'); const r = i < 0 ? h : h.slice(0, i); const arg = i < 0 ? null : (h.slice(i + 1) || null);
@@ -2418,6 +2421,173 @@ function imssAccion(k, arg) {
   else if (k === 'imssIsnOk') isnImssOk();
 }
 
+/* ═══ Finiquitos (mig. 167): se registran por tienda o centro, tomados del control de efectivo copiado o a mano. Solo administración y contabilidad.
+   El portal nunca enseña la descripción del renglón de caja (trae el nombre de la persona): se reconoce por fecha, monto y sucursal.
+   Ruta: #finiquitos[/AAAA-MM] (el mes en que se pagaron). */
+const FIN_DESDE = '2026-07';
+function olvidarFin() { Array.from(S.cache.keys()).forEach(k => { if (k.indexOf('conta_finiquitos|') === 0) S.cache.delete(k); }); }
+function formFin() { if (!S.ui.finForm) S.ui.finForm = { fecha: '', monto: '', branch_id: '', forma: 'transferencia', nota: '' }; return S.ui.finForm; }
+function sucFin(d, b) { const o = (d.opciones || []).find(x => String(x.branch_id) === String(b)); return o ? tiendaCorta(o.sucursal) : (b == null || b === '' ? '—' : 'Sucursal ' + b); }
+function opsFin(d, sel) {
+  return '<option value="">Elige…</option>' + (d.opciones || []).map(o => '<option value="' + esc(o.branch_id) + '"' + (String(o.branch_id) === String(sel == null ? '' : sel) ? ' selected' : '') + '>' +
+    esc(tiendaCorta(o.sucursal)) + (o.tipo === 'centro' ? ' (centro)' : '') + '</option>').join('');
+}
+async function vFiniquitos(arg, vez) {
+  const pedido = /^\d{4}-\d{2}$/.test(arg || '') ? arg : S.ui.finMes;
+  cargando('Finiquitos', pedido ? 'pagados en ' + mesLargo(pedido).toLowerCase() : 'el mes pasado');
+  const d = await traer('conta_finiquitos', pedido ? { mes: pedido } : {}); if (vez !== S.vez) return;
+  if (!/^\d{4}-\d{2}$/.test(String(d.mes || ''))) throw new Error('El servidor respondió sin el mes de los finiquitos.');
+  if (pedido !== d.mes) guardarEnMemoria('conta_finiquitos', { mes: d.mes }, d);
+  if (S.ui.finMes !== d.mes) { S.ui.finSel = {}; S.ui.finForm = null; }
+  if (S.ui.finModal && S.ui.finModal.mes !== d.mes) S.ui.finModal = null;
+  S.ui.finMes = d.mes; S.fin = d;
+  pon(pantallaFin(d)); pintarModalFin();
+}
+function pantallaFin(d) {
+  const hoy = String(S.inicio.hoy || ''), hoyMes = hoy.slice(0, 7) || d.mes, mesTxt = mesLargo(d.mes).toLowerCase();
+  const P = d.propuestas || [], R = d.registrados || [], X = d.descartadas || [], T = d.por_sucursal || [], comp = d.completo || {}, fijo = !!d.cerrado || !!comp.si;
+  const prev = mesMas(d.mes, -1), sig = mesMas(d.mes, 1), quien = (u) => esc(String(u || '').split('@')[0]);
+  let h = topbar('Finiquitos', esc(S.inicio.empresa || '') + ' · pagados en ' + mesTxt,
+    selMes('ir', d.mes, rangoMeses(FIN_DESDE, hoyMes), prev >= FIN_DESDE ? prev : null, sig <= hoyMes ? sig : null, m => 'finiquitos/' + m) + btnActualizar()) + '<div class="p-8">';
+  if (d.cerrado) h += '<div class="banner banner-amber"><b>El Estado de resultados de ' + mesTxt + ' ya está cerrado.</b> Sus finiquitos no se pueden cambiar sin reabrirlo.</div>';
+  else if (comp.si) h += '<div class="banner banner-lem flex items-center justify-between gap-3 flex-wrap"><span><b>Finiquitos de ' + mesTxt + ' dados por completos.</b> ' + quien(comp.por) + ' · ' + instante(comp.en) +
+    ' · ' + entero(comp.finiquitos) + (N(comp.finiquitos) === 1 ? ' finiquito' : ' finiquitos') + ' · ' + pesos(comp.total) + '</span><button class="btn btn-secondary" data-act="finReabrir">Reabrir el mes</button></div>';
+  const enEf = R.filter(x => x.forma_pago !== 'transferencia'), enTr = R.filter(x => x.forma_pago === 'transferencia'), suma = (a) => a.reduce((t, x) => t + N(x.monto), 0);
+  h += '<div class="grid grid-4 mb-6">' + stat('Finiquitos de ' + mesTxt, pesos(d.total), entero(R.length) + (R.length === 1 ? ' registrado' : ' registrados')) +
+    stat('Por registrar', entero(P.length), P.length ? 'renglones del control de efectivo' : 'nada pendiente del control de efectivo', P.length ? 'var(--ambar)' : null) +
+    stat('En efectivo', pesos(suma(enEf)), entero(enEf.length) + (enEf.length === 1 ? ' finiquito' : ' finiquitos')) +
+    stat('Por transferencia', pesos(suma(enTr)), entero(enTr.length) + (enTr.length === 1 ? ' finiquito' : ' finiquitos')) + '</div>';
+  // lo que trae el control de efectivo copiado y falta registrar
+  if (P.length) {
+    const t = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Fecha') + th('Monto', 1) + th('Tienda o centro') + th('') + '</tr></thead><tbody>' + P.map(p => {
+      const sel = Object.prototype.hasOwnProperty.call(S.ui.finSel || {}, p.llave) ? S.ui.finSel[p.llave] : p.branch_id;
+      return '<tr><td class="nowrap">' + fecha(p.fecha) + (p.mes_libro && p.mes_libro !== d.mes ? ' <span class="badge b-ambar">en el libro de ' + esc(mesLargo(p.mes_libro).toLowerCase()) + '</span>' : '') + '</td>' +
+        '<td class="text-right num font-semibold">' + pesos(p.monto) + '</td>' +
+        '<td class="nowrap">' + (fijo ? esc(sucFin(d, p.branch_id)) : '<select class="sel" data-chg="finSuc" data-k="' + esc(p.llave) + '" aria-label="Tienda o centro del finiquito del ' + fecha(p.fecha) + '">' + opsFin(d, sel) + '</select>') +
+          (p.branch_id == null ? ' <span class="badge b-ambar">sin sucursal reconocida</span>' : '') + '</td>' +
+        '<td class="nowrap text-right">' + (fijo ? '' : '<button class="btn btn-primary" data-act="finRegistrar" data-arg="' + esc(p.llave) + '">Registrar</button> <button class="btn btn-ghost" data-act="finDescartar" data-arg="' + esc(p.llave) + '">No es finiquito</button>') + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+    h += card('Del control de efectivo · ' + entero(P.length) + ' por registrar', 'Renglones de finiquito del control de efectivo copiado con fecha de ' + mesTxt + '. El portal no enseña su descripción: reconócelos por fecha, monto y sucursal en tu Excel. Confirma la tienda y regístralo, o márcalo si no es un finiquito.', t);
+  } else h += '<div class="msg-card shadow-card mb-6">' + (N((d.caja || {}).renglones) ? 'Ya no queda ningún renglón de finiquito del control de efectivo por registrar en ' + mesTxt + '.'
+    : 'El control de efectivo copiado no trae renglones de finiquito con fecha de ' + mesTxt + '.') + '</div>';
+  // registrados
+  const tr = '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Pagado el') + th('Tienda o centro') + th('Monto', 1) + th('Forma de pago') + th('De dónde salió') + th('Nota') + th('Registró') + th('') + '</tr></thead><tbody>' +
+    (R.length ? R.map(x => '<tr><td class="nowrap">' + fecha(x.fecha_pago) + '</td><td class="nowrap">' + esc(sucFin(d, x.branch_id)) + '</td><td class="text-right num font-semibold">' + pesos(x.monto) + '</td>' +
+        '<td>' + (x.forma_pago === 'transferencia' ? 'Transferencia' : 'Efectivo') + '</td>' +
+        '<td class="nowrap">' + (x.origen === 'caja' ? 'Control de efectivo' + (x.en_caja === false ? ' <span class="badge b-ambar">su renglón ya no está en la caja</span>' : '') : 'A mano') + '</td>' +
+        '<td class="text-xs" style="white-space:normal;max-width:260px">' + esc(x.nota || '') + '</td><td class="text-xs nowrap">' + quien(x.capturado_por) + ' · ' + instante(x.creado_en) + '</td>' +
+        '<td class="text-right">' + (fijo ? '' : '<button class="btn btn-ghost" data-act="finAnular" data-arg="' + esc(x.finiquito_id) + '">Anular</button>') + '</td></tr>').join('')
+      : '<tr><td colspan="8" class="text-center text-gray-500" style="padding:18px">Todavía no hay finiquitos registrados en ' + mesTxt + '.</td></tr>') + '</tbody></table></div>';
+  h += card('Registrados · ' + pesos(d.total), 'Lo que cuenta como finiquitos pagados en ' + mesTxt + ', por tienda o centro.', tr);
+  if (T.length) h += card('Por tienda', null, '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Tienda o centro') + th('Finiquitos', 1) + th('Total', 1) + '</tr></thead><tbody>' +
+    T.map(x => '<tr><td class="nowrap">' + esc(tiendaCorta(x.sucursal)) + (x.tipo === 'centro' ? ' <span class="badge b-gris">centro</span>' : '') + '</td><td class="text-right num">' + entero(x.finiquitos) + '</td><td class="text-right num font-semibold">' + pesos(x.total) + '</td></tr>').join('') +
+    '</tbody></table></div>');
+  if (!fijo) {
+    // a mano: lo que no pasó por la caja
+    const f = formFin(), y = Number(d.mes.slice(0, 4)), mo = Number(d.mes.slice(5, 7)), ult = d.mes + '-' + String(new Date(Date.UTC(y, mo, 0)).getUTCDate()).padStart(2, '0'), max = hoy && hoy < ult ? hoy : ult;
+    h += card('Registrar uno a mano', 'Para un finiquito que no pasó por el control de efectivo, por ejemplo uno pagado por transferencia.',
+      '<div class="card-body flex items-end gap-3 flex-wrap">' +
+      '<label class="text-13">Fecha de pago<input type="date" class="inp" style="display:block;margin-top:4px" data-inp="finFecha" min="' + esc(d.mes) + '-01" max="' + esc(max) + '" value="' + esc(f.fecha || '') + '"></label>' +
+      '<label class="text-13">Monto<input class="inp num" style="display:block;margin-top:4px;width:130px" inputmode="decimal" placeholder="0.00" maxlength="12" data-inp="finMonto" value="' + esc(f.monto || '') + '"></label>' +
+      '<label class="text-13">Tienda o centro<select class="sel" style="display:block;margin-top:4px" data-chg="finFSuc">' + opsFin(d, f.branch_id) + '</select></label>' +
+      '<label class="text-13">Forma de pago<select class="sel" style="display:block;margin-top:4px" data-chg="finFForma"><option value="transferencia"' + (f.forma !== 'efectivo' ? ' selected' : '') + '>Transferencia</option><option value="efectivo"' + (f.forma === 'efectivo' ? ' selected' : '') + '>Efectivo</option></select></label>' +
+      '<label class="text-13" style="flex:1;min-width:180px">Nota (opcional)<input class="inp w-full" style="display:block;margin-top:4px" maxlength="200" data-inp="finNota" value="' + esc(f.nota || '') + '"></label>' +
+      '<button class="btn btn-primary" data-act="finManual">Registrar</button></div>');
+    h += '<div class="msg-card shadow-card mb-6 flex items-center justify-between gap-3 flex-wrap"><span>' + (P.length ? 'Cuando registres o descartes los ' + entero(P.length) + ' renglones pendientes, podrás dar ' + mesTxt + ' por completo.'
+      : 'Si ya están todos los finiquitos de ' + mesTxt + ' (aunque no haya ninguno), da el mes por completo.') + '</span><button class="btn btn-secondary" data-act="finCompletar"' + (P.length ? ' disabled' : '') + '>Dar el mes por completo</button></div>';
+  }
+  if (X.length) h += card('Descartados · ' + entero(X.length), 'Renglones del control de efectivo que alguien marcó como "no es un finiquito".',
+    '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Fecha') + th('Monto', 1) + th('Por qué') + th('Quién') + th('') + '</tr></thead><tbody>' +
+    X.map(x => '<tr><td class="nowrap">' + fecha(x.fecha) + '</td><td class="text-right num">' + pesos(x.monto) + '</td><td class="text-xs" style="white-space:normal;max-width:320px">' + esc(x.motivo || '') + '</td>' +
+      '<td class="text-xs nowrap">' + quien(x.por) + ' · ' + instante(x.en) + '</td><td class="text-right">' + (fijo ? '' : '<button class="btn btn-ghost" data-act="finRestaurar" data-arg="' + esc(x.llave) + '">Restaurar</button>') + '</td></tr>').join('') +
+    '</tbody></table></div>');
+  return h + '<p class="text-11 text-gray-500 mt-5 leading-relaxed">Cada finiquito cuenta en el mes en que se pagó. Por ahora solo se registran aquí: el renglón Finiquitos del Estado de resultados los tomará de esta pantalla en la siguiente entrega. ' +
+    'Los del control de efectivo se toman de la copia que el portal hace de tu Excel; si ahí cambias la fecha, el monto o la sucursal de uno ya registrado, aquí se avisa. Nada se borra: anular o descartar deja su rastro.</p></div>';
+}
+function modalFin(d) {
+  const m = S.ui.finModal; if (!m || !d) return '';
+  const pie = (txt) => (m.error ? '<div class="banner banner-red mt-3" role="alert" style="margin-bottom:0">' + esc(m.error) + '</div>' : '') +
+    '<div class="flex gap-2 mt-3 flex-wrap"><button class="btn btn-primary" data-act="finOk"' + (m.guardando ? ' disabled' : '') + '>' + (m.guardando ? 'Guardando…' : txt) + '</button><button class="btn btn-ghost" data-act="finNo">Cancelar</button></div></div>';
+  const kv = (k, v, cls) => '<div class="kv"><div class="k">' + k + '</div><div class="v' + (cls ? ' ' + cls : '') + '">' + v + '</div></div>';
+  const mesTxt = mesLargo(d.mes).toLowerCase(), tit = (t) => '<div class="text-13 font-medium mb-2">' + t + '</div>', nota = (t) => '<p class="text-13 text-gray-500 mt-2">' + t + '</p>';
+  const motivo = (lab, ph) => '<label class="text-13 mt-3" style="display:block">' + lab + '<textarea class="inp w-full mt-1" rows="2" maxlength="200" data-inp="finMotivo" placeholder="' + ph + '">' + esc(m.motivo || '') + '</textarea></label>';
+  let h = '<div class="fac-form" style="border-top:none;padding-top:0;margin-top:0" role="dialog" aria-modal="true" aria-label="Finiquitos">';
+  if (m.tipo === 'registrar' || m.tipo === 'descartar') {
+    const p = (d.propuestas || []).find(x => x.llave === m.llave); if (!p) return '';
+    if (m.tipo === 'registrar') return h + tit('Registrar el finiquito') + kv('Pagado el', fecha(p.fecha)) + kv('Monto', pesos(p.monto), 'num font-semibold') + kv('Tienda o centro', esc(sucFin(d, m.branch_id))) +
+      kv('Forma de pago', 'Efectivo (control de efectivo)') + nota('Se carga a ' + esc(sucFin(d, m.branch_id)) + ' como finiquito pagado en ' + mesLargo(String(p.fecha).slice(0, 7)).toLowerCase() + '.') + pie('Sí, registrar');
+    return h + tit('Este renglón no es un finiquito') + kv('Fecha', fecha(p.fecha)) + kv('Monto', pesos(p.monto), 'num font-semibold') + nota('Deja de salir como pendiente. Se puede restaurar después.') +
+      motivo('Por qué no es un finiquito', 'Por ejemplo: es un préstamo, es nómina') + pie('Sí, no es finiquito');
+  }
+  if (m.tipo === 'manual') return h + tit('Registrar el finiquito') + kv('Pagado el', fecha(m.fecha)) + kv('Monto', pesos(m.monto), 'num font-semibold') + kv('Tienda o centro', esc(sucFin(d, m.branch_id))) +
+    kv('Forma de pago', m.forma === 'efectivo' ? 'Efectivo' : 'Transferencia') + (m.nota ? kv('Nota', esc(m.nota)) : '') +
+    nota('Se carga a ' + esc(sucFin(d, m.branch_id)) + ' como finiquito pagado en ' + mesLargo(String(m.fecha).slice(0, 7)).toLowerCase() + '. Revisa que no sea uno de los del control de efectivo, para no contarlo dos veces.') + pie('Sí, registrar');
+  if (m.tipo === 'anular') {
+    const x = (d.registrados || []).find(y => String(y.finiquito_id) === String(m.id)); if (!x) return '';
+    return h + tit('Anular el finiquito') + kv('Pagado el', fecha(x.fecha_pago)) + kv('Monto', pesos(x.monto), 'num font-semibold') + kv('Tienda o centro', esc(sucFin(d, x.branch_id))) +
+      nota('Deja de contar en ' + mesTxt + (x.origen === 'caja' ? ' y su renglón del control de efectivo vuelve a salir como pendiente' : '') + '. Queda en el historial.') + motivo('Motivo', 'Por qué se anula') + pie('Sí, anular');
+  }
+  if (m.tipo === 'restaurar') {
+    const x = (d.descartadas || []).find(y => y.llave === m.llave); if (!x) return '';
+    return h + tit('Restaurar el renglón') + kv('Fecha', fecha(x.fecha)) + kv('Monto', pesos(x.monto), 'num font-semibold') + nota('Vuelve a salir como pendiente de registrar.') + pie('Sí, restaurar');
+  }
+  if (m.tipo === 'completar') return h + tit('Dar por completos los finiquitos de ' + mesTxt) + kv('Finiquitos', entero((d.registrados || []).length), 'num') + kv('Total', pesos(d.total), 'num font-semibold') +
+    nota('Quiere decir que ya están todos. Después no se podrán registrar ni anular finiquitos de ' + mesTxt + ' sin reabrir el mes.') + pie('Sí, está completo');
+  if (m.tipo === 'reabrir') return h + tit('Reabrir los finiquitos de ' + mesTxt) + nota('Se podrán registrar, anular y descartar otra vez. Lo registrado no cambia.') + pie('Sí, reabrir');
+  return '';
+}
+function pintarModalFin() { modalBon(S.ui.finModal && ruta().r === 'finiquitos' ? modalFin(S.fin) : ''); }
+async function finOk() {
+  const m = S.ui.finModal, d = S.fin; if (!m || !d || m.guardando) return;
+  let acc, datos, msg, corto = null;
+  if (m.tipo === 'registrar') { acc = 'conta_finiquito_guardar'; datos = { llave: m.llave, mes: d.mes, branch_id: m.branch_id }; msg = 'Finiquito registrado en ' + sucFin(d, m.branch_id) + '.'; }
+  else if (m.tipo === 'manual') { acc = 'conta_finiquito_guardar'; datos = { fecha_pago: m.fecha, monto: m.monto, branch_id: m.branch_id, forma_pago: m.forma, nota: m.nota || '' }; msg = 'Finiquito registrado en ' + sucFin(d, m.branch_id) + '.'; }
+  else if (m.tipo === 'anular') { if (String(m.motivo || '').trim().length < 3) corto = 'Escribe por qué se anula.'; acc = 'conta_finiquito_anular'; datos = { finiquito_id: m.id, motivo: m.motivo }; msg = 'Finiquito anulado.'; }
+  else if (m.tipo === 'descartar') { if (String(m.motivo || '').trim().length < 3) corto = 'Escribe por qué no es un finiquito.'; acc = 'conta_finiquito_descartar'; datos = { llave: m.llave, mes: d.mes, motivo: m.motivo }; msg = 'Renglón descartado.'; }
+  else if (m.tipo === 'restaurar') { acc = 'conta_finiquito_descartar'; datos = { llave: m.llave, mes: d.mes, restaurar: true }; msg = 'Renglón restaurado.'; }
+  else if (m.tipo === 'completar' || m.tipo === 'reabrir') { acc = 'conta_finiquitos_mes'; datos = { mes: d.mes, accion: m.tipo }; msg = m.tipo === 'completar' ? 'Finiquitos de ' + mesLargo(d.mes).toLowerCase() + ' dados por completos.' : 'Mes reabierto.'; }
+  else return;
+  if (corto) { m.error = corto; pintarModalFin(); return; }
+  const ep = S.epoca; m.guardando = true; m.error = null; pintarModalFin();
+  try {
+    await api(acc, datos); if (ep !== S.epoca) return;
+    olvidarFin(); S.ui.finModal = null; if (m.llave && S.ui.finSel) delete S.ui.finSel[m.llave]; modalBon(''); toast(msg);
+    if (m.tipo === 'manual') { S.ui.finForm = null; if (ruta().r === 'finiquitos') ir('finiquitos/' + String(m.fecha).slice(0, 7)); }
+    else if (ruta().r === 'finiquitos') router();
+  } catch (e) {
+    if (ep !== S.epoca || (e && e.obsoleto)) return;
+    if (e && e.sesion) { errorEnVista(e); return; }
+    m.guardando = false; m.error = errorImss(e); pintarModalFin();
+  }
+}
+function finAccion(k, arg) {
+  const d = S.fin; if (!d) return;
+  const fijo = !!d.cerrado || !!(d.completo || {}).si, abre = (o) => { S.ui.finModal = Object.assign({ mes: d.mes, guardando: false, error: null, motivo: '' }, o); pintarModalFin(); };
+  if (k === 'finNo') { S.ui.finModal = null; modalBon(''); }
+  else if (k === 'finOk') finOk();
+  else if (k === 'finReabrir') { if (!d.cerrado && (d.completo || {}).si) abre({ tipo: 'reabrir' }); }
+  else if (fijo) return;
+  else if (k === 'finRegistrar') {
+    const p = (d.propuestas || []).find(x => x.llave === arg); if (!p) return;
+    const b = Object.prototype.hasOwnProperty.call(S.ui.finSel || {}, arg) ? S.ui.finSel[arg] : p.branch_id;
+    if (b == null || b === '') { toast('Elige la tienda o el centro al que va ese finiquito.'); return; }
+    abre({ tipo: 'registrar', llave: arg, branch_id: b });
+  }
+  else if (k === 'finDescartar') { if ((d.propuestas || []).some(x => x.llave === arg)) abre({ tipo: 'descartar', llave: arg }); }
+  else if (k === 'finRestaurar') { if ((d.descartadas || []).some(x => x.llave === arg)) abre({ tipo: 'restaurar', llave: arg }); }
+  else if (k === 'finAnular') { if ((d.registrados || []).some(x => String(x.finiquito_id) === String(arg))) abre({ tipo: 'anular', id: arg }); }
+  else if (k === 'finCompletar') { if (!(d.propuestas || []).length) abre({ tipo: 'completar' }); }
+  else if (k === 'finManual') {
+    const f = formFin(), monto = String(f.monto || '').replace(/[$,\s]/g, '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f.fecha || '')) { toast('Escribe la fecha en que se pagó.'); return; }
+    if (S.inicio.hoy && f.fecha > S.inicio.hoy) { toast('La fecha de pago no puede ser futura.'); return; }
+    if (f.fecha < FIN_DESDE + '-01') { toast('Los finiquitos se llevan desde julio de 2026.'); return; }
+    if (!/^\d{1,6}(\.\d{1,2})?$/.test(monto) || Number(monto) <= 0) { toast('Escribe el monto, mayor que cero (por ejemplo 3533.00).'); return; }
+    if (!/^\d{1,4}$/.test(String(f.branch_id || ''))) { toast('Elige la tienda o el centro.'); return; }
+    abre({ tipo: 'manual', fecha: f.fecha, monto, branch_id: Number(f.branch_id), forma: f.forma === 'efectivo' ? 'efectivo' : 'transferencia', nota: String(f.nota || '').trim().slice(0, 200) });
+  }
+}
+
 document.addEventListener('dragover', ev => { if (!S.inicio || ruta().r !== 'imss') return; ev.preventDefault(); const z = $('zonaImss'); if (z && !z.classList.contains('apagada')) z.classList.add('sobre'); });
 document.addEventListener('dragleave', ev => { const z = $('zonaImss'); if (z && (!ev.relatedTarget || !document.documentElement.contains(ev.relatedTarget))) z.classList.remove('sobre'); });
 document.addEventListener('drop', ev => {
@@ -2454,6 +2624,9 @@ document.addEventListener('change', ev => {
   else if (k === 'efeMes') { if (/^(\d{4}-\d{2}|historico\/[a-z0-9 ._-]{1,60})$/.test(el.value)) ir('efectivo/' + el.value); }
   else if (k === 'imssArchivo') { const f = Array.from(el.files || [])[0]; el.value = ''; elegirImss(f); }
   else if (k === 'imssSuc') abrirAsignarImss(el.getAttribute('data-k'), el.value);
+  else if (k === 'finSuc') { S.ui.finSel = S.ui.finSel || {}; S.ui.finSel[el.getAttribute('data-k')] = /^\d{1,4}$/.test(el.value) ? Number(el.value) : null; }
+  else if (k === 'finFSuc') formFin().branch_id = el.value;
+  else if (k === 'finFForma') formFin().forma = el.value === 'efectivo' ? 'efectivo' : 'transferencia';
 });
 document.addEventListener('input', ev => {
   const el = ev.target.closest('[data-inp]'); if (!el) return;
@@ -2465,6 +2638,10 @@ document.addEventListener('input', ev => {
   else if (el.getAttribute('data-inp') === 'bonCMotivo') { if (S.ui.bonCierre) S.ui.bonCierre.motivo = el.value || ''; }
   else if (el.getAttribute('data-inp') === 'imssMotivo') { if (S.ui.imssModal) S.ui.imssModal.motivo = el.value || ''; }
   else if (el.getAttribute('data-inp') === 'imssIsn') S.ui.imssIsn = el.value || '';
+  else if (el.getAttribute('data-inp') === 'finMotivo') { if (S.ui.finModal) S.ui.finModal.motivo = el.value || ''; }
+  else if (el.getAttribute('data-inp') === 'finFecha') formFin().fecha = el.value || '';
+  else if (el.getAttribute('data-inp') === 'finMonto') formFin().monto = el.value || '';
+  else if (el.getAttribute('data-inp') === 'finNota') formFin().nota = el.value || '';
   else if (el.getAttribute('data-inp') === 'histQ') { S.sub.histQ = el.value || ''; clearTimeout(S.sub.histT); S.sub.histT = setTimeout(() => cargarHistorial(S.vez), 450); }
 });
 document.addEventListener('dragover', ev => { if (!S.inicio || ruta().r !== 'subir') return; ev.preventDefault(); const z = $('zona'); if (z && !z.classList.contains('apagada')) z.classList.add('sobre'); });
@@ -2478,6 +2655,7 @@ document.addEventListener('drop', ev => {
 function accion(k, arg) {
   if (/^(sub|hist)[A-Z]/.test(k)) { subAccion(k, arg); return; }
   if (/^imss[A-Z]/.test(k)) { imssAccion(k, arg); return; }
+  if (/^fin[A-Z]/.test(k)) { finAccion(k, arg); return; }
   if (k === 'salir') salir();
   else if (k === 'arrancar') arrancar();
   else if (k === 'actualizar') actualizar();
