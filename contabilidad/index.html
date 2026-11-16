@@ -1532,6 +1532,20 @@ async function pintarDetalleRes(d, vez) {
             (esIsn ? '' : tdP(f.imss_mensual) + tdP(f.imss_bimestral)) + '<td class="text-xs" style="white-space:normal;max-width:420px">' + esc(y.nota || '') + '</td></tr>'; }).join('')
         : '<tr><td colspan="' + (esIsn ? 3 : 5) + '" class="text-center text-gray-500" style="padding:18px">Sin movimientos en esta celda.</td></tr>') + '</tbody></table></div>' +
       '<p class="text-11 text-gray-500" style="padding:8px 16px 0">' + esc(det.nota || '') + '</p>';
+  } else if (det.tipo === 'finiquitos') {
+    // mig. 168: los finiquitos registrados de cada tienda; entran cuando el mes se da por completo. Por tienda, sin fechas ni personas
+    const fs = det.filas || [], o = det.origen || {};
+    const est = o.caja_cambio ? '<span class="badge b-ambar">el control de efectivo cambió después de dar el mes por completo</span>'
+      : o.entra ? '<span class="badge b-verde">mes dado por completo' + (o.completo_en ? ' · ' + instante(o.completo_en) : '') + '</span>'
+      : '<span class="badge b-ambar">el mes todavía no se da por completo</span>';
+    b = '<div class="card-body" style="padding-bottom:6px"><p class="text-sm">' + entero(o.registrados) + (N(o.registrados) === 1 ? ' finiquito registrado' : ' finiquitos registrados') + ' en ' + esc(mesLargo(d.mes).toLowerCase()) +
+      ': <b class="num">' + pesos(o.total) + '</b> (con los de Indirectos y Corporativo, que van en su nómina). ' + est + ' <a class="lnk" href="#finiquitos/' + esc(d.mes) + '">Ver en Finiquitos</a></p></div>' +
+      '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Tienda') + th('Monto', true) + th('Nota') + '</tr></thead><tbody>' +
+      (fs.length ? fs.map(y => '<tr><td class="nowrap">' + esc(tienda(y.branch_id)) + '</td>' +
+          '<td class="text-right num font-semibold">' + (y.completo ? pesos(y.monto) : '<span class="text-gray-400">—</span>' + (N(y.monto) ? '<div class="text-11 text-gray-400">parcial ' + pesos(y.monto) + '</div>' : '')) + '</td>' +
+          '<td class="text-xs" style="white-space:normal;max-width:420px">' + esc(y.nota || '') + '</td></tr>').join('')
+        : '<tr><td colspan="3" class="text-center text-gray-500" style="padding:18px">Sin finiquitos en esta celda.</td></tr>') + '</tbody></table></div>' +
+      '<p class="text-11 text-gray-500" style="padding:8px 16px 0">' + esc(det.nota || '') + '</p>';
   } else if (det.tipo === 'nomina_mensual') {
     // mig. 145 (11-nov-2026): bonos y despensa de cada tienda (archivo mensual de Alan), al mes en que se ganan; se pagan el mes siguiente
     const fs = det.filas || [];
@@ -2562,15 +2576,20 @@ function pantallaFin(d) {
   const hoy = String(S.inicio.hoy || ''), hoyMes = hoy.slice(0, 7) || d.mes, mesTxt = mesLargo(d.mes).toLowerCase();
   const P = d.propuestas || [], R = d.registrados || [], X = d.descartadas || [], T = d.por_sucursal || [], comp = d.completo || {}, fijo = !!d.cerrado || !!comp.si;
   const prev = mesMas(d.mes, -1), sig = mesMas(d.mes, 1), quien = (u) => esc(String(u || '').split('@')[0]);
+  const pl = d.pl || null;   // mig. 168: si el mes ya entra al Estado de resultados y si la caja cambió después de darlo por completo
   // un renglón del libro de este mes puede traer fecha de los primeros días del siguiente (su quinta semana): se dice
   const otraFecha = (f) => { const m = String(f || '').slice(0, 7); return /^\d{4}-\d{2}$/.test(m) && m !== d.mes ? ' <span class="badge b-gris">fecha de ' + esc(mesLargo(m).toLowerCase()) + '</span>' : ''; };
   let h = topbar('Finiquitos', esc(S.inicio.empresa || '') + ' · ' + mesTxt,
     selMes('ir', d.mes, rangoMeses(FIN_DESDE, hoyMes), prev >= FIN_DESDE ? prev : null, sig <= hoyMes ? sig : null, m => 'finiquitos/' + m) + btnActualizar()) + '<div class="p-8">';
   if (d.cerrado) h += '<div class="banner banner-amber"><b>El Estado de resultados de ' + mesTxt + ' ya está cerrado.</b> Sus finiquitos no se pueden cambiar sin reabrirlo.</div>';
   else if (comp.si) h += '<div class="banner banner-lem flex items-center justify-between gap-3 flex-wrap"><span><b>Finiquitos de ' + mesTxt + ' dados por completos.</b> ' + quien(comp.por) + ' · ' + instante(comp.en) +
-    ' · ' + entero(comp.finiquitos) + (N(comp.finiquitos) === 1 ? ' finiquito' : ' finiquitos') + ' · ' + pesos(comp.total) + '</span><button class="btn btn-secondary" data-act="finReabrir">Reabrir el mes</button></div>';
+    ' · ' + entero(comp.finiquitos) + (N(comp.finiquitos) === 1 ? ' finiquito' : ' finiquitos') + ' · ' + pesos(comp.total) +
+    (pl && pl.entra ? ' <span class="badge b-verde">ya entra al Estado de resultados</span>' : '') + '</span><button class="btn btn-secondary" data-act="finReabrir">Reabrir el mes</button></div>';
   const caja = d.caja || {}, enCurso = d.mes >= hoyMes;
-  if (comp.si && P.length) h += '<div class="banner banner-amber"><b>El control de efectivo trae ' + entero(P.length) + (P.length === 1 ? ' renglón nuevo' : ' renglones nuevos') + ' de finiquito.</b> Llegaron después de dar el mes por completo: reábrelo para registrarlos o descartarlos.</div>';
+  if (comp.si && !d.cerrado && pl && pl.caja_cambio) h += '<div class="banner banner-amber"><b>El control de efectivo de ' + mesTxt + ' cambió en sus renglones de finiquito después de dar el mes por completo.</b> ' +
+    (P.length ? 'Trae ' + entero(P.length) + (P.length === 1 ? ' renglón nuevo' : ' renglones nuevos') + ' por registrar o descartar. ' : '') +
+    'Mientras tanto, el Estado de resultados marca Finiquitos como incompleto: reabre el mes, revísalo contra tu Excel y vuelve a darlo por completo.</div>';
+  else if (comp.si && P.length) h += '<div class="banner banner-amber"><b>El control de efectivo trae ' + entero(P.length) + (P.length === 1 ? ' renglón nuevo' : ' renglones nuevos') + ' de finiquito.</b> Llegaron después de dar el mes por completo: reábrelo para registrarlos o descartarlos.</div>';
   if (caja.copiado === false) h += '<div class="banner banner-amber"><b>El control de efectivo de ' + mesTxt + ' no está copiado en el portal.</b> No hay con qué comparar: captura a mano los finiquitos de este mes.</div>';
   if (N(caja.sin_leer)) h += '<div class="banner banner-amber"><b>' + entero(caja.sin_leer) + (N(caja.sin_leer) === 1 ? ' renglón del control de efectivo menciona' : ' renglones del control de efectivo mencionan') + ' finiquito y el portal no pudo leerlo' + (N(caja.sin_leer) === 1 ? '' : 's') + '.</b> ' +
     'Le falta la fecha, el importe, o su fecha no es de este libro. Revísalo en tu Excel y, si es un finiquito, captúralo a mano.</div>';
@@ -2618,14 +2637,16 @@ function pantallaFin(d) {
       '<button class="btn btn-primary" data-act="finManual">Registrar</button></div>');
     h += '<div class="msg-card shadow-card mb-6 flex items-center justify-between gap-3 flex-wrap"><span>' + (enCurso ? mesLargo(d.mes) + ' todavía no termina: sus finiquitos se dan por completos cuando acabe el mes.'
       : P.length ? 'Cuando registres o descartes los ' + entero(P.length) + ' renglones pendientes, podrás dar ' + mesTxt + ' por completo.'
-      : 'Si ya están todos los finiquitos de ' + mesTxt + ' (aunque no haya ninguno), da el mes por completo.') + '</span><button class="btn btn-secondary" data-act="finCompletar"' + (P.length || enCurso ? ' disabled' : '') + '>Dar el mes por completo</button></div>';
+      : 'Si ya están todos los finiquitos de ' + mesTxt + ' (aunque no haya ninguno), da el mes por completo' + (pl ? ': con eso entran al Estado de resultados.' : '.')) + '</span><button class="btn btn-secondary" data-act="finCompletar"' + (P.length || enCurso ? ' disabled' : '') + '>Dar el mes por completo</button></div>';
   }
   if (X.length) h += card('Descartados · ' + entero(X.length), 'Renglones del control de efectivo que alguien marcó como "no es un finiquito".',
     '<div class="tabla"><table class="lem-table densa"><thead><tr>' + th('Fecha') + th('Monto', 1) + th('Por qué') + th('Quién') + th('') + '</tr></thead><tbody>' +
     X.map(x => '<tr><td class="nowrap">' + fecha(x.fecha) + '</td><td class="text-right num">' + pesos(x.monto) + '</td><td class="text-xs" style="white-space:normal;max-width:320px">' + esc(x.motivo || '') + '</td>' +
       '<td class="text-xs nowrap">' + quien(x.por) + ' · ' + instante(x.en) + '</td><td class="text-right">' + (fijo ? '' : '<button class="btn btn-ghost" data-act="finRestaurar" data-arg="' + esc(x.llave) + '">Restaurar</button>') + '</td></tr>').join('') +
     '</tbody></table></div>');
-  return h + '<p class="text-11 text-gray-500 mt-5 leading-relaxed">Cada finiquito cuenta en el mes de su libro de caja (el Excel o la hoja donde está), aunque su fecha sea de los primeros días del mes siguiente; el capturado a mano, en el mes de su fecha de pago. Por ahora solo se registran aquí: el renglón Finiquitos del Estado de resultados los tomará de esta pantalla en la siguiente entrega. ' +
+  return h + '<p class="text-11 text-gray-500 mt-5 leading-relaxed">Cada finiquito cuenta en el mes de su libro de caja (el Excel o la hoja donde está), aunque su fecha sea de los primeros días del mes siguiente; el capturado a mano, en el mes de su fecha de pago. ' +
+    (pl ? 'El renglón Finiquitos del Estado de resultados toma lo registrado aquí cuando el mes se da por completo; mientras no, sale incompleto. Los de Indirectos y Corporativo van dentro de su nómina. '
+        : 'Por ahora solo se registran aquí: el renglón Finiquitos del Estado de resultados los tomará de esta pantalla en la siguiente entrega. ') +
     'Los del control de efectivo se toman de la copia que el portal hace de tu Excel; si ahí cambias la fecha, el monto o la sucursal de uno ya registrado, aquí se avisa. Nada se borra: anular o descartar deja su rastro.</p></div>';
 }
 function modalFin(d) {
@@ -2657,8 +2678,8 @@ function modalFin(d) {
     return h + tit('Restaurar el renglón') + kv('Fecha', fecha(x.fecha)) + kv('Monto', pesos(x.monto), 'num font-semibold') + nota('Vuelve a salir como pendiente de registrar.') + pie('Sí, restaurar');
   }
   if (m.tipo === 'completar') return h + tit('Dar por completos los finiquitos de ' + mesTxt) + kv('Finiquitos', entero((d.registrados || []).length), 'num') + kv('Total', pesos(d.total), 'num font-semibold') +
-    nota('Quiere decir que ya están todos. Después no se podrán registrar ni anular finiquitos de ' + mesTxt + ' sin reabrir el mes.') + pie('Sí, está completo');
-  if (m.tipo === 'reabrir') return h + tit('Reabrir los finiquitos de ' + mesTxt) + nota('Se podrán registrar, anular y descartar otra vez. Lo registrado no cambia.') + pie('Sí, reabrir');
+    nota('Quiere decir que ya están todos' + (d.pl ? ': con eso entran al Estado de resultados de ' + mesTxt : '') + '. Después no se podrán registrar ni anular finiquitos de ' + mesTxt + ' sin reabrir el mes.') + pie('Sí, está completo');
+  if (m.tipo === 'reabrir') return h + tit('Reabrir los finiquitos de ' + mesTxt) + nota('Se podrán registrar, anular y descartar otra vez. Lo registrado no cambia.' + (d.pl ? ' Mientras el mes esté abierto, el Estado de resultados marca Finiquitos como incompleto.' : '')) + pie('Sí, reabrir');
   return '';
 }
 function pintarModalFin() { modalBon(S.ui.finModal && ruta().r === 'finiquitos' ? modalFin(S.fin) : ''); }
