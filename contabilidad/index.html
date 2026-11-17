@@ -1786,7 +1786,9 @@ function formFac(L, fs) {
     if (st.destino === 'prorrateo') {
       const cs = st.concepto ? [st.concepto] : actuales.filter(k => ((L.conceptos || []).find(c => c.clave === k) || {}).clase === 'pl');
       h += '<div class="text-xs text-gray-500 mt-2">' + (cs.length ? cs.map(k => { const c = (L.conceptos || []).find(x => x.clave === k) || {};
-        return esc(c.nombre || k) + ': ' + (c.prorrateo && c.prorrateo !== 'asegurados' ? 'se reparte por ' + esc(CRIT_FAC[c.prorrateo] || c.prorrateo) + ' entre las tiendas con venta en el mes' : '<span class="neg">no tiene criterio de prorrateo; elige otro concepto o una tienda</span>'); }).join('<br>') : 'Elige el concepto.') + '</div>';
+        return esc(c.nombre || k) + ': ' + (c.prorrateo && c.prorrateo !== 'asegurados' ? 'se reparte por ' + esc(CRIT_FAC[c.prorrateo] || c.prorrateo) + ' entre las tiendas con venta en el mes'
+          : rep && rep.repartible && actuales.includes(k) ? '<span class="warn">no se prorratean con una fórmula; se reparten con los importes del desglose de CDC.</span> Usa <button type="button" class="lnk" data-act="facDestino" data-arg="reparto" style="background:none;border:0;padding:0;font:inherit;font-weight:500;cursor:pointer">Repartir por importes</button>.'   // el servidor dijo que esta factura se reparte por importes (169)
+          : '<span class="neg">no tiene criterio de prorrateo; elige otro concepto o una tienda</span>'); }).join('<br>') : 'Elige el concepto.') + '</div>';
     }
   } else h += '<div class="text-xs text-gray-500 mt-2">Se anula tu corrección y la factura vuelve a lo que diga la regla general. La corrección anulada queda en el historial.</div>';
   h += '<div class="mt-3"><label class="text-13" for="facMotivo">Motivo <span class="text-gray-500" style="font-weight:400">(obligatorio: queda con tu nombre)</span></label><textarea id="facMotivo" class="inp w-full mt-1" rows="2" maxlength="300" data-inp="facMotivo" placeholder="Ej.: el ticket de GEPP dice Vallarta">' + esc(st.motivo || '') + '</textarea></div>';
