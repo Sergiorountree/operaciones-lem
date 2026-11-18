@@ -342,6 +342,7 @@ async function vSemaforo() {
   let d; try { d = await api('ven_semaforo', { anio: S.anio, mes: S.mes, branch_id: S.branch }); } catch (e) { if (e.codigo === 'no_liberado') { pon(topbar('Semáforo de ventas', mesLabel(), selMes()) + noLiberadoHtml()); return; } throw e; }
   S.sem = d; const vp = veParametros();
   let acts = selMes(); if (sucs.length > 1) acts += '<select class="sel" onchange="S.branch=Number(this.value);router()">' + sucs.map(s => '<option value="' + s.branch_id + '"' + (s.branch_id === S.branch ? ' selected' : '') + '>' + esc(s.nombre) + '</option>').join('') + '</select>';
+  if (vp) acts += '<button class="btn btn-secondary" onclick="excelSemaforo()" title="Baja esta tabla en Excel">⬇ Excel</button>';
   const hoy = (d.dias || []).find(x => x.hoy) || null; const ult = (d.dias || []).filter(x => x.real != null).slice(-1)[0] || null;
   let h = topbar('Semáforo · ' + esc(d.sucursal), mesLabel() + ' · corte ' + fmtFecha(d.corte) + (d.cerrada ? ' · <span style="color:#8C1F1B">sucursal cerrada (remodelación)</span>' : ''), acts) + '<div class="p-8">';
   if (d.provisional && vp) h += '<div class="banner banner-amber text-sm" style="color:#7A4B05">⚠️ Metas provisionales: los % de incremento de este mes son una copia y todavía no se confirman en Metas y parámetros.</div>';
@@ -406,7 +407,7 @@ async function vConsolidado() {
   const color = v => v == null ? 'sin_datos' : v >= 0 ? 'verde' : v >= N(d.tolerancia_amarillo) ? 'amarillo' : 'rojo';
   const red = tot(filas); const operaron = filas.filter(f => N(f.real_mtd) > 0); const redOp = tot(operaron); const criticas = filas.filter(f => f.alerta).length;
   const conIdx = filas.filter(f => f.indice_vs_red != null); const mejor = conIdx.slice().sort((a, b) => b.indice_vs_red - a.indice_vs_red)[0], peor = conIdx.slice().sort((a, b) => a.indice_vs_red - b.indice_vs_red)[0];
-  let h = topbar('Consolidado de sucursales', mesLabel() + ' · corte ' + fmtFecha(d.corte), selMes()) + '<div class="p-8">';
+  let h = topbar('Consolidado de sucursales', mesLabel() + ' · corte ' + fmtFecha(d.corte), selMes() + (vp ? '<button class="btn btn-secondary" onclick="excelPresupuestoRed(this)" title="Presupuesto de cada sucursal, día por día, en Excel">⬇ Presupuesto en Excel</button>' : '')) + '<div class="p-8">';
   if (d.provisional && vp) h += '<div class="banner banner-amber text-sm" style="color:#7A4B05">⚠️ Metas provisionales este mes (copia sin revisar). Confírmalas en Metas y parámetros antes de juzgar a nadie.</div>';
   if (vp && !d.liberado) h += '<div class="banner text-sm" style="background:var(--lem-light);border-color:var(--border);color:var(--lem-dark)">🔒 Este mes todavía no está liberado: los gerentes y el asesor no lo ven. Se libera desde <a href="#metas" style="color:inherit"><b>Metas y parámetros</b></a>.</div>';
   h += '<div class="grid grid-4 mb-6">' + stat('Objetivo mensual (red)', pesos0(red.objetivo)) + stat('Venta real al corte', pesos0(red.real_mtd), (red.var_mtd >= 0 ? '+' : '') + pesos0(red.var_mtd) + ' vs presupuesto ' + pesos0(red.presupuesto_mtd), color(red.var_mtd_pct) === 'verde' ? '#0E5A42' : color(red.var_mtd_pct) === 'amarillo' ? '#7A4B05' : '#8C1F1B') + stat('Variación % al corte', pct(red.var_mtd_pct), semHtml(color(red.var_mtd_pct), true)) + stat('Proyección fin de mes', pesos0(red.proyeccion), 'Progreso ' + Math.round(red.progreso * 100) + '% del presupuesto al corte', 'var(--lem)') + '</div>';
@@ -418,6 +419,72 @@ async function vConsolidado() {
   if (operaron.length < filas.length) h += '<div class="bg-white rounded-xl shadow-card p-5 mt-6"><div class="text-base font-medium mb-1">La red sin las sucursales cerradas</div><p class="text-sm text-gray-500 mb-3">Una sucursal cerrada (obra, remodelación) sigue cargando su meta y su presupuesto en el TOTAL RED. Aquí se ve la misma red contando solo las que sí operaron. Ninguna meta se modifica.</p><div class="grid grid-4">' + stat('Sin una sola venta en el mes', filas.length - operaron.length) + stat('Presupuesto MTD (operaron)', pesos0(redOp.presupuesto_mtd)) + stat('Variación % (operaron)', pct(redOp.var_mtd_pct), '', color(redOp.var_mtd_pct) === 'verde' ? '#0E5A42' : '#8C1F1B') + stat('Vs año pasado (operaron)', pct(redOp.var_ly_pct), '', redOp.var_ly_pct == null ? null : redOp.var_ly_pct >= 0 ? '#0E5A42' : '#8C1F1B') + '</div></div>';
   h += '<div class="text-11 text-gray-400 mt-5 leading-relaxed"><strong>Índice vs red</strong> = crecimiento de la sucursal contra el año pasado menos el crecimiento de toda la red: si llovió y caen todas, el índice dice quién cayó por su cuenta. <strong>Proyección</strong> = objetivo × (real ÷ presupuesto al corte). Venta sin IVA.</div>';
   pon(h + '</div>');
+}
+
+/* ── Presupuesto a Excel (18-nov-2026; solo admin y contabilidad): el semáforo de una sucursal o el presupuesto de toda la red,
+   día por día. Son los mismos números de ven_semaforo (los da SQL); aquí solo se acomodan en hojas. Los totales son SUMA de Excel. ── */
+const XL_PESOS = '#,##0', XL_PCT = '0.0%', XL_FECHA = 'dd/mm/yyyy';
+function xlRed(v, dec) { return v == null || v === '' || isNaN(Number(v)) ? null : Math.round(Number(v) * Math.pow(10, dec)) / Math.pow(10, dec); }
+const xP = v => ({ v: xlRed(v, 2), z: XL_PESOS });
+const xPc = v => ({ v: xlRed(v, 4), z: XL_PCT });
+const xF = iso => { if (!iso) return ''; const p = String(iso).slice(0, 10).split('-').map(Number); return { v: (Date.UTC(p[0], p[1] - 1, p[2]) - Date.UTC(1899, 11, 30)) / 86400000, z: XL_FECHA }; };
+function xSuma(col, r0, r1, valores) { return { f: 'SUM(' + col + r0 + ':' + col + r1 + ')', v: Math.round(valores.reduce((a, x) => a + N(x), 0) * 100) / 100, z: XL_PESOS }; }
+function xlHoja(filas, anchos) {   // filas: valores sueltos o { v, z, f } para número con formato o fórmula
+  const ws = {}; let maxC = 0;
+  filas.forEach((r, i) => { maxC = Math.max(maxC, r.length); r.forEach((c, j) => {
+    const ref = XLSX.utils.encode_cell({ r: i, c: j });
+    if (c && typeof c === 'object') { if (c.v == null && !c.f) return; ws[ref] = { t: 'n', v: c.v == null ? 0 : c.v, z: c.z }; if (c.f) ws[ref].f = c.f; }
+    else if (c != null && c !== '') ws[ref] = typeof c === 'number' ? { t: 'n', v: c } : { t: 's', v: String(c) };
+  }); });
+  ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: Math.max(filas.length - 1, 0), c: Math.max(maxC - 1, 0) } });
+  ws['!cols'] = anchos.map(w => ({ wch: w }));
+  return ws;
+}
+function xlNombre(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_|_$/g, ''); }
+function mesArchivo(anio, mes) { return anio + '-' + String(mes).padStart(2, '0'); }
+
+function excelSemaforo() {
+  const d = S.sem; if (!d || !window.XLSX) { toast('No se pudo armar el Excel; recarga la página.'); return; }
+  const dias = d.dias || []; const r0 = 8, r1 = 7 + dias.length;   // encabezado en el renglón 7 de Excel
+  const filas = [['Sucursal', d.sucursal], ['Mes', mesLabel()], ['Objetivo del mes', xP(d.objetivo)], ['Incremento sobre el año pasado', xPc(d.incremento)], ['Corte', xF(d.corte)], [],
+    ['Fecha', 'Día', 'Año pasado', 'AP mismo día sem.', 'Presupuesto', 'Venta real', 'Var %', 'Semáforo día', 'Var vs AP', 'Acum. presupuesto', 'Acum. real']];
+  dias.forEach(x => { const futuro = x.real == null && x.fecha > d.corte;
+    filas.push([xF(x.fecha), DOW[x.dow], xP(x.ly), xP(x.ly_dow), xP(x.presupuesto), xP(x.real), xPc(x.var_pct), x.real != null ? (SEM_TXT[x.semaforo] || '') : '', xPc(x.var_ly_pct), futuro ? '' : xP(x.acum_presupuesto), x.real != null ? xP(x.acum_real) : '']); });
+  if (dias.length) filas.push(['Total del mes', '', xSuma('C', r0, r1, dias.map(x => x.ly)), xSuma('D', r0, r1, dias.map(x => x.ly_dow)), xSuma('E', r0, r1, dias.map(x => x.presupuesto)), xSuma('F', r0, r1, dias.map(x => x.real))]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, xlHoja(filas, [30, 8, 13, 16, 13, 13, 9, 13, 10, 17, 13]), 'Semáforo');
+  XLSX.writeFile(wb, 'semaforo_' + xlNombre(d.sucursal) + '_' + mesArchivo(S.anio, S.mes) + '.xlsx'); toast('Excel descargado.');
+}
+
+async function excelPresupuestoRed(btn) {
+  const c = S.cons; if (!c || !window.XLSX) { toast('No se pudo armar el Excel; recarga la página.'); return; }
+  const anio = S.anio, mes = S.mes, emp = S.empresa, etiqueta = mesLabel();
+  const sucs = (c.filas || []).filter(f => (!emp || f.empresa_id === emp) && !f.sin_ly);
+  if (!sucs.length) { toast('Ninguna sucursal tiene presupuesto este mes.'); return; }
+  const antes = btn.innerHTML; btn.disabled = true; let hechos = 0, sig = 0; const res = new Array(sucs.length);
+  const avance = () => { btn.textContent = 'Armando ' + hechos + ' de ' + sucs.length + '…'; }; avance();
+  try {   // de cuatro en cuatro: el mismo semáforo que se abre a mano, una sucursal a la vez
+    await Promise.all([0, 1, 2, 3].map(async () => { while (sig < sucs.length) { const k = sig++; res[k] = await api('ven_semaforo', { anio, mes, branch_id: sucs[k].branch_id }); hechos++; avance(); } }));
+  } catch (e) { errorUI(e); return; } finally { btn.disabled = false; btn.innerHTML = antes; }
+  const nom = k => sucs[k].sucursal || res[k].sucursal, n = sucs.length;
+  // Hoja 1 · Por sucursal
+  const h1 = [['Presupuesto de venta · ' + etiqueta + ' · sin IVA'], [], ['Empresa', 'Sucursal', 'Objetivo del mes', 'Incremento vs año pasado', 'Presupuesto al corte', 'Venta real al corte']];
+  res.forEach((d, k) => h1.push([empresaNombre(sucs[k].empresa_id), nom(k), xP(d.objetivo), xPc(d.incremento), xP(d.presupuesto_mtd), xP(d.real_mtd)]));
+  h1.push(['Total', '', xSuma('C', 4, 3 + n, res.map(d => d.objetivo)), '', xSuma('E', 4, 3 + n, res.map(d => d.presupuesto_mtd)), xSuma('F', 4, 3 + n, res.map(d => d.real_mtd))]);
+  // Hoja 2 · Presupuesto diario: un renglón por día, una columna por sucursal
+  const porFecha = {}; res.forEach((d, k) => (d.dias || []).forEach(x => { (porFecha[x.fecha] = porFecha[x.fecha] || { dow: x.dow, p: {} }).p[k] = x.presupuesto; }));
+  const fechas = Object.keys(porFecha).sort(); const colTot = XLSX.utils.encode_col(2 + n), colUlt = XLSX.utils.encode_col(1 + n);
+  const h2 = [['Fecha', 'Día'].concat(res.map((d, k) => nom(k))).concat(['Total'])];
+  fechas.forEach((f, i) => { const row = i + 2, vals = res.map((d, k) => porFecha[f].p[k]);
+    h2.push([xF(f), DOW[porFecha[f].dow]].concat(vals.map(xP)).concat([{ f: 'SUM(C' + row + ':' + colUlt + row + ')', v: Math.round(vals.reduce((a, x) => a + N(x), 0) * 100) / 100, z: XL_PESOS }])); });
+  h2.push(['Total del mes', ''].concat(res.map((d, k) => xSuma(XLSX.utils.encode_col(2 + k), 2, fechas.length + 1, fechas.map(f => porFecha[f].p[k])))).concat([xSuma(colTot, 2, fechas.length + 1, fechas.map(f => Object.values(porFecha[f].p).reduce((a, x) => a + N(x), 0)))]));
+  // Hoja 3 · Detalle: todo junto, para filtrar o hacer tabla dinámica
+  const h3 = [['Empresa', 'Sucursal', 'Fecha', 'Día', 'Año pasado', 'AP mismo día sem.', 'Presupuesto', 'Venta real', 'Var %', 'Semáforo día']];
+  res.forEach((d, k) => (d.dias || []).forEach(x => h3.push([empresaNombre(sucs[k].empresa_id), nom(k), xF(x.fecha), DOW[x.dow], xP(x.ly), xP(x.ly_dow), xP(x.presupuesto), xP(x.real), xPc(x.var_pct), x.real != null ? (SEM_TXT[x.semaforo] || '') : ''])));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, xlHoja(h1, [18, 30, 16, 14, 18, 18]), 'Por sucursal');
+  XLSX.utils.book_append_sheet(wb, xlHoja(h2, [12, 6].concat(res.map(() => 14)).concat([15])), 'Presupuesto diario');
+  XLSX.utils.book_append_sheet(wb, xlHoja(h3, [18, 30, 12, 6, 13, 16, 13, 13, 9, 13]), 'Detalle');
+  XLSX.writeFile(wb, 'presupuesto_ventas_' + mesArchivo(anio, mes) + (emp ? '_' + xlNombre(empresaNombre(emp)) : '') + '.xlsx'); toast('Excel descargado: ' + n + ' sucursales.');
 }
 
 /* ── Metas y parámetros (hoja Parametros; solo admin y contabilidad) ── */
